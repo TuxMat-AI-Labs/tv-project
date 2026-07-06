@@ -1,9 +1,13 @@
-const BUSINESS_START = { hour: 8, minute: 30 };
-const BUSINESS_END = { hour: 16, minute: 30 };
+// Displays play content during these local hours, every day; outside this window
+// the screensaver runs for overnight pixel-care. Kept broad on purpose so a TV
+// shows its assigned content through the whole business day + evening — only the
+// small hours fall to the screensaver. Override per-venue via env.
+const CONTENT_START_HOUR = Number(process.env.CONTENT_START_HOUR ?? 6); // 6:00 AM
+const CONTENT_END_HOUR = Number(process.env.CONTENT_END_HOUR ?? 23); // 11:00 PM
 
-// The venue's local timezone. Business-hours / daypart decisions are made here,
-// NOT in the server's timezone — otherwise a UTC server (e.g. Render) would flip
-// displays to the screensaver in the middle of the actual business day.
+// The venue's local timezone. Hours are evaluated here, NOT in the server's
+// timezone — otherwise a UTC server (e.g. Render) would flip displays to the
+// screensaver in the middle of the actual business day.
 const VENUE_TIMEZONE = process.env.VENUE_TIMEZONE || "America/Toronto";
 
 const WEEKDAY_INDEX: Record<string, number> = {
@@ -34,13 +38,11 @@ function venueParts(now: Date): { day: number; minutes: number } {
   return { day, minutes: hour * 60 + minute };
 }
 
-/** Mon-Fri only — weekends always fall outside business hours regardless of time. */
+/** True while displays should play content (every day); false = overnight screensaver window. */
 export function isWithinBusinessHours(now: Date): boolean {
-  const { day, minutes } = venueParts(now);
-  if (day === 0 || day === 6) return false;
-
-  const start = BUSINESS_START.hour * 60 + BUSINESS_START.minute;
-  const end = BUSINESS_END.hour * 60 + BUSINESS_END.minute;
+  const { minutes } = venueParts(now);
+  const start = CONTENT_START_HOUR * 60;
+  const end = CONTENT_END_HOUR * 60;
   return minutes >= start && minutes < end;
 }
 

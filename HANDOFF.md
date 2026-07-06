@@ -191,7 +191,13 @@ Extend it to stamp `Device.lastSeenAt`.
 > so screens can be pair-tested against existing displays. The display detail
 > **preview shows the assigned content directly** (ignores the time-of-day
 > screensaver schedule) so "Change content" always previews the wallpaper, even
-> after hours; business hours evaluate in `VENUE_TIMEZONE` (default America/Toronto).
+> after hours. Content plays **06:00–23:00 daily** (screensaver overnight only),
+> evaluated in `VENUE_TIMEZONE` (default America/Toronto); tune with
+> `CONTENT_START_HOUR` / `CONTENT_END_HOUR`. A live TV picks up a content change
+> on its next poll (~15s). **Online** = a synced TV checking in: a paired
+> `Device` polling `/api/tv/register` (or a slug-only TV's content heartbeat) —
+> admin browsing the hub no longer marks displays online, so unpaired slots read
+> offline.
 
 The `/hub/screensaver` picker stores the chosen animation in `localStorage` only.
 To actually drive the TVs, add a `screensaverStyle` field (on `Display` and/or a

@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveContentForDisplay } from "@/lib/display/resolveContentForDisplay";
 
-const ONLINE_THRESHOLD_MS = 45_000;
+const HEARTBEAT_THRESHOLD_MS = 45_000;
+const DEVICE_THRESHOLD_MS = 60_000;
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -12,13 +13,20 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       room: true,
       assignments: { include: { contentItem: true }, orderBy: { sortOrder: "asc" } },
       heartbeat: true,
+      device: true,
     },
   });
   if (!display) return NextResponse.json({ error: "not found" }, { status: 404 });
 
   const now = new Date();
   const resolved = resolveContentForDisplay(display, now);
-  const online = display.heartbeat ? now.getTime() - display.heartbeat.reportedAt.getTime() < ONLINE_THRESHOLD_MS : false;
+  const heartbeatFresh = display.heartbeat
+    ? now.getTime() - display.heartbeat.reportedAt.getTime() < HEARTBEAT_THRESHOLD_MS
+    : false;
+  const deviceFresh = display.device?.lastSeenAt
+    ? now.getTime() - display.device.lastSeenAt.getTime() < DEVICE_THRESHOLD_MS
+    : false;
+  const online = heartbeatFresh || deviceFresh;
 
   return NextResponse.json({
     ...display,

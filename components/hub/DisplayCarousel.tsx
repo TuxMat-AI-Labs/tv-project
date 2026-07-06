@@ -82,9 +82,7 @@ export function DisplayCarousel({
       ) : (
         <div
           ref={scrollRef}
-          className={`no-scrollbar flex snap-x snap-mandatory gap-6 overflow-x-auto scroll-smooth py-3 ${
-            nav.overflow ? "[mask-image:linear-gradient(to_right,transparent,#000_2.5%,#000_97.5%,transparent)]" : ""
-          }`}
+          className="no-scrollbar flex snap-x snap-mandatory gap-6 overflow-x-auto scroll-smooth py-3"
         >
           {displays.map((display, i) => (
             <div key={display.id} className={`shrink-0 snap-start ${tileWidth}`}>
@@ -104,7 +102,7 @@ function CarouselArrow({ dir, disabled, onClick }: { dir: "left" | "right"; disa
       aria-label={dir === "left" ? "Previous displays" : "Next displays"}
       onClick={onClick}
       disabled={disabled}
-      className="flex h-8 w-8 items-center justify-center rounded-full border border-black/10 bg-white/60 text-foreground backdrop-blur transition hover:border-gold hover:text-gold disabled:pointer-events-none disabled:opacity-30"
+      className="glass-btn flex h-8 w-8 items-center justify-center rounded-full disabled:pointer-events-none"
     >
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
         <polyline points={dir === "left" ? "15 18 9 12 15 6" : "9 18 15 12 9 6"} />

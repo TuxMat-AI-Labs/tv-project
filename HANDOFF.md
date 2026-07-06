@@ -77,6 +77,23 @@ The Claude_Preview MCP is rooted at the stub, so its `.claude/launch.json`
 
 ### 1. Device pairing & identity — "which TV is this?" (the big one)
 
+> **✅ SHIPPED (this session).** Claim-code pairing + persistent httpOnly device
+> cookie is built and verified locally end-to-end: `/tv` mints a device + code +
+> QR, `/hub/pair?code=` approves it (assign existing display or create a new one,
+> with swap-on-reassign), and the TV then auto-loads its content and is
+> recognized permanently via the `tuxdisplay_device` cookie (confirmed httpOnly).
+> Unpair/relabel + a paired-screens list live on `/hub/pair`; presence stamps
+> `Device.lastSeenAt`. Files: `lib/device.ts`, `app/tv/*`, `components/tv/*`,
+> `app/api/tv/register`, `app/api/admin/pair/{claim,unpair}`,
+> `app/api/admin/devices`, `components/hub/PairClient.tsx`,
+> `components/display/DisplayPlayer.tsx` (player extracted, shared by `/tv` +
+> `/display/[slug]`). Migration `20260706010000_add_device`.
+> **⚠️ STILL TO VERIFY ON REAL HARDWARE:** that the Samsung/Tizen browser keeps
+> the httpOnly cookie across power cycles. If it does not, fall back to setting
+> each Display's `/display/<slug>` URL as the browser homepage (that path still
+> works unchanged). Also add `NEXT_PUBLIC`/`AUTH_URL` in prod so the QR encodes
+> the public origin (register already reads `AUTH_URL`, falling back to origin).
+
 **Goal:** point each Samsung TV's browser at TuxDisplay once, pair it to a logical
 Display ("TV 1 by my desk"), have it permanently recognized and auto-load its
 content — **without typing the admin password on every TV.**
@@ -144,17 +161,23 @@ slug in the URL is the permanent identity — zero backend, robust, but no in-hu
 Extend it to stamp `Device.lastSeenAt`.
 
 **Build checklist:**
-- [ ] `Device` model + migration; relation to `Display`.
-- [ ] `/tv` public entry route: cookie check → pairing screen (code + QR, on-brand,
+- [x] `Device` model + migration; relation to `Display`.
+- [x] `/tv` public entry route: cookie check → pairing screen (code + QR, on-brand,
       full-screen) or content.
-- [ ] Pairing APIs: issue device+code; claim code (admin-authed) → bind `displayId`.
-- [ ] Hub UI: "Pair a screen" + Pair icon on displays; code entry / QR; device list
-      with relabel / unpair.
-- [ ] Long-lived httpOnly `tuxdisplay_device` cookie (`SameSite=Lax`, `Secure`);
-      verify persistence on the real Samsung browser.
-- [ ] Extend heartbeat → `Device.lastSeenAt`.
+- [x] Pairing APIs: issue device+code; claim code (admin-authed) → bind `displayId`.
+- [x] Hub UI: "Pair a screen" (Customize → Pair a screen / `/hub/pair`); code entry
+      + QR deep-link; device list with unpair.
+- [x] Long-lived httpOnly `tuxdisplay_device` cookie (`SameSite=Lax`, `Secure` in
+      prod). ⚠️ Still verify persistence on the real Samsung browser.
+- [x] Extend heartbeat → `Device.lastSeenAt` (stamped on each `/api/tv/register` poll).
 
 ### 2. Screensaver style → backend
+
+> Note: this session gave the picker a visual overhaul — full-screen immersive
+> bleed (only the TUXDISPLAY header, hub chrome hidden), three distinct colours
+> (gold / aqua / violet), hover = vibrant artwork (no gold outline), and an
+> Activate pill that sweeps light right→left. Selection is **still localStorage
+> only** — the backend wiring below is unchanged.
 
 The `/hub/screensaver` picker stores the chosen animation in `localStorage` only.
 To actually drive the TVs, add a `screensaverStyle` field (on `Display` and/or a

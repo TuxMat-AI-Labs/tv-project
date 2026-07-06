@@ -2,7 +2,15 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 
 // Next.js 16 renamed `middleware.ts` -> `proxy.ts` (and the exported function to `proxy`).
-const ADMIN_ONLY = [/^\/hub\/customize\/rooms/, /^\/hub\/customize\/displays/, /^\/api\/admin\/rooms/, /^\/api\/admin\/displays/];
+const ADMIN_ONLY = [
+  /^\/hub\/customize\/rooms/,
+  /^\/hub\/customize\/displays/,
+  /^\/hub\/pair/,
+  /^\/api\/admin\/rooms/,
+  /^\/api\/admin\/displays/,
+  /^\/api\/admin\/pair/,
+  /^\/api\/admin\/devices/,
+];
 
 const MARKETING_OR_ADMIN = [
   /^\/hub\/customize\/library/,

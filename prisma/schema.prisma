@@ -67,6 +67,7 @@ model Display {
 
   assignments Assignment[]
   heartbeat   Heartbeat?
+  device      Device?
 
   @@index([roomId])
 }
@@ -115,4 +116,21 @@ model Heartbeat {
   display          Display  @relation(fields: [displayId], references: [id])
   currentContentId String?
   reportedAt       DateTime @default(now())
+}
+
+// A physical TV browser, identified by a long-lived httpOnly cookie (`token`).
+// Enrolled via claim-code pairing: the TV shows a short `pairingCode` + QR while
+// unpaired; an admin approves it from the hub, binding it to a Display. After
+// that the cookie recognizes the screen permanently — no password on the TV.
+model Device {
+  id            String    @id @default(cuid())
+  token         String    @unique // random secret stored in the TV's httpOnly cookie — the durable identity
+  displayId     String?   @unique // which Display this screen shows (null until paired)
+  display       Display?  @relation(fields: [displayId], references: [id])
+  pairingCode   String?   @unique // short human code shown on the TV while unpaired (e.g. TUX-4F9K)
+  codeExpiresAt DateTime?
+  label         String? // optional note ("by Colin's desk")
+  pairedAt      DateTime?
+  lastSeenAt    DateTime?
+  createdAt     DateTime  @default(now())
 }

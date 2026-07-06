@@ -2,6 +2,11 @@ import Link from "next/link";
 
 const SECTIONS = [
   {
+    href: "/hub/pair",
+    label: "Pair a screen",
+    description: "Enroll a new TV by scanning its QR or entering the code it shows — no login on the TV.",
+  },
+  {
     href: "/hub/customize/rooms",
     label: "Rooms",
     description: "Create and organize the rooms that group displays together.",

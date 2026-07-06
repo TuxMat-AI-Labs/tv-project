@@ -29,7 +29,7 @@ export default async function SignInPage({
         <form action={doSignIn}>
           <button
             type="submit"
-            className="w-full rounded-md bg-gold py-2.5 text-sm font-semibold text-black transition hover:bg-gold-light"
+            className="glass-btn glass-btn--gold w-full rounded-md py-2.5 text-sm font-semibold"
           >
             {entraConfigured ? "Sign in with Microsoft" : "Sign in (development)"}
           </button>

@@ -18,7 +18,7 @@ export function EmptyState({
       {cta && (
         <Link
           href={cta.href}
-          className="mt-6 rounded-md bg-gold px-4 py-2 text-sm font-semibold text-black transition hover:bg-gold-light"
+          className="glass-btn glass-btn--gold mt-6 rounded-md px-4 py-2 text-sm font-semibold"
         >
           {cta.label}
         </Link>

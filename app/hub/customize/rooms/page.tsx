@@ -126,7 +126,7 @@ export default function RoomsPage() {
           <button
             onClick={createRoom}
             disabled={creating || !newName.trim()}
-            className="rounded bg-gold px-4 py-1.5 text-sm font-medium text-black transition hover:bg-gold-light disabled:opacity-50"
+            className="glass-btn glass-btn--gold rounded px-4 py-1.5 text-sm font-medium"
           >
             {creating ? "Creating…" : "Create room"}
           </button>

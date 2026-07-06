@@ -143,7 +143,7 @@ export default function LibraryPage() {
           <button
             onClick={upload}
             disabled={uploading || !file || !title.trim()}
-            className="rounded bg-gold px-4 py-1.5 text-sm font-medium text-black transition hover:bg-gold-light disabled:opacity-50"
+            className="glass-btn glass-btn--gold rounded px-4 py-1.5 text-sm font-medium"
           >
             {uploading ? "Uploading…" : "Upload"}
           </button>

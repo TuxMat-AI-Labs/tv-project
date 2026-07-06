@@ -45,7 +45,8 @@ export function DisplayTile({
   return (
     <Link href={`/hub/displays/${display.id}`} className="group block" scroll={false}>
       <motion.div layoutId={`display-frame-${display.id}`} style={{ perspective: 900 }}>
-        {/* 3D push wrapper — tilts toward the cursor and lifts on hover (Task E). */}
+        {/* 3D push wrapper — the bezel + screen live on one plane here, so they
+            tilt toward the cursor and lift together as a single object. */}
         <div
           onMouseMove={handleMove}
           onMouseLeave={handleLeave}
@@ -53,9 +54,19 @@ export function DisplayTile({
           style={{
             transformStyle: "preserve-3d",
             transform: `rotateX(${t.rx}deg) rotateY(${t.ry}deg) scale(${t.lift ? 1.045 : 1})`,
-            filter: t.lift ? "drop-shadow(0 22px 30px rgba(32,28,22,0.28))" : undefined,
           }}
         >
+          {/* Soft grounded shadow that sits BEHIND the whole TV. Blurred and inset
+              so it reads as one object's shadow — never a hard rectangle, and
+              contained so it can't bleed into the caption below. Deepens on lift. */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-[7%] top-[7%] bottom-[7%] rounded-[10%] bg-[#15110b] blur-2xl transition-all duration-200 ease-out"
+            style={{
+              opacity: t.lift ? 0.5 : 0.26,
+              transform: `translateY(${t.lift ? 12 : 5}px)`,
+            }}
+          />
           <TVFrame>
             {/* Screen content — wakes with the staggered power-on (Task F). */}
             <div

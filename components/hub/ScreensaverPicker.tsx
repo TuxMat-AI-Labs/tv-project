@@ -1,21 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 
 type Variant = "drift" | "bounce" | "pulse";
-const OPTIONS: { key: Variant; label: string; blurb: string }[] = [
-  { key: "drift", label: "Drift", blurb: "Slow wander" },
-  { key: "pulse", label: "Pulse", blurb: "Breathing glow" },
-  { key: "bounce", label: "Bounce", blurb: "Edge to edge" },
+
+// Each option carries its own colour: a hue-rotate that recolours the gold
+// monogram plus a matching glow (as "r, g, b"). Together the three panels read
+// as three distinct colours instead of one gold.
+const OPTIONS: { key: Variant; label: string; blurb: string; hue: number; glow: string }[] = [
+  { key: "drift", label: "Drift", blurb: "Slow wander", hue: 0, glow: "223, 186, 124" }, // gold
+  { key: "pulse", label: "Pulse", blurb: "Breathing glow", hue: 152, glow: "94, 214, 214" }, // aqua
+  { key: "bounce", label: "Bounce", blurb: "Edge to edge", hue: 232, glow: "170, 141, 236" }, // violet
 ];
 
 const STORAGE_KEY = "tuxdisplay:screensaver";
 
 /**
- * Screensaver picker — three live previews side by side, separated by a hairline,
- * each animating exactly as it will on the TV. Hover focuses one; tap activates
- * it for the scheduled pixel-care window. Selection persists locally for now
- * (wiring it to displays needs a `screensaverStyle` field on the backend).
+ * Screensaver picker — three live, full-bleed previews, each in its own colour
+ * and animating exactly as it will on the TV. Hovering a panel makes its artwork
+ * markedly more vibrant (no outline) and sweeps a band of light across its
+ * Activate button, right → left. Tap activates it for the scheduled pixel-care
+ * window. Selection persists locally for now (wiring it to displays needs a
+ * `screensaverStyle` field on the backend).
  */
 export function ScreensaverPicker() {
   const [active, setActive] = useState<Variant | null>(null);
@@ -31,7 +37,7 @@ export function ScreensaverPicker() {
   }
 
   return (
-    <div className="group/row grid grid-cols-3 overflow-hidden rounded-2xl border border-black/10 bg-black shadow-[0_24px_60px_-24px_rgba(32,28,22,0.4)]" style={{ height: "76vh" }}>
+    <div className="grid h-full grid-cols-3 bg-black">
       {OPTIONS.map((opt, i) => {
         const isActive = active === opt.key;
         return (
@@ -40,23 +46,20 @@ export function ScreensaverPicker() {
             type="button"
             onClick={() => activate(opt.key)}
             aria-pressed={isActive}
-            className={`group/panel relative overflow-hidden focus:outline-none ${i > 0 ? "border-l border-white/40" : ""}`}
+            className={`ss-panel group/panel relative overflow-hidden focus:outline-none ${
+              i > 0 ? "border-l border-white/10" : ""
+            } ${isActive ? "is-active" : ""}`}
           >
-            <ScreensaverStage variant={opt.key} />
+            <ScreensaverStage variant={opt.key} hue={opt.hue} glow={opt.glow} />
 
-            {/* Dim every panel except the hovered one, so hover previews the pick. */}
-            <span className="pointer-events-none absolute inset-0 bg-black/45 transition-colors duration-300 group-hover/row:bg-black/60 group-hover/panel:!bg-transparent" />
-
-            {isActive && <span className="pointer-events-none absolute inset-0 z-10 ring-2 ring-inset ring-gold" />}
-
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex items-center justify-between p-5">
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex items-center justify-between p-6">
               <span className="flex flex-col text-left">
-                <span className="text-sm font-semibold tracking-wide text-white uppercase">{opt.label}</span>
-                <span className="text-[0.7rem] tracking-wide text-white/50 uppercase">{opt.blurb}</span>
+                <span className="text-base font-semibold tracking-wide text-white uppercase">{opt.label}</span>
+                <span className="text-xs tracking-wide text-white/50 uppercase">{opt.blurb}</span>
               </span>
               <span
-                className={`rounded-full border px-3 py-1 text-xs font-medium tracking-wide uppercase transition ${
-                  isActive ? "border-gold bg-gold text-black" : "border-white/30 text-white/80"
+                className={`ss-activate glass-btn glass-btn--dark rounded-full px-4 py-1.5 text-xs font-medium tracking-wide uppercase ${
+                  isActive ? "is-active" : ""
                 }`}
               >
                 {isActive ? "Active" : "Activate"}
@@ -69,7 +72,7 @@ export function ScreensaverPicker() {
   );
 }
 
-function ScreensaverStage({ variant }: { variant: Variant }) {
+function ScreensaverStage({ variant, hue, glow }: { variant: Variant; hue: number; glow: string }) {
   const anim =
     variant === "drift"
       ? "ss-drift 16s ease-in-out infinite alternate"
@@ -78,18 +81,23 @@ function ScreensaverStage({ variant }: { variant: Variant }) {
         : "ss-pulse 5s ease-in-out infinite";
   const markClass =
     variant === "pulse"
-      ? "absolute top-1/2 left-1/2 w-[36%]"
+      ? "absolute top-1/2 left-1/2 w-[34%]"
       : variant === "bounce"
         ? "absolute w-[22%]"
         : "absolute w-[26%]";
 
   return (
     <div
-      className="absolute inset-0 overflow-hidden"
-      style={{ backgroundImage: "radial-gradient(60% 50% at 50% 45%, rgba(46,51,57,0.5) 0%, rgba(0,0,0,0) 70%)" }}
+      className="ss-stage absolute inset-0 overflow-hidden"
+      style={{ backgroundImage: `radial-gradient(60% 55% at 50% 45%, rgba(${glow}, 0.3) 0%, rgba(0,0,0,0) 70%)` }}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/brand/tuxmat-monogram.png" alt="" className={`${markClass} opacity-90`} style={{ animation: anim }} />
+      <img
+        src="/brand/tuxmat-monogram.png"
+        alt=""
+        className={`${markClass} opacity-95`}
+        style={{ animation: anim, filter: `hue-rotate(${hue}deg) drop-shadow(0 0 24px rgba(${glow}, 0.55))` } as CSSProperties}
+      />
     </div>
   );
 }

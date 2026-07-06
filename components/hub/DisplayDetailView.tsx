@@ -69,10 +69,9 @@ export function DisplayDetailView({
 
       {display && (
         <div className="fixed top-7 left-1/2 z-30 -translate-x-1/2 text-center">
-          <p className="text-sm font-medium text-white/90">
+          <p className="text-sm font-semibold tracking-wide text-white/90 uppercase">
             {display.room.name} <span className="text-gold-light">{display.number}</span>
           </p>
-          <p className="text-[0.6rem] tracking-[0.3em] text-white/40 uppercase">{display.name}</p>
         </div>
       )}
 
@@ -151,11 +150,7 @@ function ActionCluster({ panel, setPanel }: { panel: PanelKey; setPanel: (p: Pan
           key={item.key}
           title={item.label}
           onClick={() => setPanel(panel === item.key ? null : item.key)}
-          className={`rounded-full border p-3 backdrop-blur-md transition ${
-            panel === item.key
-              ? "border-gold bg-gold text-black"
-              : "border-white/15 bg-black/40 text-white/90 hover:border-gold/60 hover:text-gold-light"
-          }`}
+          className={`glass-btn glass-btn--dark rounded-full p-3 ${panel === item.key ? "is-active" : ""}`}
         >
           {item.icon}
         </button>
@@ -240,7 +235,7 @@ function EditPanel({
         <button
           onClick={save}
           disabled={saving}
-          className="w-full rounded-md bg-gold py-1.5 font-medium text-black transition hover:bg-gold-light disabled:opacity-50"
+          className="glass-btn glass-btn--gold w-full rounded-md py-1.5 font-medium"
         >
           Save
         </button>

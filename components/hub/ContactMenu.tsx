@@ -49,7 +49,8 @@ export function ContactMenu({
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label="Account menu"
-        className="flex h-9 w-9 items-center justify-center rounded-full border border-gold/40 bg-gold/10 text-xs font-semibold text-gold transition-colors hover:border-gold hover:bg-gold/15"
+        className="glass-btn flex h-9 w-9 items-center justify-center rounded-full text-xs font-semibold"
+        style={{ color: "var(--gold)" }}
       >
         {initials}
       </button>

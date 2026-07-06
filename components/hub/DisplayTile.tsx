@@ -29,6 +29,10 @@ export function DisplayTile({
 }) {
   // rx/ry are the live rotation; `lift` toggles the scale/shadow push.
   const [t, setT] = useState({ rx: 0, ry: 0, lift: false });
+  // While the shared-layout morph runs (opening into / closing back from the
+  // detail view), lift this tile above its neighbors so it slides into place on
+  // top instead of behind the adjacent tiles.
+  const [morphing, setMorphing] = useState(false);
 
   function handleMove(e: React.MouseEvent<HTMLDivElement>) {
     if (prefersReducedMotion()) return;
@@ -44,7 +48,12 @@ export function DisplayTile({
 
   return (
     <Link href={`/hub/displays/${display.id}`} className="group block" scroll={false}>
-      <motion.div layoutId={`display-frame-${display.id}`} style={{ perspective: 900 }}>
+      <motion.div
+        layoutId={`display-frame-${display.id}`}
+        onLayoutAnimationStart={() => setMorphing(true)}
+        onLayoutAnimationComplete={() => setMorphing(false)}
+        style={{ perspective: 900, position: "relative", zIndex: morphing ? 30 : undefined }}
+      >
         {/* Lift wrapper — the bezel + screen live on one plane here, so they rise
             toward you and tilt together as one solid object. The shadow is a
             box-shadow ON this wrapper, so it belongs to the TV: it hugs the TV's

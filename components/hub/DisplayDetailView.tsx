@@ -39,11 +39,17 @@ export function DisplayDetailView({
 }) {
   const [display, setDisplay] = useState<DisplayDetail | null>(null);
   const [panel, setPanel] = useState<PanelKey>(null);
+  // Bumped on every refresh so the framed preview remounts and re-fetches
+  // immediately after a change (otherwise it waits for its own ~15s poll).
+  const [previewNonce, setPreviewNonce] = useState(0);
 
   const refresh = () =>
     fetch(`/api/admin/displays/${displayId}`)
       .then((r) => r.json())
-      .then(setDisplay);
+      .then((d) => {
+        setDisplay(d);
+        setPreviewNonce((n) => n + 1);
+      });
 
   useEffect(() => {
     refresh();
@@ -82,7 +88,9 @@ export function DisplayDetailView({
           className="relative"
           style={{ height: "86vh", maxWidth: "94vw", aspectRatio: "824 / 1412" }}
         >
-          <TVFrame>{display && <LivePreview slug={display.slug} contentFit={display.contentFit} />}</TVFrame>
+          <TVFrame>
+            {display && <LivePreview key={previewNonce} slug={display.slug} contentFit={display.contentFit} />}
+          </TVFrame>
         </motion.div>
       </div>
 

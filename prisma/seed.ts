@@ -51,53 +51,63 @@ async function main() {
     { name: "Showroom 2", number: 2, roomSlug: "showroom" },
   ];
 
-  // Branded TuxMat placeholder creatives (portrait 9:16), served from /public.
-  // Alternated across displays so the wall isn't monotone.
-  const placeholders = [
-    "/placeholders/coverage-reach.jpg",
-    "/placeholders/us-vs-them.jpg",
-    "/placeholders/your-car.jpg",
-    "/placeholders/the-standard.jpg",
-  ];
-
+  // Ensure the displays exist.
+  const displayRecords: { id: string; name: string; slug: string; idx: number }[] = [];
   for (const [i, d] of displaysToSeed.entries()) {
     const room = roomRecords.get(d.roomSlug)!;
-    const existingDisplay = await prisma.display.findFirst({ where: { name: d.name, roomId: room.id } });
+    const existing = await prisma.display.findFirst({ where: { name: d.name, roomId: room.id } });
     const display =
-      existingDisplay ??
-      (await prisma.display.create({ data: { name: d.name, number: d.number, roomId: room.id } }));
-
-    const imageUrl = placeholders[i % placeholders.length];
-    const existingAssignment = await prisma.assignment.findFirst({ where: { displayId: display.id } });
-    if (existingAssignment) {
-      // Refresh the artwork on re-seed so placeholder swaps take effect.
-      await prisma.contentItem.update({
-        where: { id: existingAssignment.contentItemId },
-        data: { type: "IMAGE", fileUrl: imageUrl, thumbnailUrl: imageUrl },
-      });
-    } else {
-      const contentItem = await prisma.contentItem.create({
-        data: {
-          title: `${d.name} sample poster`,
-          type: "IMAGE",
-          fileUrl: imageUrl,
-          thumbnailUrl: imageUrl,
-          durationSec: 15,
-          uploadedById: admin.id,
-        },
-      });
-      await prisma.assignment.create({
-        data: {
-          contentItemId: contentItem.id,
-          displayId: display.id,
-          sortOrder: 0,
-          createdById: admin.id,
-        },
-      });
-    }
-
-    console.log(`Seeded display "${display.name}" -> http://localhost:3000/display/${display.slug}`);
+      existing ?? (await prisma.display.create({ data: { name: d.name, number: d.number, roomId: room.id } }));
+    displayRecords.push({ id: display.id, name: display.name, slug: display.slug, idx: i });
   }
+
+  // Branded TuxMat placeholder creatives (portrait 9:16), served from /public.
+  // A single SHARED library named by the creative — not per-display — so the
+  // "Change content" list reads as reusable artwork, never tied to one screen.
+  const creatives = [
+    { title: "Built for the Rest", fileUrl: "/placeholders/coverage-reach.jpg" },
+    { title: "Not a Standard", fileUrl: "/placeholders/us-vs-them.jpg" },
+    { title: "Your Car Isn't Generic", fileUrl: "/placeholders/your-car.jpg" },
+    { title: "The Standard Doesn't Change", fileUrl: "/placeholders/the-standard.jpg" },
+  ];
+
+  const creativeIds: string[] = [];
+  for (const c of creatives) {
+    const existing = await prisma.contentItem.findFirst({ where: { fileUrl: c.fileUrl } });
+    const item = existing
+      ? await prisma.contentItem.update({
+          where: { id: existing.id },
+          data: { title: c.title, type: "IMAGE", thumbnailUrl: c.fileUrl, durationSec: 15 },
+        })
+      : await prisma.contentItem.create({
+          data: {
+            title: c.title,
+            type: "IMAGE",
+            fileUrl: c.fileUrl,
+            thumbnailUrl: c.fileUrl,
+            durationSec: 15,
+            uploadedById: admin.id,
+          },
+        });
+    creativeIds.push(item.id);
+  }
+
+  // Assign one shared creative per display (rotating), repointing any existing
+  // assignment to the shared item so the wall stays populated.
+  for (const d of displayRecords) {
+    const contentItemId = creativeIds[d.idx % creativeIds.length];
+    const current = await prisma.assignment.findFirst({ where: { displayId: d.id } });
+    if (current?.contentItemId !== contentItemId) {
+      await prisma.$transaction([
+        prisma.assignment.deleteMany({ where: { displayId: d.id } }),
+        prisma.assignment.create({ data: { displayId: d.id, contentItemId, sortOrder: 0, createdById: admin.id } }),
+      ]);
+    }
+    console.log(`Seeded display "${d.name}" -> http://localhost:3000/display/${d.slug}`);
+  }
+
+  // Remove any legacy per-display content items left orphaned by the repoint.
+  await prisma.contentItem.deleteMany({ where: { id: { notIn: creativeIds }, assignments: { none: {} } } });
 
   console.log(`\nHub: http://localhost:3000/hub (dev auth bypass, seeded admin user id ${admin.id})`);
 }

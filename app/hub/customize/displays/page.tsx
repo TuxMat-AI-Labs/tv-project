@@ -100,7 +100,7 @@ export default function DisplaysPage() {
   }
 
   return (
-    <div>
+    <div className="reveal">
       <h1 className="text-2xl font-semibold text-foreground">Customize</h1>
       <CustomizeSubNav active="displays" />
 
@@ -112,7 +112,7 @@ export default function DisplaysPage() {
             <input
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
-              className="mt-1 block rounded border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-white"
+              className="mt-1 block rounded border border-black/10 bg-white px-2 py-1.5 text-sm text-foreground"
               placeholder="e.g. Lobby TV"
             />
           </label>
@@ -122,7 +122,7 @@ export default function DisplaysPage() {
               type="number"
               value={newNumber}
               onChange={(e) => setNewNumber(Number(e.target.value))}
-              className="mt-1 block w-20 rounded border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-white"
+              className="mt-1 block w-20 rounded border border-black/10 bg-white px-2 py-1.5 text-sm text-foreground"
             />
           </label>
           <label className="block">
@@ -130,7 +130,7 @@ export default function DisplaysPage() {
             <select
               value={newRoomId}
               onChange={(e) => setNewRoomId(e.target.value)}
-              className="mt-1 block rounded border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-white"
+              className="mt-1 block rounded border border-black/10 bg-white px-2 py-1.5 text-sm text-foreground"
             >
               {rooms.map((room) => (
                 <option key={room.id} value={room.id}>
@@ -147,7 +147,7 @@ export default function DisplaysPage() {
             {creating ? "Creating…" : "Create display"}
           </button>
         </div>
-        {createError && <p className="mt-2 text-xs text-red-400">{createError}</p>}
+        {createError && <p className="mt-2 text-xs text-red-600">{createError}</p>}
         {rooms.length === 0 && !loading && (
           <p className="mt-2 text-xs text-muted">Create a room first before adding displays.</p>
         )}
@@ -193,14 +193,14 @@ export default function DisplaysPage() {
                     className={`rounded-full px-2 py-0.5 text-xs ${
                       display.active
                         ? "bg-emerald-950 text-emerald-300 hover:bg-emerald-900"
-                        : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
+                        : "bg-surface-2 text-muted hover:bg-black/5"
                     }`}
                   >
                     {display.active ? "Active" : "Inactive"}
                   </button>
                 </td>
                 <td className="px-4 py-3">
-                  <span className="rounded-full bg-zinc-800 px-2 py-0.5 text-xs text-zinc-400">
+                  <span className="rounded-full bg-surface-2 px-2 py-0.5 text-xs text-muted">
                     {display.screensaverOverride === null
                       ? "Auto"
                       : display.screensaverOverride
@@ -209,24 +209,24 @@ export default function DisplaysPage() {
                   </span>
                 </td>
                 <td className="px-4 py-3">
-                  <span className="rounded-full bg-zinc-800 px-2 py-0.5 text-xs text-zinc-400 capitalize">
+                  <span className="rounded-full bg-surface-2 px-2 py-0.5 text-xs text-muted capitalize">
                     {display.contentFit.toLowerCase()}
                   </span>
                 </td>
                 <td className="px-4 py-3">
                   <button
                     onClick={() => copyUrl(display)}
-                    className="text-xs text-muted hover:text-gold-light"
+                    className="text-xs text-muted hover:text-gold"
                     title={`/display/${display.slug}`}
                   >
                     {copiedId === display.id ? "Copied!" : "Copy URL"}
                   </button>
                 </td>
                 <td className="px-4 py-3 text-right whitespace-nowrap">
-                  <Link href={`/hub/displays/${display.id}`} className="mr-3 text-zinc-300 hover:text-gold-light">
+                  <Link href={`/hub/displays/${display.id}`} className="mr-3 text-foreground hover:text-gold">
                     Open
                   </Link>
-                  <button onClick={() => deleteDisplay(display.id)} className="text-red-400 hover:text-red-300">
+                  <button onClick={() => deleteDisplay(display.id)} className="text-red-600 hover:text-red-700">
                     Delete
                   </button>
                 </td>
@@ -235,7 +235,7 @@ export default function DisplaysPage() {
           </tbody>
         </table>
       </div>
-      {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
+      {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
     </div>
   );
 }

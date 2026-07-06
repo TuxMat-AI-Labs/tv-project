@@ -23,7 +23,7 @@ export function HubNav({ rooms }: { rooms: { name: string; slug: string }[] }) {
             key={item.href}
             href={item.href}
             className={`relative whitespace-nowrap rounded-md px-3 py-1.5 text-sm transition-colors ${
-              active ? "text-gold" : "text-muted hover:text-white"
+              active ? "text-gold" : "text-muted hover:text-foreground"
             }`}
           >
             {item.label}

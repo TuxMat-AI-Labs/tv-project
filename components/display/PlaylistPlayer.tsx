@@ -48,7 +48,7 @@ export function PlaylistPlayer({
   const objectFit = FIT_TO_OBJECT_FIT[contentFit];
 
   return (
-    <div className="fixed inset-0 bg-black">
+    <div className="absolute inset-0 bg-black">
       {current.type === "IMAGE" ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img

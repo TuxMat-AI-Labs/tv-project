@@ -14,17 +14,24 @@ export default function HubDashboardPage() {
 
   return (
     <div>
+      {/* StatusSummary carries its own `.reveal` so the cards stagger individually. */}
       <StatusSummary status={status} />
       {hasDisplays ? (
-        status.rooms
-          .filter((r) => r.displays.length > 0)
-          .map((room) => <RoomSection key={room.id} room={room} />)
+        <div className="reveal">
+          {status.rooms
+            .filter((r) => r.displays.length > 0)
+            .map((room) => (
+              <RoomSection key={room.id} room={room} />
+            ))}
+        </div>
       ) : (
-        <EmptyState
-          title="No displays yet"
-          body="Add a room and its displays to start the wall. Each display gets its own URL to point a TV browser at."
-          cta={{ label: "Set up displays", href: "/hub/customize/rooms" }}
-        />
+        <div className="reveal">
+          <EmptyState
+            title="No displays yet"
+            body="Add a room and its displays to start the wall. Each display gets its own URL to point a TV browser at."
+            cta={{ label: "Set up displays", href: "/hub/customize/rooms" }}
+          />
+        </div>
       )}
     </div>
   );

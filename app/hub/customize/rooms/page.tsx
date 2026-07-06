@@ -98,7 +98,7 @@ export default function RoomsPage() {
   }
 
   return (
-    <div>
+    <div className="reveal">
       <h1 className="text-2xl font-semibold text-foreground">Customize</h1>
       <CustomizeSubNav active="rooms" />
 
@@ -110,7 +110,7 @@ export default function RoomsPage() {
             <input
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
-              className="mt-1 block rounded border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-white"
+              className="mt-1 block rounded border border-black/10 bg-white px-2 py-1.5 text-sm text-foreground"
               placeholder="e.g. Lobby"
             />
           </label>
@@ -120,7 +120,7 @@ export default function RoomsPage() {
               type="number"
               value={newSortOrder}
               onChange={(e) => setNewSortOrder(Number(e.target.value))}
-              className="mt-1 block w-24 rounded border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-white"
+              className="mt-1 block w-24 rounded border border-black/10 bg-white px-2 py-1.5 text-sm text-foreground"
             />
           </label>
           <button
@@ -131,11 +131,11 @@ export default function RoomsPage() {
             {creating ? "Creating…" : "Create room"}
           </button>
         </div>
-        {createError && <p className="mt-2 text-xs text-red-400">{createError}</p>}
+        {createError && <p className="mt-2 text-xs text-red-600">{createError}</p>}
       </div>
 
       {deleteError && (
-        <p className="mt-4 rounded border border-red-900 bg-red-950/40 px-3 py-2 text-sm text-red-400">
+        <p className="mt-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
           {deleteError}
         </p>
       )}
@@ -173,7 +173,7 @@ export default function RoomsPage() {
                       <input
                         value={editName}
                         onChange={(e) => setEditName(e.target.value)}
-                        className="w-full rounded border border-zinc-700 bg-zinc-800 px-2 py-1 text-white"
+                        className="w-full rounded border border-black/10 bg-white px-2 py-1 text-foreground"
                       />
                     </td>
                     <td className="px-4 py-2">
@@ -181,7 +181,7 @@ export default function RoomsPage() {
                         type="number"
                         value={editSortOrder}
                         onChange={(e) => setEditSortOrder(Number(e.target.value))}
-                        className="w-20 rounded border border-zinc-700 bg-zinc-800 px-2 py-1 text-white"
+                        className="w-20 rounded border border-black/10 bg-white px-2 py-1 text-foreground"
                       />
                     </td>
                     <td className="px-4 py-2 text-muted">{room.slug}</td>
@@ -189,11 +189,11 @@ export default function RoomsPage() {
                       <button
                         onClick={() => saveEdit(room.id)}
                         disabled={savingEdit}
-                        className="mr-3 text-zinc-200 hover:text-gold-light"
+                        className="mr-3 text-foreground hover:text-gold"
                       >
                         Save
                       </button>
-                      <button onClick={() => setEditingId(null)} className="text-muted hover:text-zinc-300">
+                      <button onClick={() => setEditingId(null)} className="text-muted hover:text-foreground">
                         Cancel
                       </button>
                     </td>
@@ -204,10 +204,10 @@ export default function RoomsPage() {
                     <td className="px-4 py-3 text-muted">{room.sortOrder}</td>
                     <td className="px-4 py-3 text-muted">{room.slug}</td>
                     <td className="px-4 py-3 text-right">
-                      <button onClick={() => startEdit(room)} className="mr-3 text-zinc-300 hover:text-gold-light">
+                      <button onClick={() => startEdit(room)} className="mr-3 text-foreground hover:text-gold">
                         Edit
                       </button>
-                      <button onClick={() => deleteRoom(room.id)} className="text-red-400 hover:text-red-300">
+                      <button onClick={() => deleteRoom(room.id)} className="text-red-600 hover:text-red-700">
                         Delete
                       </button>
                     </td>
@@ -218,7 +218,7 @@ export default function RoomsPage() {
           </tbody>
         </table>
       </div>
-      {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
+      {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
     </div>
   );
 }

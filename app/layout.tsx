@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import "./globals.css";
+import { ScrollReveal } from "@/components/hub/ScrollReveal";
 
 // Poppins is TuxMat's primary brand font. next/font self-hosts it at build
 // time, so no external font CDN is hit at runtime (important on Render).
@@ -22,7 +23,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${poppins.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <ScrollReveal />
+        {children}
+      </body>
     </html>
   );
 }

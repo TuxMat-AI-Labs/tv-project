@@ -17,7 +17,7 @@ export function CustomizeSubNav({ active }: { active: (typeof TABS)[number]["key
           className={`rounded-lg border px-4 py-2 text-sm font-medium transition ${
             tab.key === active
               ? "border-gold bg-gold text-black"
-              : "border-white/10 bg-surface text-zinc-200 hover:border-gold/50 hover:text-gold-light"
+              : "border-black/10 bg-surface-2 text-foreground hover:border-gold/50 hover:text-gold"
           }`}
         >
           {tab.label}

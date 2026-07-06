@@ -13,5 +13,9 @@ export default function RoomPage({ params }: { params: Promise<{ roomSlug: strin
   const room = status.rooms.find((r) => r.slug === roomSlug);
   if (!room) return <p className="text-sm text-muted">Room not found.</p>;
 
-  return <RoomSection room={room} tileSize="large" />;
+  return (
+    <div className="reveal">
+      <RoomSection room={room} tileSize="large" />
+    </div>
+  );
 }

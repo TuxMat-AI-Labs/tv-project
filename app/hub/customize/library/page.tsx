@@ -102,7 +102,7 @@ export default function LibraryPage() {
   }
 
   return (
-    <div>
+    <div className="reveal">
       <h1 className="text-2xl font-semibold text-foreground">Customize</h1>
       <CustomizeSubNav active="library" />
 
@@ -116,7 +116,7 @@ export default function LibraryPage() {
               type="file"
               accept="image/*,video/*"
               onChange={onFileChange}
-              className="mt-1 block text-sm text-zinc-300 file:mr-3 file:rounded file:border-0 file:bg-zinc-800 file:px-3 file:py-1.5 file:text-sm file:text-zinc-100 hover:file:bg-zinc-700"
+              className="mt-1 block text-sm text-foreground file:mr-3 file:rounded file:border-0 file:bg-surface-2 file:px-3 file:py-1.5 file:text-sm file:text-foreground hover:file:bg-black/5"
             />
           </label>
           <label className="block">
@@ -124,7 +124,7 @@ export default function LibraryPage() {
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="mt-1 block rounded border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-white"
+              className="mt-1 block rounded border border-black/10 bg-white px-2 py-1.5 text-sm text-foreground"
               placeholder="e.g. Summer promo"
             />
           </label>
@@ -136,7 +136,7 @@ export default function LibraryPage() {
               value={durationSec}
               onChange={(e) => setDurationSec(Number(e.target.value))}
               disabled={mediaType === "VIDEO"}
-              className="mt-1 block w-24 rounded border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-white disabled:opacity-40"
+              className="mt-1 block w-24 rounded border border-black/10 bg-white px-2 py-1.5 text-sm text-foreground disabled:opacity-40"
             />
             {mediaType === "VIDEO" && <p className="mt-1 text-[10px] text-muted">Uses the video&apos;s own length</p>}
           </label>
@@ -148,7 +148,7 @@ export default function LibraryPage() {
             {uploading ? "Uploading…" : "Upload"}
           </button>
         </div>
-        {uploadError && <p className="mt-2 text-xs text-red-400">{uploadError}</p>}
+        {uploadError && <p className="mt-2 text-xs text-red-600">{uploadError}</p>}
       </div>
 
       <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
@@ -158,24 +158,24 @@ export default function LibraryPage() {
         )}
         {items.map((item) => (
           <div key={item.id} className="overflow-hidden brand-card">
-            <div className="flex aspect-video items-center justify-center bg-zinc-800">
+            <div className="flex aspect-video items-center justify-center bg-surface-2">
               {item.thumbnailUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={item.thumbnailUrl} alt="" className="h-full w-full object-cover" />
               ) : (
-                <span className="text-xs text-zinc-600 uppercase">{item.type}</span>
+                <span className="text-xs text-muted uppercase">{item.type}</span>
               )}
             </div>
             <div className="p-2">
               <p className="truncate text-xs font-medium text-foreground">{item.title}</p>
-              <span className="mt-1 inline-block rounded-full bg-zinc-800 px-2 py-0.5 text-[10px] text-zinc-400 uppercase">
+              <span className="mt-1 inline-block rounded-full bg-surface-2 px-2 py-0.5 text-[10px] text-muted uppercase">
                 {item.type}
               </span>
             </div>
           </div>
         ))}
       </div>
-      {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
+      {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
     </div>
   );
 }

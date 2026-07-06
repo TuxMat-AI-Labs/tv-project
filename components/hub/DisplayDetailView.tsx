@@ -4,8 +4,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useDisplayContent } from "@/lib/display/useDisplayContent";
 import { PlaylistPlayer } from "@/components/display/PlaylistPlayer";
-import { Screensaver } from "@/components/display/Screensaver";
-import { InactiveScreen } from "@/components/display/InactiveScreen";
+import { TVFrame } from "@/components/hub/TVFrame";
 import { PencilIcon, SwapIcon, HealthIcon, AdjustIcon } from "@/components/hub/icons";
 import { Wordmark } from "@/components/brand/Wordmark";
 
@@ -53,18 +52,23 @@ export function DisplayDetailView({
 
   return (
     <motion.div
-      layoutId={`display-frame-${displayId}`}
-      className={isModal ? "fixed inset-0 z-50 overflow-hidden bg-black" : "fixed inset-0 bg-black"}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className={isModal ? "fixed inset-0 z-50 overflow-hidden" : "fixed inset-0"}
+      style={{ backgroundColor: "#0a0a0b" }}
     >
-      {/* Scrim keeps the overlay chrome legible over bright content. */}
-      <div className="pointer-events-none fixed inset-x-0 top-0 z-10 h-28 bg-gradient-to-b from-black/70 to-transparent" />
+      {/* Soft ambient glow so the mounted TV reads as sitting in a dark room. */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{ background: "radial-gradient(60% 55% at 50% 44%, rgba(46,51,57,0.4) 0%, rgba(0,0,0,0) 70%)" }}
+      />
 
-      <button onClick={onClose} className="fixed top-6 left-6 z-20 opacity-90 transition hover:opacity-100" title="Back to hub">
-        <Wordmark size="sm" />
+      <button onClick={onClose} className="fixed top-6 left-6 z-30 opacity-90 transition hover:opacity-100" title="Back to hub">
+        <Wordmark size="sm" tone="light" />
       </button>
 
       {display && (
-        <div className="fixed top-7 left-1/2 z-20 -translate-x-1/2 text-center">
+        <div className="fixed top-7 left-1/2 z-30 -translate-x-1/2 text-center">
           <p className="text-sm font-medium text-white/90">
             {display.room.name} <span className="text-gold-light">{display.number}</span>
           </p>
@@ -72,7 +76,16 @@ export function DisplayDetailView({
         </div>
       )}
 
-      {display && <LivePreview slug={display.slug} contentFit={display.contentFit} />}
+      {/* The clicked tile morphs into this centered TV via the shared layoutId. */}
+      <div className="absolute inset-0 flex items-center justify-center px-4">
+        <motion.div
+          layoutId={`display-frame-${displayId}`}
+          className="relative"
+          style={{ height: "86vh", maxWidth: "94vw", aspectRatio: "824 / 1412" }}
+        >
+          <TVFrame>{display && <LivePreview slug={display.slug} contentFit={display.contentFit} />}</TVFrame>
+        </motion.div>
+      </div>
 
       {display && (
         <>
@@ -87,14 +100,41 @@ export function DisplayDetailView({
   );
 }
 
+/**
+ * The content shown inside the framed TV. Playlists reuse the real PlaylistPlayer
+ * (which fills its container), so the graphic fills the screen exactly. The
+ * screensaver/inactive states get container-scaled previews here — the real
+ * fullscreen Screensaver uses viewport units and only runs on the TV itself.
+ */
 function LivePreview({ slug, contentFit }: { slug: string; contentFit: "COVER" | "CONTAIN" | "FILL" }) {
   const { data, reportHeartbeat } = useDisplayContent(slug);
-  if (!data) return null;
+  if (!data) return <div className="absolute inset-0 bg-black" />;
   if (data.mode === "playlist" && data.playlist?.length) {
     return <PlaylistPlayer playlist={data.playlist} contentFit={contentFit} onCurrentItemChange={reportHeartbeat} />;
   }
-  if (data.mode === "screensaver") return <Screensaver />;
-  return <InactiveScreen />;
+  if (data.mode === "screensaver") {
+    return (
+      <div className="absolute inset-0 overflow-hidden bg-black">
+        <div
+          className="absolute inset-0"
+          style={{ background: "radial-gradient(60% 50% at 50% 45%, rgba(46,51,57,0.5) 0%, rgba(0,0,0,0) 70%)" }}
+        />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/brand/tuxmat-monogram.png"
+          alt="TuxMat"
+          className="absolute top-1/2 left-1/2 w-1/3 -translate-x-1/2 -translate-y-1/2 opacity-90"
+        />
+      </div>
+    );
+  }
+  return (
+    <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/brand/tuxmat-monogram.png" alt="TuxMat" className="w-1/4 opacity-30" />
+      <p className="text-[0.6rem] tracking-[0.3em] text-zinc-600 uppercase">Display not configured</p>
+    </div>
+  );
 }
 
 function ActionCluster({ panel, setPanel }: { panel: PanelKey; setPanel: (p: PanelKey) => void }) {

@@ -39,28 +39,36 @@ async function main() {
     { name: "Showroom 2", number: 2, roomSlug: "showroom" },
   ];
 
-  const sampleImageUrl = "https://picsum.photos/seed/tuxdisplay/2160/3840";
+  // Branded TuxMat placeholder creatives (portrait 9:16), served from /public.
+  // Alternated across displays so the wall isn't monotone.
+  const placeholders = ["/placeholders/coverage-reach.jpg", "/placeholders/us-vs-them.jpg"];
 
-  for (const d of displaysToSeed) {
+  for (const [i, d] of displaysToSeed.entries()) {
     const room = roomRecords.get(d.roomSlug)!;
     const existingDisplay = await prisma.display.findFirst({ where: { name: d.name, roomId: room.id } });
     const display =
       existingDisplay ??
       (await prisma.display.create({ data: { name: d.name, number: d.number, roomId: room.id } }));
 
-    const assignmentCount = await prisma.assignment.count({ where: { displayId: display.id } });
-    if (assignmentCount === 0) {
+    const imageUrl = placeholders[i % placeholders.length];
+    const existingAssignment = await prisma.assignment.findFirst({ where: { displayId: display.id } });
+    if (existingAssignment) {
+      // Refresh the artwork on re-seed so placeholder swaps take effect.
+      await prisma.contentItem.update({
+        where: { id: existingAssignment.contentItemId },
+        data: { type: "IMAGE", fileUrl: imageUrl, thumbnailUrl: imageUrl },
+      });
+    } else {
       const contentItem = await prisma.contentItem.create({
         data: {
           title: `${d.name} sample poster`,
           type: "IMAGE",
-          fileUrl: sampleImageUrl,
-          thumbnailUrl: sampleImageUrl,
+          fileUrl: imageUrl,
+          thumbnailUrl: imageUrl,
           durationSec: 15,
           uploadedById: admin.id,
         },
       });
-
       await prisma.assignment.create({
         data: {
           contentItemId: contentItem.id,

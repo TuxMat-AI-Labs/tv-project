@@ -25,7 +25,7 @@ const SECTIONS = [
 
 export default function CustomizePage() {
   return (
-    <div>
+    <div className="reveal">
       <h1 className="text-2xl font-semibold text-foreground">Customize</h1>
       <p className="mt-1 text-sm text-muted">Manage rooms, displays, media, and scheduling.</p>
 
@@ -36,7 +36,7 @@ export default function CustomizePage() {
             href={section.href}
             className="brand-card group p-5 transition hover:border-gold/40"
           >
-            <h2 className="text-sm font-semibold text-foreground transition group-hover:text-gold-light">
+            <h2 className="text-sm font-semibold text-foreground transition group-hover:text-gold">
               {section.label}
             </h2>
             <p className="mt-1.5 text-xs leading-relaxed text-muted">{section.description}</p>

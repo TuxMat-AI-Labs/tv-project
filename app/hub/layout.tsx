@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { auth, signOut } from "@/auth";
 import { Wordmark } from "@/components/brand/Wordmark";
 import { HubNav } from "@/components/hub/HubNav";
+import { ContactMenu } from "@/components/hub/ContactMenu";
 
 export default async function HubLayout({
   children,
@@ -29,25 +30,16 @@ export default async function HubLayout({
 
   return (
     <div className="min-h-screen text-foreground">
-      <header className="sticky top-0 z-40 border-b brand-hairline bg-black/60 backdrop-blur-xl">
+      <header className="sticky top-0 z-40 border-b brand-hairline bg-white/70 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 pt-5 pb-3">
           <Wordmark subtitle="Display Hub" />
-          <div className="flex items-center gap-4">
-            <span className="hidden text-xs text-muted sm:inline">
-              {session?.user?.email} · <span className="text-gold-light">{session?.user?.role}</span>
-            </span>
-            <form action={handleSignOut}>
-              <button
-                type="submit"
-                className="rounded-md border brand-hairline px-3 py-1.5 text-xs text-muted transition-colors hover:border-gold hover:text-gold"
-              >
-                Sign out
-              </button>
-            </form>
-            <span className="flex h-9 w-9 items-center justify-center rounded-full border border-gold/40 bg-gold/10 text-xs font-semibold text-gold-light">
-              {initials}
-            </span>
-          </div>
+          <ContactMenu
+            initials={initials}
+            name={session?.user?.name}
+            email={session?.user?.email}
+            role={session?.user?.role}
+            signOutAction={handleSignOut}
+          />
         </div>
         <div className="mx-auto max-w-7xl px-6">
           <HubNav rooms={rooms} />

@@ -36,6 +36,14 @@ export async function GET() {
           ? display.assignments.find((a) => a.contentItem.id === display.heartbeat!.currentContentId)
           : undefined;
 
+        // Fall back to the first scheduled item so a tile shows its artwork even
+        // before any TV has reported a heartbeat.
+        const firstPlaylistId = resolved.mode === "playlist" ? resolved.playlist[0]?.id : undefined;
+        const fallbackAssignment = firstPlaylistId
+          ? display.assignments.find((a) => a.contentItem.id === firstPlaylistId)
+          : undefined;
+        const content = (matchedAssignment ?? fallbackAssignment)?.contentItem;
+
         return {
           id: display.id,
           slug: display.slug,
@@ -43,12 +51,12 @@ export async function GET() {
           number: display.number,
           active: display.active,
           mode: resolved.mode,
-          currentContent: matchedAssignment
+          currentContent: content
             ? {
-                id: matchedAssignment.contentItem.id,
-                type: matchedAssignment.contentItem.type,
-                thumbnailUrl: matchedAssignment.contentItem.thumbnailUrl,
-                title: matchedAssignment.contentItem.title,
+                id: content.id,
+                type: content.type,
+                thumbnailUrl: content.thumbnailUrl,
+                title: content.title,
               }
             : null,
           online,

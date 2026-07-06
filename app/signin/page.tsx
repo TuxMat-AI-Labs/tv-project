@@ -16,7 +16,7 @@ export default async function SignInPage({
 
   return (
     <div className="flex min-h-screen items-center justify-center px-6">
-      <div className="brand-card w-full max-w-sm px-8 py-10 text-center">
+      <div className="reveal brand-card w-full max-w-sm px-8 py-10 text-center">
         <div className="mb-8 flex justify-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/brand/tuxmat-monogram.png" alt="TuxMat" className="h-14 w-auto" />

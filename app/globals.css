@@ -7,18 +7,21 @@
  */
 :root {
   --rich-black: #000000;
-  --surface: #14181c;
-  --surface-2: #1b2025;
   --blue-black: #2e3339;
   --gold: #b9975b;
   --gold-light: #dfba7c;
   --gold-metallic-1: #9c762d;
   --gold-metallic-2: #e5c770;
 
-  --background: var(--rich-black);
-  --foreground: #f5f4f2;
-  --muted: #8a8f96;
-  --border: rgba(255, 255, 255, 0.08);
+  /* Light Hub theme (July 2025 Brand Guidelines applied to a white surface).
+     The TV output pages stay dark via their own explicit colors — see
+     components/display/* and DisplayDetailView. */
+  --background: #faf9f6;
+  --foreground: #201c16;
+  --muted: #78716a;
+  --border: rgba(0, 0, 0, 0.1);
+  --surface: #ffffff;
+  --surface-2: #f3f1ec;
 }
 
 @theme inline {
@@ -36,9 +39,12 @@
 body {
   color: var(--foreground);
   font-family: var(--font-poppins), Arial, Helvetica, sans-serif;
-  /* Rich-black base with a faint upper glow, echoing the TuxTrack dashboard. */
-  background-color: var(--rich-black);
-  background-image: radial-gradient(120% 80% at 50% -10%, rgba(46, 51, 57, 0.55) 0%, rgba(0, 0, 0, 0) 55%);
+  /* Warm near-white base with a faint gold glow up top, echoing the TuxTrack
+     dashboard's premium feel translated to a light surface. */
+  background-color: var(--background);
+  background-image:
+    radial-gradient(85% 55% at 12% 0%, rgba(185, 151, 91, 0.1) 0%, rgba(185, 151, 91, 0) 55%),
+    radial-gradient(70% 55% at 100% 18%, rgba(46, 51, 57, 0.07) 0%, rgba(46, 51, 57, 0) 55%);
   background-attachment: fixed;
 }
 
@@ -50,47 +56,176 @@ body {
   color: transparent;
 }
 
-/* Refined card surface used across the Hub. */
-.brand-card {
-  position: relative;
-  background:
-    linear-gradient(180deg, rgba(30, 35, 41, 0.92) 0%, rgba(14, 17, 20, 0.92) 100%);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.05) inset,
-    0 1px 2px rgba(0, 0, 0, 0.4),
-    0 24px 48px -28px rgba(0, 0, 0, 0.9);
-}
-
-/* Elevated variant for the summary metrics: a faint gold glow in the top-left
-   corner and a brighter top hairline, so the numbers read as the focal point. */
+/* Liquid glass — a translucent, blurred panel with a soft specular top edge and
+   a low, diffuse shadow that lifts it off the page. Deliberately clean: no gold
+   outline or glow, just glass. Shared by every Hub card. */
+.brand-card,
 .stat-card {
   position: relative;
-  overflow: hidden;
-  background:
-    radial-gradient(120% 140% at 0% 0%, rgba(185, 151, 91, 0.1) 0%, rgba(185, 151, 91, 0) 42%),
-    linear-gradient(180deg, rgba(30, 35, 41, 0.92) 0%, rgba(14, 17, 20, 0.92) 100%);
-  border: 1px solid var(--border);
-  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.6);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  backdrop-filter: blur(24px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 18px;
   box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.05) inset,
-    0 24px 48px -28px rgba(0, 0, 0, 0.9);
-}
-.stat-card::before {
-  content: "";
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 1px;
-  background: linear-gradient(90deg, rgba(185, 151, 91, 0.5), rgba(185, 151, 91, 0) 60%);
+    inset 0 1px 1px rgba(255, 255, 255, 0.9),
+    0 2px 6px -3px rgba(32, 28, 22, 0.08),
+    0 14px 36px -16px rgba(32, 28, 22, 0.22);
 }
 
 .tabular {
   font-variant-numeric: tabular-nums;
 }
 
+/* Staggered LCD power-on for the Hub display tiles (Task F). Tiles fade in
+   "off" during the reveal (C); once it finishes, each screen wakes in sequence —
+   a thin bright line snaps in, expands to fill the panel, and the backlight
+   settles. `--tile-index` staggers the wave; base delay clears the reveal.
+   Skipped under prefers-reduced-motion (screens are simply on). */
+@keyframes screen-power-on {
+  0% {
+    opacity: 0;
+    transform: scaleY(0.006);
+    filter: brightness(2.6);
+  }
+  38% {
+    opacity: 1;
+    transform: scaleY(0.02);
+    filter: brightness(2.6);
+  }
+  60% {
+    opacity: 1;
+    transform: scaleY(1);
+    filter: brightness(1.7);
+  }
+  100% {
+    opacity: 1;
+    transform: scaleY(1);
+    filter: brightness(1);
+  }
+}
+@keyframes screen-flash {
+  0% {
+    opacity: 0;
+    transform: scaleY(0.01);
+  }
+  30% {
+    opacity: 0.85;
+    transform: scaleY(0.02);
+  }
+  55% {
+    opacity: 0.35;
+    transform: scaleY(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scaleY(1);
+  }
+}
+/* Base state (also the reduced-motion state): screen fully on, flash hidden. */
+.screen-content {
+  opacity: 1;
+}
+.screen-flash {
+  opacity: 0;
+  transform-origin: center;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.9) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+@media (prefers-reduced-motion: no-preference) {
+  .screen-content {
+    transform-origin: center;
+    animation: screen-power-on 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    animation-delay: calc(1.15s + var(--tile-index, 0) * 0.12s);
+  }
+  .screen-flash {
+    animation: screen-flash 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    animation-delay: calc(1.15s + var(--tile-index, 0) * 0.12s);
+  }
+}
+
+/* Apple-style scroll reveal (ref: apple.com/ca/iphone). Direct children of a
+   `.reveal` wrapper start lowered + transparent and rise into place as they
+   scroll into view — ScrollReveal toggles `.in-view` via IntersectionObserver.
+   A gentle per-position delay staggers items that appear together. Under
+   prefers-reduced-motion nothing is hidden and content simply appears. */
+@media (prefers-reduced-motion: no-preference) {
+  .reveal > * {
+    opacity: 0;
+    transform: translateY(28px) scale(0.985);
+    /* Soft, decelerating ease (easeOutCubic) — gentle start, slow settle, no
+       aggressive snap. ScrollReveal sets a per-item transition-delay so items
+       that appear together arrive one at a time. */
+    transition:
+      opacity 1.05s cubic-bezier(0.33, 1, 0.68, 1),
+      transform 1.05s cubic-bezier(0.33, 1, 0.68, 1);
+    will-change: opacity, transform;
+  }
+  .reveal > *.in-view {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 .brand-hairline {
   border-color: var(--border);
+}
+
+/* Screensaver preview motions for the picker — container-relative so each option
+   animates live inside its panel, echoing how it plays on the TV. */
+@keyframes ss-drift {
+  0% {
+    left: 6%;
+    top: 10%;
+    transform: scale(1);
+  }
+  50% {
+    left: 56%;
+    top: 52%;
+    transform: scale(1.08);
+  }
+  100% {
+    left: 14%;
+    top: 74%;
+    transform: scale(0.96);
+  }
+}
+@keyframes ss-bounce {
+  0% {
+    left: 6%;
+    top: 8%;
+  }
+  25% {
+    left: 66%;
+    top: 34%;
+  }
+  50% {
+    left: 28%;
+    top: 70%;
+  }
+  75% {
+    left: 70%;
+    top: 58%;
+  }
+  100% {
+    left: 6%;
+    top: 8%;
+  }
+}
+@keyframes ss-pulse {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(0.9);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.12);
+    opacity: 1;
+  }
 }
 
 /* Hide the horizontal scrollbar on the overflow nav without disabling scroll. */

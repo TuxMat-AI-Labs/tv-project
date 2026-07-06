@@ -106,7 +106,7 @@ export default function AssignmentsPage() {
   }
 
   return (
-    <div>
+    <div className="reveal">
       <h1 className="text-2xl font-semibold text-foreground">Customize</h1>
       <CustomizeSubNav active="assignments" />
 
@@ -118,7 +118,7 @@ export default function AssignmentsPage() {
             <select
               value={displayId}
               onChange={(e) => setDisplayId(e.target.value)}
-              className="mt-1 block rounded border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-white"
+              className="mt-1 block rounded border border-black/10 bg-white px-2 py-1.5 text-sm text-foreground"
             >
               {displays.map((d) => (
                 <option key={d.id} value={d.id}>
@@ -132,7 +132,7 @@ export default function AssignmentsPage() {
             <select
               value={contentItemId}
               onChange={(e) => setContentItemId(e.target.value)}
-              className="mt-1 block rounded border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-white"
+              className="mt-1 block rounded border border-black/10 bg-white px-2 py-1.5 text-sm text-foreground"
             >
               {items.map((item) => (
                 <option key={item.id} value={item.id}>
@@ -147,7 +147,7 @@ export default function AssignmentsPage() {
               type="number"
               value={sortOrder}
               onChange={(e) => setSortOrder(Number(e.target.value))}
-              className="mt-1 block w-20 rounded border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-white"
+              className="mt-1 block w-20 rounded border border-black/10 bg-white px-2 py-1.5 text-sm text-foreground"
             />
           </label>
           <label className="block">
@@ -156,7 +156,7 @@ export default function AssignmentsPage() {
               type="datetime-local"
               value={startsAt}
               onChange={(e) => setStartsAt(e.target.value)}
-              className="mt-1 block rounded border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-white"
+              className="mt-1 block rounded border border-black/10 bg-white px-2 py-1.5 text-sm text-foreground"
             />
           </label>
           <label className="block">
@@ -165,7 +165,7 @@ export default function AssignmentsPage() {
               type="datetime-local"
               value={endsAt}
               onChange={(e) => setEndsAt(e.target.value)}
-              className="mt-1 block rounded border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-white"
+              className="mt-1 block rounded border border-black/10 bg-white px-2 py-1.5 text-sm text-foreground"
             />
           </label>
           <label className="block">
@@ -174,7 +174,7 @@ export default function AssignmentsPage() {
               type="time"
               value={daypartStart}
               onChange={(e) => setDaypartStart(e.target.value)}
-              className="mt-1 block rounded border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-white"
+              className="mt-1 block rounded border border-black/10 bg-white px-2 py-1.5 text-sm text-foreground"
             />
           </label>
           <label className="block">
@@ -183,7 +183,7 @@ export default function AssignmentsPage() {
               type="time"
               value={daypartEnd}
               onChange={(e) => setDaypartEnd(e.target.value)}
-              className="mt-1 block rounded border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-white"
+              className="mt-1 block rounded border border-black/10 bg-white px-2 py-1.5 text-sm text-foreground"
             />
           </label>
           <button
@@ -194,7 +194,7 @@ export default function AssignmentsPage() {
             {creating ? "Creating…" : "Create assignment"}
           </button>
         </div>
-        {createError && <p className="mt-2 text-xs text-red-400">{createError}</p>}
+        {createError && <p className="mt-2 text-xs text-red-600">{createError}</p>}
         {(displays.length === 0 || items.length === 0) && !loading && (
           <p className="mt-2 text-xs text-muted">
             You need at least one display and one content item before creating an assignment.
@@ -236,13 +236,13 @@ export default function AssignmentsPage() {
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
-                    <div className="h-8 w-6 flex-shrink-0 overflow-hidden rounded bg-zinc-800">
+                    <div className="h-8 w-6 flex-shrink-0 overflow-hidden rounded bg-surface-2">
                       {a.contentItem.thumbnailUrl && (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={a.contentItem.thumbnailUrl} alt="" className="h-full w-full object-cover" />
                       )}
                     </div>
-                    <span className="text-zinc-200">{a.contentItem.title}</span>
+                    <span className="text-foreground">{a.contentItem.title}</span>
                   </div>
                 </td>
                 <td className="px-4 py-3 text-muted">{a.sortOrder}</td>
@@ -252,7 +252,7 @@ export default function AssignmentsPage() {
                       {formatDate(a.startsAt) ?? "…"} &rarr; {formatDate(a.endsAt) ?? "…"}
                     </span>
                   ) : (
-                    <span className="text-zinc-600">Always</span>
+                    <span className="text-muted">Always</span>
                   )}
                 </td>
                 <td className="px-4 py-3 text-muted">
@@ -261,11 +261,11 @@ export default function AssignmentsPage() {
                       {a.daypartStart ?? "00:00"} &ndash; {a.daypartEnd ?? "23:59"}
                     </span>
                   ) : (
-                    <span className="text-zinc-600">All day</span>
+                    <span className="text-muted">All day</span>
                   )}
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <button onClick={() => deleteAssignment(a.id)} className="text-red-400 hover:text-red-300">
+                  <button onClick={() => deleteAssignment(a.id)} className="text-red-600 hover:text-red-700">
                     Delete
                   </button>
                 </td>
@@ -274,7 +274,7 @@ export default function AssignmentsPage() {
           </tbody>
         </table>
       </div>
-      {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
+      {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
     </div>
   );
 }

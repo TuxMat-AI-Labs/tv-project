@@ -34,6 +34,10 @@ async function main() {
 
   const displaysToSeed = [
     { name: "Upstairs Office 1", number: 1, roomSlug: "upstairs-office" },
+    { name: "Upstairs Office 2", number: 2, roomSlug: "upstairs-office" },
+    { name: "Upstairs Office 3", number: 3, roomSlug: "upstairs-office" },
+    { name: "Upstairs Office 4", number: 4, roomSlug: "upstairs-office" },
+    { name: "Upstairs Office 5", number: 5, roomSlug: "upstairs-office" },
     { name: "Multi-Purpose Room 1", number: 1, roomSlug: "multi-purpose-room" },
     { name: "Showroom 1", number: 1, roomSlug: "showroom" },
     { name: "Showroom 2", number: 2, roomSlug: "showroom" },

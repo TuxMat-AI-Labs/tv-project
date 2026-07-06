@@ -319,48 +319,71 @@ body {
   }
 }
 
-/* Screensaver picker interactions. Each panel is `.ss-panel`; its artwork stage
-   is `.ss-stage`. At rest the artwork is slightly muted; hovering a panel makes
-   its image markedly more VIBRANT (saturate + brighten) to signal the pick —
-   no gold outline. The Activate pill (`.ss-activate`) lights up as a band of
-   light sweeps across it right → left. */
+/* Screensaver picker. Each panel is `.ss-panel`; its artwork stage is `.ss-stage`.
+   The stage stays lively and gets markedly more VIBRANT on hover / when selected
+   (no outline). Colourful `.ss-cube` pixels drift around alongside the monogram. */
 .ss-stage {
-  filter: saturate(0.85) brightness(0.82);
+  filter: saturate(1.05) brightness(0.96);
   transition: filter 0.45s ease;
 }
 .ss-panel:hover .ss-stage,
 .ss-panel.is-active .ss-stage {
-  filter: saturate(1.55) brightness(1.18) contrast(1.05);
+  filter: saturate(1.7) brightness(1.28) contrast(1.06);
 }
 
-.ss-activate {
+.ss-cube {
+  position: absolute;
+  border-radius: 3px;
+  opacity: 0.9;
+  animation-name: ss-float;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  will-change: transform;
+}
+@keyframes ss-float {
+  0% {
+    transform: translateY(0) rotate(0deg) scale(1);
+  }
+  50% {
+    transform: translateY(-16px) rotate(12deg) scale(1.14);
+  }
+  100% {
+    transform: translateY(0) rotate(0deg) scale(1);
+  }
+}
+
+/* Activate control as a charging health bar: a gold fill sweeps left → right.
+   It charges on hover (preview) and locks full while activating or when active. */
+.ss-charge {
   position: relative;
   overflow: hidden;
 }
-.ss-activate::after {
-  content: "";
+.ss-charge-fill {
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    100deg,
-    transparent 34%,
-    rgba(255, 255, 255, 0.6) 50%,
-    transparent 66%
-  );
-  transform: translateX(-130%);
-  pointer-events: none;
+  transform-origin: left center;
+  transform: scaleX(0);
+  background: linear-gradient(90deg, var(--gold-metallic-1) 0%, var(--gold) 45%, var(--gold-metallic-2) 100%);
+  transition: transform 1s linear;
 }
-@keyframes btn-sweep-rl {
-  0% {
-    transform: translateX(130%);
-  }
-  100% {
-    transform: translateX(-130%);
-  }
+.ss-panel:hover .ss-charge-fill {
+  transform: scaleX(1);
 }
-@media (prefers-reduced-motion: no-preference) {
-  .ss-panel:hover .ss-activate::after {
-    animation: btn-sweep-rl 0.9s ease-out;
+.ss-charge-fill.is-full {
+  transform: scaleX(1);
+  transition: transform 0.8s linear;
+}
+.ss-charge-label {
+  position: relative;
+  z-index: 1;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ss-cube {
+    animation: none;
+  }
+  .ss-charge-fill {
+    transition: none;
   }
 }
 

@@ -175,9 +175,13 @@ Extend it to stamp `Device.lastSeenAt`.
 
 > Note: this session gave the picker a visual overhaul — full-screen immersive
 > bleed (only the TUXDISPLAY header, hub chrome hidden), three distinct colours
-> (gold / aqua / violet), hover = vibrant artwork (no gold outline), and an
-> Activate pill that sweeps light right→left. Selection is **still localStorage
-> only** — the backend wiring below is unchanged.
+> (gold / aqua / violet) with drifting colourful pixel cubes + monogram, thin
+> white dividers between panels, hover = vibrant artwork (no gold outline), and
+> an Activate **charging health bar** that fills left→right; clicking a panel
+> charges it, activates the style, and routes back to the dashboard. Selection is
+> **still localStorage only** — the backend wiring below is unchanged.
+> Seed now provisions **Upstairs Office 1–5** (+ Multi-Purpose 1, Showroom 1–2)
+> so screens can be pair-tested against existing displays.
 
 The `/hub/screensaver` picker stores the chosen animation in `localStorage` only.
 To actually drive the TVs, add a `screensaverStyle` field (on `Display` and/or a

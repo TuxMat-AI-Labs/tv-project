@@ -15,7 +15,7 @@ export function HubNav({ rooms }: { rooms: { name: string; slug: string }[] }) {
   ];
 
   return (
-    <nav className="flex items-center gap-1 overflow-x-auto">
+    <nav className="no-scrollbar flex items-center gap-1 overflow-x-auto">
       {items.map((item) => {
         const active = item.href === "/hub" ? pathname === "/hub" : pathname.startsWith(item.href);
         return (

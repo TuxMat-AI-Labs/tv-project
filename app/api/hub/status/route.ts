@@ -1,0 +1,62 @@
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { resolveContentForDisplay } from "@/lib/display/resolveContentForDisplay";
+import type { HubStatusResponse } from "@/lib/hub/types";
+
+export const dynamic = "force-dynamic";
+
+const ONLINE_THRESHOLD_MS = 45_000;
+
+export async function GET() {
+  const rooms = await prisma.room.findMany({
+    orderBy: { sortOrder: "asc" },
+    include: {
+      displays: {
+        orderBy: { number: "asc" },
+        include: {
+          assignments: { include: { contentItem: true } },
+          heartbeat: true,
+        },
+      },
+    },
+  });
+
+  const now = new Date();
+
+  const payload: HubStatusResponse = {
+    rooms: rooms.map((room) => ({
+      id: room.id,
+      name: room.name,
+      slug: room.slug,
+      displays: room.displays.map((display) => {
+        const resolved = resolveContentForDisplay(display, now);
+        const online = display.heartbeat ? now.getTime() - display.heartbeat.reportedAt.getTime() < ONLINE_THRESHOLD_MS : false;
+
+        const matchedAssignment = display.heartbeat?.currentContentId
+          ? display.assignments.find((a) => a.contentItem.id === display.heartbeat!.currentContentId)
+          : undefined;
+
+        return {
+          id: display.id,
+          slug: display.slug,
+          name: display.name,
+          number: display.number,
+          active: display.active,
+          mode: resolved.mode,
+          currentContent: matchedAssignment
+            ? {
+                id: matchedAssignment.contentItem.id,
+                type: matchedAssignment.contentItem.type,
+                thumbnailUrl: matchedAssignment.contentItem.thumbnailUrl,
+                title: matchedAssignment.contentItem.title,
+              }
+            : null,
+          online,
+          lastSeenAt: display.heartbeat?.reportedAt.toISOString() ?? null,
+        };
+      }),
+    })),
+  };
+
+  return NextResponse.json(payload);
+}

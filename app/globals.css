@@ -1,0 +1,63 @@
+@import "tailwindcss";
+
+/*
+ * TuxMat brand tokens — from the July 2025 Brand Guidelines.
+ * Gold #B9975B (primary), #DFBA7C (highlight), metallic #9C762D→#E5C770.
+ * Rich Black #000000, blue-rich-black #2E3339. Primary font Poppins.
+ */
+:root {
+  --rich-black: #000000;
+  --surface: #14181c;
+  --surface-2: #1b2025;
+  --blue-black: #2e3339;
+  --gold: #b9975b;
+  --gold-light: #dfba7c;
+  --gold-metallic-1: #9c762d;
+  --gold-metallic-2: #e5c770;
+
+  --background: var(--rich-black);
+  --foreground: #f5f4f2;
+  --muted: #8a8f96;
+  --border: rgba(255, 255, 255, 0.08);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-gold: var(--gold);
+  --color-gold-light: var(--gold-light);
+  --color-blue-black: var(--blue-black);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-muted: var(--muted);
+  --font-sans: var(--font-poppins), Arial, Helvetica, sans-serif;
+}
+
+body {
+  color: var(--foreground);
+  font-family: var(--font-poppins), Arial, Helvetica, sans-serif;
+  /* Rich-black base with a faint upper glow, echoing the TuxTrack dashboard. */
+  background-color: var(--rich-black);
+  background-image: radial-gradient(120% 80% at 50% -10%, rgba(46, 51, 57, 0.55) 0%, rgba(0, 0, 0, 0) 55%);
+  background-attachment: fixed;
+}
+
+/* Metallic gold text/fills for the wordmark accent and key figures. */
+.text-gold-metallic {
+  background: linear-gradient(180deg, var(--gold-metallic-2) 0%, var(--gold) 55%, var(--gold-metallic-1) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Refined card surface used across the Hub. */
+.brand-card {
+  background: linear-gradient(180deg, rgba(27, 32, 37, 0.9) 0%, rgba(15, 18, 21, 0.9) 100%);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 20px 40px -24px rgba(0, 0, 0, 0.8);
+}
+
+.brand-hairline {
+  border-color: var(--border);
+}

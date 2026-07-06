@@ -1,0 +1,118 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  MARKETING
+  VIEWER
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+enum ContentFit {
+  COVER
+  CONTAIN
+  FILL
+}
+
+model User {
+  id            String   @id @default(cuid())
+  entraObjectId String   @unique
+  email         String   @unique
+  name          String?
+  role          Role     @default(VIEWER)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  uploadedContent   ContentItem[]
+  createdAssignments Assignment[]
+}
+
+model Room {
+  id        String    @id @default(cuid())
+  name      String
+  slug      String    @unique
+  sortOrder Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  displays Display[]
+}
+
+model Display {
+  id                  String   @id @default(cuid())
+  slug                String   @unique @default(cuid())
+  name                String
+  number              Int
+  roomId              String
+  room                Room     @relation(fields: [roomId], references: [id])
+  active              Boolean  @default(true)
+  screensaverOverride Boolean?
+  contentFit          ContentFit @default(COVER)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  assignments Assignment[]
+  heartbeat   Heartbeat?
+
+  @@index([roomId])
+}
+
+model ContentItem {
+  id           String    @id @default(cuid())
+  title        String
+  type         MediaType
+  fileUrl      String
+  thumbnailUrl String?
+  durationSec  Int?
+  uploadedById String
+  uploadedBy   User      @relation(fields: [uploadedById], references: [id])
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  assignments Assignment[]
+}
+
+model Assignment {
+  id            String      @id @default(cuid())
+  contentItemId String
+  contentItem   ContentItem @relation(fields: [contentItemId], references: [id])
+  displayId     String
+  display       Display     @relation(fields: [displayId], references: [id])
+
+  sortOrder Int @default(0)
+
+  startsAt DateTime?
+  endsAt   DateTime?
+
+  daypartStart String?
+  daypartEnd   String?
+
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([displayId])
+  @@index([contentItemId])
+}
+
+model Heartbeat {
+  displayId        String   @id
+  display          Display  @relation(fields: [displayId], references: [id])
+  currentContentId String?
+  reportedAt       DateTime @default(now())
+}

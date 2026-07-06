@@ -1,0 +1,65 @@
+# TuxDisplay — Render Blueprint (Infrastructure-as-Code).
+# Spins up the web service + managed Postgres and wires the two together.
+# Secrets are declared as keys only (sync: false) and entered in the Render
+# dashboard at deploy time — they are never committed. See DEPLOY.md.
+
+services:
+  - type: web
+    name: tuxdisplay
+    runtime: node
+    plan: starter # always-on so displays never hit a spun-down service; change to `free` to start cheap.
+    region: oregon
+    branch: main
+    autoDeploy: true
+    # Build the app and generate the Prisma client.
+    buildCommand: npm ci && npx prisma generate && npm run build
+    # Run migrations once per release, after build, before the new version goes live.
+    preDeployCommand: npx prisma migrate deploy
+    startCommand: npm run start
+    healthCheckPath: /signin
+    envVars:
+      - key: NODE_VERSION
+        value: "24.18.0"
+      # Auto-wired from the managed database below — no manual connection string.
+      - key: DATABASE_URL
+        fromDatabase:
+          name: tuxdisplay-db
+          property: connectionString
+      # Auth.js session secret — Render generates and stores this automatically.
+      - key: AUTH_SECRET
+        generateValue: true
+      - key: AUTH_TRUST_HOST
+        value: "true"
+      # Set to the service's public URL after the first deploy (e.g.
+      # https://tuxdisplay.onrender.com). Needed for Auth.js callback URLs.
+      - key: AUTH_URL
+        sync: false
+      # Microsoft Entra ID SSO — from your Azure app registration.
+      - key: AUTH_MICROSOFT_ENTRA_ID_ID
+        sync: false
+      - key: AUTH_MICROSOFT_ENTRA_ID_SECRET
+        sync: false
+      - key: AUTH_MICROSOFT_ENTRA_ID_ISSUER
+        sync: false
+      # AD security group object IDs → app roles.
+      - key: ENTRA_ADMIN_GROUP_ID
+        sync: false
+      - key: ENTRA_MARKETING_GROUP_ID
+        sync: false
+      # Cloudflare R2 media bucket.
+      - key: CLOUDFLARE_R2_ACCOUNT_ID
+        sync: false
+      - key: CLOUDFLARE_R2_ACCESS_KEY_ID
+        sync: false
+      - key: CLOUDFLARE_R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: CLOUDFLARE_R2_BUCKET
+        sync: false
+      - key: CLOUDFLARE_R2_PUBLIC_URL
+        sync: false
+
+databases:
+  - name: tuxdisplay-db
+    plan: basic-256mb # paid tier so the DB does not expire; Render's `free` Postgres is deleted after 90 days.
+    region: oregon
+    postgresMajorVersion: "16"

@@ -13,8 +13,10 @@ services:
     autoDeploy: true
     # Build the app and generate the Prisma client.
     buildCommand: npm ci && npx prisma generate && npm run build
-    # Run migrations once per release, after build, before the new version goes live.
-    preDeployCommand: npx prisma migrate deploy
+    # Run migrations once per release, after build, before the new version goes
+    # live. Then bootstrap-seed: populates rooms/displays + placeholder creatives
+    # on an empty DB (first deploy); a no-op once rooms exist (see prisma/seed.ts).
+    preDeployCommand: npx prisma migrate deploy && npx prisma db seed
     startCommand: npm run start
     healthCheckPath: /signin
     envVars:

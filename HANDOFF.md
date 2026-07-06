@@ -21,7 +21,10 @@ The Claude_Preview MCP is rooted at the stub, so its `.claude/launch.json`
   Entra group IDs unset, every authed employee is ADMIN. Local dev has a one-click
   "Sign in (development)" bypass (Entra vars unset locally).
 - **DB:** Render Postgres `tuxdisplay-db`; migrations via `prisma migrate deploy`
-  in the blueprint preDeploy. **Production DB is empty** (no rooms/displays yet).
+  in the blueprint preDeploy, **followed by `prisma db seed`** which bootstrap-seeds
+  rooms + displays (Upstairs Office 1–5, Multi-Purpose 1, Showroom 1–2) + placeholder
+  creatives on an empty DB (a no-op once rooms exist; `FORCE_SEED=1` to re-seed).
+  So the first deploy after this change populates the previously-empty prod DB.
 - **Media:** Cloudflare R2 bucket `tuxdisplay`, public dev URL. **⚠️ R2 CORS still
   not set** — browser uploads (Customize → Library) fail until you add the CORS
   policy on the bucket (allow `https://tuxdisplay.tuxmat.ai`, PUT/GET, `*` headers).

@@ -45,34 +45,25 @@ export function DisplayTile({
   return (
     <Link href={`/hub/displays/${display.id}`} className="group block" scroll={false}>
       <motion.div layoutId={`display-frame-${display.id}`} style={{ perspective: 900 }}>
-        {/* Stage: holds the soft ground shadow behind the TV and the lift wrapper. */}
-        <div className="relative">
-          {/* Ambient shadow — a soft radial that fades fully to transparent (no
-              edges, no rectangle), sitting BEHIND the TV. It does not tilt with
-              the TV, and its gradient never resolves to a line, so it can't bleed
-              a hard edge into the caption below. Fades in and grounds on lift. */}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0 transition-all duration-300 ease-out"
-            style={{
-              background: "radial-gradient(58% 52% at 50% 58%, rgba(18,14,9,0.55) 0%, rgba(18,14,9,0) 70%)",
-              filter: "blur(20px)",
-              opacity: t.lift ? 1 : 0,
-              transform: t.lift ? "translateY(10px) scale(1)" : "translateY(2px) scale(0.9)",
-            }}
-          />
-          {/* Lift wrapper — the bezel + screen live on one plane here, so they
-              rise toward you and tilt together as a single solid object. */}
-          <div
-            onMouseMove={handleMove}
-            onMouseLeave={handleLeave}
-            className="relative transition-transform duration-200 ease-out will-change-transform"
-            style={{
-              transformStyle: "preserve-3d",
-              transform: `rotateX(${t.rx}deg) rotateY(${t.ry}deg) translateY(${t.lift ? -6 : 0}px) scale(${t.lift ? 1.03 : 1})`,
-            }}
-          >
-            <TVFrame>
+        {/* Lift wrapper — the bezel + screen live on one plane here, so they rise
+            toward you and tilt together as one solid object. The shadow is a
+            box-shadow ON this wrapper, so it belongs to the TV: it hugs the TV's
+            shape, tilts and moves with it, softens/deepens on lift, and never
+            renders as a detached box or hard line. */}
+        <div
+          onMouseMove={handleMove}
+          onMouseLeave={handleLeave}
+          className="relative will-change-transform"
+          style={{
+            transformStyle: "preserve-3d",
+            transform: `rotateX(${t.rx}deg) rotateY(${t.ry}deg) translateY(${t.lift ? -6 : 0}px) scale(${t.lift ? 1.03 : 1})`,
+            boxShadow: t.lift
+              ? "0 16px 34px -14px rgba(15,11,7,0.5), 0 4px 12px -8px rgba(15,11,7,0.35)"
+              : "0 6px 16px -12px rgba(15,11,7,0.3)",
+            transition: "transform 0.2s ease-out, box-shadow 0.3s ease-out",
+          }}
+        >
+          <TVFrame>
               {/* Screen content — wakes with the staggered power-on (Task F). */}
               <div
                 className="screen-content absolute inset-0 z-0"
@@ -98,8 +89,7 @@ export function DisplayTile({
               />
               {/* Hover edge glow. */}
               <span className="pointer-events-none absolute inset-0 z-20 ring-1 ring-inset ring-transparent transition group-hover:ring-gold/50" />
-            </TVFrame>
-          </div>
+          </TVFrame>
         </div>
         <div className="mt-3 flex items-center justify-between gap-2">
           <p className="truncate text-sm font-medium text-foreground">

@@ -5,6 +5,14 @@ const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
+  // Bootstrap only: populate an empty database (e.g. first production deploy) but
+  // never clobber an already-configured one. Set FORCE_SEED=1 to re-seed anyway.
+  const existingRooms = await prisma.room.count();
+  if (existingRooms > 0 && !process.env.FORCE_SEED) {
+    console.log(`Seed skipped — ${existingRooms} room(s) already exist. Set FORCE_SEED=1 to re-seed.`);
+    return;
+  }
+
   const admin = await prisma.user.upsert({
     where: { entraObjectId: "dev-seed-admin" },
     create: {

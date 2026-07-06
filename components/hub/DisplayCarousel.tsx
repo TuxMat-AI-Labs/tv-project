@@ -82,7 +82,7 @@ export function DisplayCarousel({
       ) : (
         <div
           ref={scrollRef}
-          className="no-scrollbar flex snap-x snap-mandatory gap-6 overflow-x-auto scroll-smooth px-1 py-8"
+          className="no-scrollbar flex snap-x snap-mandatory gap-6 overflow-x-auto scroll-smooth px-2 py-10"
         >
           {displays.map((display, i) => (
             <div key={display.id} className={`shrink-0 snap-start ${tileWidth}`}>

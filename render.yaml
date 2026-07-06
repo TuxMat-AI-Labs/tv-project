@@ -30,21 +30,17 @@ services:
         generateValue: true
       - key: AUTH_TRUST_HOST
         value: "true"
-      # Set to the service's public URL after the first deploy (e.g.
-      # https://tuxdisplay.onrender.com). Needed for Auth.js callback URLs.
+      # The app's public URL (e.g. https://tuxdisplay.tuxmat.ai). Needed for
+      # Auth.js callback URLs.
       - key: AUTH_URL
         sync: false
-      # Microsoft Entra ID SSO — from your Azure app registration.
-      - key: AUTH_MICROSOFT_ENTRA_ID_ID
+      # Microsoft Entra ID SSO — TuxMat's standard Azure credential trio.
+      # The OIDC issuer is derived from AZURE_TENANT_ID in code.
+      - key: AZURE_CLIENT_ID
         sync: false
-      - key: AUTH_MICROSOFT_ENTRA_ID_SECRET
+      - key: AZURE_CLIENT_SECRET
         sync: false
-      - key: AUTH_MICROSOFT_ENTRA_ID_ISSUER
-        sync: false
-      # AD security group object IDs → app roles.
-      - key: ENTRA_ADMIN_GROUP_ID
-        sync: false
-      - key: ENTRA_MARKETING_GROUP_ID
+      - key: AZURE_TENANT_ID
         sync: false
       # Cloudflare R2 media bucket.
       - key: CLOUDFLARE_R2_ACCOUNT_ID

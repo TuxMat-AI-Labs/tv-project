@@ -34,13 +34,13 @@ deploy, so this can't live in the Blueprint.
 2. Under **Authentication → Redirect URIs**, add:
    `https://<your-render-url>/api/auth/callback/microsoft-entra-id`
 3. Under **Certificates & secrets**, create a client secret.
-4. Copy these three values into the Render env vars:
-   - `AUTH_MICROSOFT_ENTRA_ID_ID` — Application (client) ID
-   - `AUTH_MICROSOFT_ENTRA_ID_SECRET` — the client secret value
-   - `AUTH_MICROSOFT_ENTRA_ID_ISSUER` — the full URL
-     `https://login.microsoftonline.com/<tenant-id>/v2.0` (NOT the bare tenant ID)
-5. Redeploy. Once `AUTH_MICROSOFT_ENTRA_ID_ID` is set, the local dev sign-in
-   bypass is automatically disabled and real SSO takes over.
+4. Copy the standard TuxMat Azure trio into the Render env vars:
+   - `AZURE_CLIENT_ID` — Application (client) ID
+   - `AZURE_CLIENT_SECRET` — the client secret value
+   - `AZURE_TENANT_ID` — Directory (tenant) ID (just the GUID; the app builds
+     the OIDC issuer URL from it)
+5. Redeploy. Once `AZURE_CLIENT_ID` is set, the local dev sign-in bypass is
+   automatically disabled and real SSO takes over.
 
 ### Optional: admin/marketing role separation
 

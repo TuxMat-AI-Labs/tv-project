@@ -14,11 +14,15 @@ declare module "next-auth" {
   }
 }
 
-export const entraConfigured = Boolean(process.env.AUTH_MICROSOFT_ENTRA_ID_ID);
+// Uses TuxMat's standard Azure env-var convention (AZURE_CLIENT_ID /
+// AZURE_CLIENT_SECRET / AZURE_TENANT_ID), the same trio every other TuxMat app
+// uses. The OIDC issuer is derived from the tenant ID, so no issuer URL needs
+// to be set by hand.
+export const entraConfigured = Boolean(process.env.AZURE_CLIENT_ID);
 
 // Local-only stand-in for Entra SSO so the Hub can be built/tested before the
-// real tenant/app-registration/group IDs exist. Automatically disabled the
-// moment AUTH_MICROSOFT_ENTRA_ID_ID is set (i.e. in production on Render).
+// Azure credentials exist. Automatically disabled the moment AZURE_CLIENT_ID is
+// set (i.e. in production on Render).
 const devBypassProvider = Credentials({
   id: "dev-bypass",
   name: "Dev sign-in (no Entra configured)",
@@ -37,9 +41,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: entraConfigured
     ? [
         MicrosoftEntraID({
-          clientId: process.env.AUTH_MICROSOFT_ENTRA_ID_ID,
-          clientSecret: process.env.AUTH_MICROSOFT_ENTRA_ID_SECRET,
-          issuer: process.env.AUTH_MICROSOFT_ENTRA_ID_ISSUER,
+          clientId: process.env.AZURE_CLIENT_ID,
+          clientSecret: process.env.AZURE_CLIENT_SECRET,
+          issuer: `https://login.microsoftonline.com/${process.env.AZURE_TENANT_ID}/v2.0`,
         }),
       ]
     : [devBypassProvider],

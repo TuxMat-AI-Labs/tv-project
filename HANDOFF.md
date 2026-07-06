@@ -176,15 +176,22 @@ Extend it to stamp `Device.lastSeenAt`.
 
 ### 2. Screensaver style → backend
 
-> Note: this session gave the picker a visual overhaul — full-screen immersive
-> bleed (only the TUXDISPLAY header, hub chrome hidden), three distinct colours
-> (gold / aqua / violet) with drifting colourful pixel cubes + monogram, thin
-> white dividers between panels, hover = vibrant artwork (no gold outline), and
-> an Activate **charging health bar** that fills left→right; clicking a panel
-> charges it, activates the style, and routes back to the dashboard. Selection is
-> **still localStorage only** — the backend wiring below is unchanged.
+> Note: the screensaver is now a flowing **lava lamp** — soft colour blobs that
+> drift/scale continuously over black with no static gradient, line, or logo (an
+> effective pixel-care "screen massage"). One reusable `components/screensaver/
+> LavaLamp.tsx` drives the real TV screensaver (`components/display/Screensaver.tsx`),
+> all three picker variations (Drift = warm gold/slow, Pulse = aqua/breathing,
+> Bounce = violet/fast), and the forced-screensaver detail preview. The picker is
+> a full-screen immersive bleed (only the TUXDISPLAY header), thin white dividers
+> between panels, hover = more vibrant, and an Activate **charging health bar**
+> that fills left→right; clicking a panel charges it, activates, and routes back
+> to the dashboard. Selection is **still localStorage only** — once wired to the
+> backend (below), pass the chosen motion into `LavaLamp`.
 > Seed now provisions **Upstairs Office 1–5** (+ Multi-Purpose 1, Showroom 1–2)
-> so screens can be pair-tested against existing displays.
+> so screens can be pair-tested against existing displays. The display detail
+> **preview shows the assigned content directly** (ignores the time-of-day
+> screensaver schedule) so "Change content" always previews the wallpaper, even
+> after hours; business hours evaluate in `VENUE_TIMEZONE` (default America/Toronto).
 
 The `/hub/screensaver` picker stores the chosen animation in `localStorage` only.
 To actually drive the TVs, add a `screensaverStyle` field (on `Display` and/or a

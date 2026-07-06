@@ -266,90 +266,61 @@ body {
   border-color: var(--border);
 }
 
-/* Screensaver preview motions for the picker — container-relative so each option
-   animates live inside its panel, echoing how it plays on the TV. */
-@keyframes ss-drift {
+/* Flowing lava-lamp blob paths (see components/screensaver/LavaLamp.tsx). Blobs
+   drift and scale continuously and never settle, so no pixel holds a static
+   image — an effective overnight pixel-care "screen massage". */
+@keyframes ss-lava-1 {
   0% {
-    left: 6%;
-    top: 10%;
-    transform: scale(1);
+    transform: translate(-28%, -22%) scale(1);
   }
   50% {
-    left: 56%;
-    top: 52%;
-    transform: scale(1.08);
+    transform: translate(55%, 72%) scale(1.4);
   }
   100% {
-    left: 14%;
-    top: 74%;
-    transform: scale(0.96);
+    transform: translate(18%, 132%) scale(0.82);
   }
 }
-@keyframes ss-bounce {
+@keyframes ss-lava-2 {
   0% {
-    left: 6%;
-    top: 8%;
-  }
-  25% {
-    left: 66%;
-    top: 34%;
+    transform: translate(62%, -32%) scale(1.1);
   }
   50% {
-    left: 28%;
-    top: 70%;
-  }
-  75% {
-    left: 70%;
-    top: 58%;
+    transform: translate(-42%, 58%) scale(0.78);
   }
   100% {
-    left: 6%;
-    top: 8%;
+    transform: translate(42%, 122%) scale(1.32);
   }
 }
-@keyframes ss-pulse {
+@keyframes ss-lava-3 {
+  0% {
+    transform: translate(22%, 118%) scale(1.22);
+  }
+  50% {
+    transform: translate(72%, 18%) scale(0.88);
+  }
+  100% {
+    transform: translate(-22%, 62%) scale(1.16);
+  }
+}
+@keyframes ss-breathe {
   0%,
   100% {
-    transform: translate(-50%, -50%) scale(0.9);
-    opacity: 0.5;
+    opacity: 0.4;
   }
   50% {
-    transform: translate(-50%, -50%) scale(1.12);
-    opacity: 1;
+    opacity: 0.95;
   }
 }
 
-/* Screensaver picker. Each panel is `.ss-panel`; its artwork stage is `.ss-stage`.
-   The stage stays lively and gets markedly more VIBRANT on hover / when selected
-   (no outline). Colourful `.ss-cube` pixels drift around alongside the monogram. */
+/* Screensaver picker. Each panel is `.ss-panel`; its lava stage is `.ss-stage`,
+   which stays lively and gets markedly more VIBRANT on hover / when selected. */
 .ss-stage {
   filter: saturate(1.05) brightness(0.96);
   transition: filter 0.45s ease;
 }
 .ss-panel:hover .ss-stage,
 .ss-panel.is-active .ss-stage {
-  filter: saturate(1.7) brightness(1.28) contrast(1.06);
-}
-
-.ss-cube {
-  position: absolute;
-  border-radius: 3px;
-  opacity: 0.9;
-  animation-name: ss-float;
-  animation-timing-function: ease-in-out;
-  animation-iteration-count: infinite;
-  will-change: transform;
-}
-@keyframes ss-float {
-  0% {
-    transform: translateY(0) rotate(0deg) scale(1);
-  }
-  50% {
-    transform: translateY(-16px) rotate(12deg) scale(1.14);
-  }
-  100% {
-    transform: translateY(0) rotate(0deg) scale(1);
-  }
+  filter: saturate(1.6) brightness(1.22) contrast(1.05);
 }
 
 /* Activate control as a charging health bar: a gold fill sweeps left → right.
@@ -379,8 +350,9 @@ body {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 @media (prefers-reduced-motion: reduce) {
-  .ss-cube {
-    animation: none;
+  /* !important overrides the per-blob inline animation set by LavaLamp. */
+  .ss-lava-blob {
+    animation: none !important;
   }
   .ss-charge-fill {
     transition: none;

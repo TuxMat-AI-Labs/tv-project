@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { useDisplayContent } from "@/lib/display/useDisplayContent";
-import { PlaylistPlayer } from "@/components/display/PlaylistPlayer";
 import { TVFrame } from "@/components/hub/TVFrame";
+import { LavaLamp } from "@/components/screensaver/LavaLamp";
 import { PencilIcon, SwapIcon, HealthIcon, AdjustIcon } from "@/components/hub/icons";
 import { Wordmark } from "@/components/brand/Wordmark";
 
@@ -39,17 +38,11 @@ export function DisplayDetailView({
 }) {
   const [display, setDisplay] = useState<DisplayDetail | null>(null);
   const [panel, setPanel] = useState<PanelKey>(null);
-  // Bumped on every refresh so the framed preview remounts and re-fetches
-  // immediately after a change (otherwise it waits for its own ~15s poll).
-  const [previewNonce, setPreviewNonce] = useState(0);
 
   const refresh = () =>
     fetch(`/api/admin/displays/${displayId}`)
       .then((r) => r.json())
-      .then((d) => {
-        setDisplay(d);
-        setPreviewNonce((n) => n + 1);
-      });
+      .then(setDisplay);
 
   useEffect(() => {
     refresh();
@@ -88,9 +81,7 @@ export function DisplayDetailView({
           className="relative"
           style={{ height: "86vh", maxWidth: "94vw", aspectRatio: "824 / 1412" }}
         >
-          <TVFrame>
-            {display && <LivePreview key={previewNonce} slug={display.slug} contentFit={display.contentFit} />}
-          </TVFrame>
+          <TVFrame>{display && <LivePreview display={display} />}</TVFrame>
         </motion.div>
       </div>
 
@@ -108,38 +99,35 @@ export function DisplayDetailView({
 }
 
 /**
- * The content shown inside the framed TV. Playlists reuse the real PlaylistPlayer
- * (which fills its container), so the graphic fills the screen exactly. The
- * screensaver/inactive states get container-scaled previews here — the real
- * fullscreen Screensaver uses viewport units and only runs on the TV itself.
+ * The content shown inside the framed TV. This is a *management* preview, so it
+ * shows the display's ASSIGNED content directly — it deliberately ignores the
+ * time-of-day screensaver schedule (that only governs the live TV), so picking a
+ * wallpaper always shows it here, even after business hours. A forced-on
+ * screensaver override still previews as the screensaver. Updates instantly when
+ * `display` refreshes after a change (no polling, no remount flicker).
  */
-function LivePreview({ slug, contentFit }: { slug: string; contentFit: "COVER" | "CONTAIN" | "FILL" }) {
-  const { data, reportHeartbeat } = useDisplayContent(slug);
-  if (!data) return <div className="absolute inset-0 bg-black" />;
-  if (data.mode === "playlist" && data.playlist?.length) {
-    return <PlaylistPlayer playlist={data.playlist} contentFit={contentFit} onCurrentItemChange={reportHeartbeat} />;
+function LivePreview({ display }: { display: DisplayDetail }) {
+  if (display.screensaverOverride === true) {
+    return <LavaLamp colors={["#e5c770", "#5ed6d6", "#aa8dec", "#f0a6c8"]} blur={30} />;
   }
-  if (data.mode === "screensaver") {
+
+  const item = display.assignments[0]?.contentItem;
+  if (!item?.thumbnailUrl) {
     return (
-      <div className="absolute inset-0 overflow-hidden bg-black">
-        <div
-          className="absolute inset-0"
-          style={{ background: "radial-gradient(60% 50% at 50% 45%, rgba(46,51,57,0.5) 0%, rgba(0,0,0,0) 70%)" }}
-        />
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/brand/tuxmat-monogram.png"
-          alt="TuxMat"
-          className="absolute top-1/2 left-1/2 w-1/3 -translate-x-1/2 -translate-y-1/2 opacity-90"
-        />
+        <img src="/brand/tuxmat-monogram.png" alt="TuxMat" className="w-1/4 opacity-30" />
+        <p className="text-[0.6rem] tracking-[0.3em] text-zinc-600 uppercase">No content assigned</p>
       </div>
     );
   }
+
+  const fit =
+    display.contentFit === "CONTAIN" ? "object-contain" : display.contentFit === "FILL" ? "object-fill" : "object-cover";
   return (
-    <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black">
+    <div className="absolute inset-0 bg-black">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/brand/tuxmat-monogram.png" alt="TuxMat" className="w-1/4 opacity-30" />
-      <p className="text-[0.6rem] tracking-[0.3em] text-zinc-600 uppercase">Display not configured</p>
+      <img src={item.thumbnailUrl} alt={item.title} className={`h-full w-full ${fit}`} />
     </div>
   );
 }

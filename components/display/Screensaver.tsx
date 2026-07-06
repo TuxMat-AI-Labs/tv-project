@@ -1,28 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import styles from "./Screensaver.module.css";
+import { LavaLamp } from "@/components/screensaver/LavaLamp";
 
-const VARIANTS = [styles.drift0, styles.drift1, styles.drift2, styles.drift3];
+// Full brand palette for the overnight lava lamp.
+const COLORS = ["#e5c770", "#5ed6d6", "#aa8dec", "#f0a6c8", "#dfba7c", "#7ec8ff"];
 
 /**
- * Overnight pixel-care screensaver: the TuxMat gold monogram drifts slowly and
- * continuously across a rich-black canvas so no pixel holds a static image.
- * CSS-only animation (no JS loop) so it runs safely for days unattended.
+ * Overnight pixel-care screensaver: a flowing "lava lamp" of soft colour blobs
+ * over black. Everything moves continuously — no static gradient, line, or logo
+ * — so no pixel holds a fixed image (an effective screen massage). CSS-only, so
+ * it runs safely for days unattended. Once the picker's selection is wired to
+ * the backend (handoff #2), pass the chosen `motion` here.
  */
 export function Screensaver() {
-  const [variant, setVariant] = useState<string | null>(null);
-
-  useEffect(() => {
-    // Client-only random drift path, deferred past hydration.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setVariant(VARIANTS[Math.floor(Math.random() * VARIANTS.length)]);
-  }, []);
-
   return (
-    <div className={styles.stage}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/brand/tuxmat-monogram.png" alt="TuxMat" className={`${styles.mark} ${variant ?? ""}`} />
+    <div className="fixed inset-0 overflow-hidden bg-black">
+      <LavaLamp motion="drift" colors={COLORS} blur={72} />
     </div>
   );
 }

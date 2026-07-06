@@ -34,16 +34,24 @@ deploy, so this can't live in the Blueprint.
 2. Under **Authentication → Redirect URIs**, add:
    `https://<your-render-url>/api/auth/callback/microsoft-entra-id`
 3. Under **Certificates & secrets**, create a client secret.
-4. Under **Token configuration**, add the **groups** claim to the ID token (this
-   is what maps users to admin/marketing roles).
-5. Copy these into the Render env vars:
+4. Copy these three values into the Render env vars:
    - `AUTH_MICROSOFT_ENTRA_ID_ID` — Application (client) ID
    - `AUTH_MICROSOFT_ENTRA_ID_SECRET` — the client secret value
-   - `AUTH_MICROSOFT_ENTRA_ID_ISSUER` — `https://login.microsoftonline.com/<tenant-id>/v2.0`
-   - `ENTRA_ADMIN_GROUP_ID` / `ENTRA_MARKETING_GROUP_ID` — the two AD security
-     group object IDs
-6. Redeploy. Once `AUTH_MICROSOFT_ENTRA_ID_ID` is set, the local dev sign-in
+   - `AUTH_MICROSOFT_ENTRA_ID_ISSUER` — the full URL
+     `https://login.microsoftonline.com/<tenant-id>/v2.0` (NOT the bare tenant ID)
+5. Redeploy. Once `AUTH_MICROSOFT_ENTRA_ID_ID` is set, the local dev sign-in
    bypass is automatically disabled and real SSO takes over.
+
+### Optional: admin/marketing role separation
+
+By default, every employee who signs in gets full admin access — fine for an
+internal tool behind SSO. To split roles (admins manage rooms/displays;
+marketing uploads and schedules content; everyone else read-only):
+
+1. In the Azure app registration, under **Token configuration**, add the
+   **groups** claim to the ID token.
+2. Set `ENTRA_ADMIN_GROUP_ID` and `ENTRA_MARKETING_GROUP_ID` to the two AD
+   security group object IDs. Once either is set, role separation turns on.
 
 ## 4. Cloudflare R2 — media storage
 

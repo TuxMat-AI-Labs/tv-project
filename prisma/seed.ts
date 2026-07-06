@@ -41,7 +41,12 @@ async function main() {
 
   // Branded TuxMat placeholder creatives (portrait 9:16), served from /public.
   // Alternated across displays so the wall isn't monotone.
-  const placeholders = ["/placeholders/coverage-reach.jpg", "/placeholders/us-vs-them.jpg"];
+  const placeholders = [
+    "/placeholders/coverage-reach.jpg",
+    "/placeholders/us-vs-them.jpg",
+    "/placeholders/your-car.jpg",
+    "/placeholders/the-standard.jpg",
+  ];
 
   for (const [i, d] of displaysToSeed.entries()) {
     const room = roomRecords.get(d.roomSlug)!;

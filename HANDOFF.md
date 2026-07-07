@@ -76,7 +76,34 @@ The Claude_Preview MCP is rooted at the stub, so its `.claude/launch.json`
     hairline-separated, hover-to-focus, tap-to-activate. **Selection is localStorage
     only right now** — see pending work.
 
-## Pending work
+## Latest session — quirk fixes (all shipped)
+
+- **Content library named by creative, not room.** The 8 per-display "… sample
+  poster" items were collapsed into **4 shared, creative-named** items (Built for
+  the Rest / Not a Standard / Your Car Isn't Generic / The Standard Doesn't
+  Change). `prisma/seed.ts` now runs `normalizeCreatives()` on **every** deploy
+  (image-preserving: repoints duplicate assignments to the canonical item with
+  the same file, then deletes the dupes) — the room/display bootstrap stays
+  empty-DB-only. So prod is fixed on the next deploy without clobbering edits.
+- **Change a display's room from the Displays table.** The Room column is now a
+  `<select>` that PATCHes `roomId` and re-sorts (optimistic), so displays
+  recategorize immediately (`app/hub/customize/displays/page.tsx`).
+- **No person reflection on "off" screens.** `TVFrame`'s glass region now has a
+  dark glass base so the studio photo's reflection never shows through — an off /
+  screensaver tile reads as clean dark glass with just the synthetic glare.
+- **Smoother carousels.** `DisplayCarousel` dropped `snap-mandatory` (it fought
+  trackpad momentum) and now coalesces scroll → nav-state updates to one rAF and
+  only re-renders when a value flips (was `setState` on every scroll event).
+
+### NEXT UP: animate a custom lava-lamp image (requested, not started)
+
+The user wants to drop a real lava-lamp photo (portrait, orange/purple, TuxMat
+monogram overlaid — see their reference) into the repo and have the screensaver
+"animate" it with **no static/still imagery**. A single still can't truly morph;
+the agreed-good options are (1) slow Ken-Burns pan/zoom + hue drift, (2) layer it
+behind the existing CSS `LavaLamp` blobs, or (4) a WebGL/canvas fluid sim recolored
+to the palette (the real deal, bigger lift). Ask which fidelity they want; keep the
+monogram overlay per their reference. Current screensaver = CSS `LavaLamp` (blobs).
 
 ### 1. Device pairing & identity — "which TV is this?" (the big one)
 

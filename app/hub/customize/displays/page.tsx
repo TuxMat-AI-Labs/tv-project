@@ -80,6 +80,22 @@ export default function DisplaysPage() {
     await refresh();
   }
 
+  async function changeRoom(display: Display, roomId: string) {
+    if (roomId === display.roomId) return;
+    // Optimistically move the row so the table re-groups immediately.
+    setDisplays((cur) =>
+      [...cur.map((d) => (d.id === display.id ? { ...d, roomId, room: rooms.find((r) => r.id === roomId) ?? d.room } : d))].sort(
+        (a, b) => a.room.sortOrder - b.room.sortOrder || a.number - b.number
+      )
+    );
+    await fetch(`/api/admin/displays/${display.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ roomId }),
+    });
+    await refresh();
+  }
+
   async function deleteDisplay(id: string) {
     if (!confirm("Delete this display? This cannot be undone.")) return;
     try {
@@ -184,7 +200,20 @@ export default function DisplaysPage() {
             )}
             {displays.map((display) => (
               <tr key={display.id} className="border-b brand-hairline last:border-b-0">
-                <td className="px-4 py-3 text-muted">{display.room.name}</td>
+                <td className="px-4 py-3">
+                  <select
+                    value={display.roomId}
+                    onChange={(e) => changeRoom(display, e.target.value)}
+                    className="rounded border border-black/10 bg-white px-2 py-1 text-sm text-foreground"
+                    aria-label={`Room for ${display.name}`}
+                  >
+                    {rooms.map((room) => (
+                      <option key={room.id} value={room.id}>
+                        {room.name}
+                      </option>
+                    ))}
+                  </select>
+                </td>
                 <td className="px-4 py-3 text-foreground">{display.name}</td>
                 <td className="px-4 py-3 text-muted">{display.number}</td>
                 <td className="px-4 py-3">

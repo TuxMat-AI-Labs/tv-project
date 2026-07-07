@@ -25,27 +25,42 @@ export function DisplayCarousel({
   emptyText?: string;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const rafRef = useRef<number | null>(null);
   const [nav, setNav] = useState({ overflow: false, atStart: true, atEnd: false });
 
+  // Measure once, and only re-render when a nav value actually flips — so
+  // scrolling doesn't fire a setState on every frame (that caused the jitter).
   const update = useCallback(() => {
     const el = scrollRef.current;
     if (!el) return;
-    setNav({
+    const next = {
       overflow: el.scrollWidth > el.clientWidth + 4,
       atStart: el.scrollLeft <= 2,
       atEnd: el.scrollLeft + el.clientWidth >= el.scrollWidth - 2,
-    });
+    };
+    setNav((prev) =>
+      prev.overflow === next.overflow && prev.atStart === next.atStart && prev.atEnd === next.atEnd ? prev : next
+    );
   }, []);
 
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
+    // Coalesce scroll events to one measurement per animation frame.
+    const onScroll = () => {
+      if (rafRef.current != null) return;
+      rafRef.current = requestAnimationFrame(() => {
+        rafRef.current = null;
+        update();
+      });
+    };
     const ro = new ResizeObserver(update); // fires once on observe → initial measure
     ro.observe(el);
-    el.addEventListener("scroll", update, { passive: true });
+    el.addEventListener("scroll", onScroll, { passive: true });
     return () => {
       ro.disconnect();
-      el.removeEventListener("scroll", update);
+      el.removeEventListener("scroll", onScroll);
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
     };
   }, [update]);
 
@@ -82,10 +97,10 @@ export function DisplayCarousel({
       ) : (
         <div
           ref={scrollRef}
-          className="no-scrollbar flex snap-x snap-mandatory gap-6 overflow-x-auto scroll-smooth px-2 py-10"
+          className="no-scrollbar flex gap-6 overflow-x-auto scroll-smooth px-2 py-10 overscroll-x-contain"
         >
           {displays.map((display, i) => (
-            <div key={display.id} className={`shrink-0 snap-start ${tileWidth}`}>
+            <div key={display.id} className={`shrink-0 ${tileWidth}`}>
               <DisplayTile display={display} index={i} />
             </div>
           ))}

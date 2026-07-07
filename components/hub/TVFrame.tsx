@@ -4,8 +4,9 @@
  * as the frame. `children` render inside the glass region, whose offsets are
  * measured from the photo so a 9:16 content area lands exactly on the panel.
  * A soft diagonal glare streak is layered on top, echoing the natural reflection
- * in the render. The photo's own reflective black glass shows through until a
- * tile powers on, which is why the "off" state reads as a real dark screen.
+ * in the render. The glass region has its own dark base so the photo's screen
+ * reflection (which includes a person from the studio shot) never shows through —
+ * an "off" screen reads as clean dark glass with just the glare.
  */
 export function TVFrame({ children }: { children: React.ReactNode }) {
   return (
@@ -22,7 +23,14 @@ export function TVFrame({ children }: { children: React.ReactNode }) {
          the metal bezel's inner edge so no dark inner-border line shows at the top. */}
       <div
         className="absolute overflow-hidden rounded-[1px]"
-        style={{ left: "4.7%", top: "0.9%", right: "3.16%", bottom: "1.56%" }}
+        style={{
+          left: "4.7%",
+          top: "0.9%",
+          right: "3.16%",
+          bottom: "1.56%",
+          // Dark glass base — hides the studio photo's reflection behind the panel.
+          background: "linear-gradient(157deg, #17181c 0%, #0a0b0d 52%, #0f1013 100%)",
+        }}
       >
         {children}
         {/* Soft diagonal light-streak — a subtle reflection so the glass reads as glossy. */}

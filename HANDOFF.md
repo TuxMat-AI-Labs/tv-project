@@ -76,6 +76,15 @@ The Claude_Preview MCP is rooted at the stub, so its `.claude/launch.json`
     hairline-separated, hover-to-focus, tap-to-activate. **Selection is localStorage
     only right now** — see pending work.
 
+## Git push / deploy note
+
+Push access to `TuxMat-AI-Labs/tv-project` requires a **TuxMat-AI-Labs member**
+credential. The macOS keychain had cached a personal account (`diazcs`, no
+access), which 403'd. Fix: clear it with
+`printf "protocol=https\nhost=github.com\n\n" | git credential-osxkeychain erase`,
+then `git push` and enter the member username + a **PAT** (Contents: Read/write on
+this repo) as the password. Everything through `6cb6b66` is pushed to `main`.
+
 ## Latest session — quirk fixes (all shipped)
 
 - **Content library named by creative, not room.** The 8 per-display "… sample

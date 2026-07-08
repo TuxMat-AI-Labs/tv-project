@@ -97,6 +97,10 @@ export function PlaylistPlayer({
               autoPlay
               muted
               playsInline
+              // Sole item: loop it (no next slide to advance to, and re-selecting
+              // the same index wouldn't remount/replay it). Multi-item: don't
+              // loop — 'ended' drives the push-slide to the next ad.
+              loop={playlist.length === 1}
               onEnded={advance}
             />
           )}

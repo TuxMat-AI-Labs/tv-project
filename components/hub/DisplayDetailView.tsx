@@ -7,7 +7,7 @@ import { LavaLamp } from "@/components/screensaver/LavaLamp";
 import { PencilIcon, SwapIcon, HealthIcon, AdjustIcon, RefreshIcon } from "@/components/hub/icons";
 import { Wordmark } from "@/components/brand/Wordmark";
 
-type ContentItemLite = { id: string; title: string; type: "IMAGE" | "VIDEO"; thumbnailUrl: string | null };
+type ContentItemLite = { id: string; title: string; type: "IMAGE" | "VIDEO"; fileUrl: string; thumbnailUrl: string | null };
 type RoomLite = { id: string; name: string; slug: string };
 type DisplayDetail = {
   id: string;
@@ -112,7 +112,7 @@ function LivePreview({ display }: { display: DisplayDetail }) {
   }
 
   const item = display.assignments[0]?.contentItem;
-  if (!item?.thumbnailUrl) {
+  if (!item) {
     return (
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black">
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -124,10 +124,19 @@ function LivePreview({ display }: { display: DisplayDetail }) {
 
   const fit =
     display.contentFit === "CONTAIN" ? "object-contain" : display.contentFit === "FILL" ? "object-fill" : "object-cover";
+
+  if (item.type === "VIDEO") {
+    return (
+      <div className="absolute inset-0 bg-black">
+        <video src={item.fileUrl} className={`h-full w-full ${fit}`} autoPlay muted loop playsInline />
+      </div>
+    );
+  }
+
   return (
     <div className="absolute inset-0 bg-black">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={item.thumbnailUrl} alt={item.title} className={`h-full w-full ${fit}`} />
+      <img src={item.thumbnailUrl ?? item.fileUrl} alt={item.title} className={`h-full w-full ${fit}`} />
     </div>
   );
 }

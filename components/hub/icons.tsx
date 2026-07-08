@@ -11,11 +11,15 @@ export function PencilIcon() {
   );
 }
 
+// Two-way exchange arrows — reads as "swap/replace content", distinct from the
+// circular RefreshIcon (reload the TV) so the two actions aren't confusable.
 export function SwapIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5">
-      <path d="M21 12a9 9 0 1 1-2.6-6.36" strokeLinecap="round" />
-      <path d="M21 3v5h-5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M3 8h18" strokeLinecap="round" />
+      <path d="M17 4l4 4-4 4" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M21 16H3" strokeLinecap="round" />
+      <path d="M7 12l-4 4 4 4" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }

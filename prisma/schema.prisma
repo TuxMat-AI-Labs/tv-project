@@ -62,6 +62,7 @@ model Display {
   active              Boolean  @default(true)
   screensaverOverride Boolean?
   contentFit          ContentFit @default(COVER)
+  reloadRequestedAt   DateTime? // bumped by the hub's "Refresh" action; the TV reloads on its next content poll when this changes
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 

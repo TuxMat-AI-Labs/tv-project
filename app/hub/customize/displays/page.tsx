@@ -23,6 +23,7 @@ export default function DisplaysPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [refreshedId, setRefreshedId] = useState<string | null>(null);
 
   const [newName, setNewName] = useState("");
   const [newNumber, setNewNumber] = useState(1);
@@ -113,6 +114,12 @@ export default function DisplaysPage() {
       setCopiedId(display.id);
       setTimeout(() => setCopiedId((cur) => (cur === display.id ? null : cur)), 1500);
     });
+  }
+
+  async function refreshTv(display: Display) {
+    setRefreshedId(display.id);
+    await fetch(`/api/admin/displays/${display.id}/reload`, { method: "POST" });
+    setTimeout(() => setRefreshedId((cur) => (cur === display.id ? null : cur)), 1800);
   }
 
   return (
@@ -252,6 +259,13 @@ export default function DisplaysPage() {
                   </button>
                 </td>
                 <td className="px-4 py-3 text-right whitespace-nowrap">
+                  <button
+                    onClick={() => refreshTv(display)}
+                    className="mr-3 text-muted hover:text-gold"
+                    title="Reload this TV's page"
+                  >
+                    {refreshedId === display.id ? "Requested!" : "Refresh TV"}
+                  </button>
                   <Link href={`/hub/displays/${display.id}`} className="mr-3 text-foreground hover:text-gold">
                     Open
                   </Link>

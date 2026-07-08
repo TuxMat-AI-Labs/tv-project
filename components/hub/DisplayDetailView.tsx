@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { TVFrame } from "@/components/hub/TVFrame";
 import { LavaLamp } from "@/components/screensaver/LavaLamp";
-import { PencilIcon, SwapIcon, HealthIcon, AdjustIcon } from "@/components/hub/icons";
+import { PencilIcon, SwapIcon, HealthIcon, AdjustIcon, RefreshIcon } from "@/components/hub/icons";
 import { Wordmark } from "@/components/brand/Wordmark";
 
 type ContentItemLite = { id: string; title: string; type: "IMAGE" | "VIDEO"; thumbnailUrl: string | null };
@@ -87,7 +87,7 @@ export function DisplayDetailView({
 
       {display && (
         <>
-          <ActionCluster panel={panel} setPanel={setPanel} />
+          <ActionCluster panel={panel} setPanel={setPanel} displayId={displayId} />
           {panel === "edit" && <EditPanel display={display} onSaved={refresh} onClose={() => setPanel(null)} />}
           {panel === "change" && <ChangePanel display={display} onSaved={refresh} onClose={() => setPanel(null)} />}
           {panel === "health" && <HealthPanel display={display} onSaved={refresh} onClose={() => setPanel(null)} />}
@@ -132,7 +132,15 @@ function LivePreview({ display }: { display: DisplayDetail }) {
   );
 }
 
-function ActionCluster({ panel, setPanel }: { panel: PanelKey; setPanel: (p: PanelKey) => void }) {
+function ActionCluster({
+  panel,
+  setPanel,
+  displayId,
+}: {
+  panel: PanelKey;
+  setPanel: (p: PanelKey) => void;
+  displayId: string;
+}) {
   const items: { key: PanelKey; label: string; icon: React.ReactNode }[] = [
     { key: "edit", label: "Edit", icon: <PencilIcon /> },
     { key: "change", label: "Change", icon: <SwapIcon /> },
@@ -151,7 +159,45 @@ function ActionCluster({ panel, setPanel }: { panel: PanelKey; setPanel: (p: Pan
           {item.icon}
         </button>
       ))}
+      <RefreshButton displayId={displayId} />
     </div>
+  );
+}
+
+/**
+ * Remotely reloads the TV's browser page — the display picks it up on its next
+ * content poll (~15s) and reloads itself. No panel: it's a fire-and-forget
+ * action with a brief inline confirmation instead of an opened drawer.
+ */
+function RefreshButton({ displayId }: { displayId: string }) {
+  const [state, setState] = useState<"idle" | "requesting" | "done">("idle");
+
+  async function request() {
+    if (state === "requesting") return;
+    setState("requesting");
+    try {
+      await fetch(`/api/admin/displays/${displayId}/reload`, { method: "POST" });
+      setState("done");
+    } finally {
+      setTimeout(() => setState("idle"), 1800);
+    }
+  }
+
+  return (
+    <button
+      title={state === "done" ? "Refresh requested" : "Refresh this TV's page"}
+      onClick={request}
+      disabled={state === "requesting"}
+      className="glass-btn glass-btn--dark rounded-full p-3 disabled:opacity-60"
+    >
+      {state === "done" ? (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5">
+          <path d="M5 12.5 10 17l9-10" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      ) : (
+        <RefreshIcon />
+      )}
+    </button>
   );
 }
 

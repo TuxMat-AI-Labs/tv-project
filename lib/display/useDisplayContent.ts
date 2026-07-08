@@ -7,6 +7,7 @@ export type DisplayContentResponse = {
   mode: "playlist" | "screensaver" | "inactive";
   playlist?: PlaylistItem[];
   contentFit?: "COVER" | "CONTAIN" | "FILL";
+  reloadRequestedAt?: string | null;
   serverTime: string;
 };
 
@@ -24,6 +25,10 @@ export function useDisplayContent(slug: string) {
   const [data, setData] = useState<DisplayContentResponse | null>(null);
   const failuresRef = useRef(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Baseline the reload marker on the first poll (an old value already on the
+  // Display shouldn't trigger a reload on mount) — only a *change* after that
+  // means the hub just asked this TV to refresh.
+  const reloadBaselineRef = useRef<string | null | undefined>(undefined);
 
   useEffect(() => {
     let cancelled = false;
@@ -35,6 +40,15 @@ export function useDisplayContent(slug: string) {
         const json = (await res.json()) as DisplayContentResponse;
         if (cancelled) return;
         failuresRef.current = 0;
+
+        const reloadMarker = json.reloadRequestedAt ?? null;
+        if (reloadBaselineRef.current === undefined) {
+          reloadBaselineRef.current = reloadMarker;
+        } else if (reloadMarker !== reloadBaselineRef.current) {
+          window.location.reload();
+          return;
+        }
+
         setData(json);
       } catch {
         failuresRef.current += 1;

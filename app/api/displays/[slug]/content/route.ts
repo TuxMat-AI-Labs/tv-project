@@ -22,6 +22,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ slu
   return NextResponse.json({
     ...resolved,
     contentFit: display.contentFit,
+    reloadRequestedAt: display.reloadRequestedAt?.toISOString() ?? null,
     serverTime: now.toISOString(),
   });
 }

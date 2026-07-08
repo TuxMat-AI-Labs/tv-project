@@ -25,9 +25,10 @@ The Claude_Preview MCP is rooted at the stub, so its `.claude/launch.json`
   rooms + displays (Upstairs Office 1–5, Multi-Purpose 1, Showroom 1–2) + placeholder
   creatives on an empty DB (a no-op once rooms exist; `FORCE_SEED=1` to re-seed).
   So the first deploy after this change populates the previously-empty prod DB.
-- **Media:** Cloudflare R2 bucket `tuxdisplay`, public dev URL. **⚠️ R2 CORS still
-  not set** — browser uploads (Customize → Library) fail until you add the CORS
-  policy on the bucket (allow `https://tuxdisplay.tuxmat.ai`, PUT/GET, `*` headers).
+- **Media:** Cloudflare R2 bucket `tuxdisplay`, public dev URL. CORS policy **is now
+  set** (`AllowedOrigins: ["https://tuxdisplay.tuxmat.ai"]`, `PUT/GET/HEAD`, `*`
+  headers) — but the in-app Library uploader still fails on prod with "Failed to
+  fetch." See ⚠️ **Known issue** below before assuming CORS is the blocker.
 
 ## Local dev
 
@@ -83,9 +84,76 @@ credential. The macOS keychain had cached a personal account (`diazcs`, no
 access), which 403'd. Fix: clear it with
 `printf "protocol=https\nhost=github.com\n\n" | git credential-osxkeychain erase`,
 then `git push` and enter the member username + a **PAT** (Contents: Read/write on
-this repo) as the password. Everything through `1c686e7` is pushed to `main`.
+this repo) as the password. Everything through `8537be3` is pushed to `main`.
 
-## Latest session — TV scroll fix, remote refresh, push-slide transitions (all shipped)
+## Latest session — content library expansion, video pipeline, icon/preview fixes (all shipped)
+
+- **8 new paid-social creatives added to the shared library** (7 images + 1
+  video), reachable from prod on the next deploy via the seed (same
+  `normalizeCreatives()` mechanism as the original 4 placeholders — safe,
+  idempotent, image-preserving). Files in `public/creatives/*.jpg`. Titles
+  cleaned up from internal funnel-jargon filenames (e.g. "Paid Social
+  Vertical_Data MOF" → "2.5× the Coverage"). Two were later swapped for their
+  full-resolution 2160×3840 exports (same filenames, no seed change needed).
+- **Video content pipeline established.** The 60 MB Capsule launch video is
+  **not** committed to git — uploaded server-side straight to R2 via new
+  `scripts/upload-capsule-video.mjs` (bypasses browser CORS entirely; run it
+  with the 5 `CLOUDFLARE_R2_*` vars in local `.env`, copied from Render's
+  Environment tab). Registered as a `VIDEO` library item ("The Capsule
+  Launch") via the seed, pointing at its R2 public URL. `.gitignore` now
+  blocks `*.mp4`/`*.mov` so a stray video can't land in git history by
+  accident — **use this script as the pattern for adding any future video**
+  (update `LOCAL_FILE`/`KEY`, run, add the printed URL to `CREATIVES` in
+  `prisma/seed.ts`).
+- **Poster frame for the video.** Extracted a real frame at 7s (the clean
+  product shot, chosen from a 6-frame ffmpeg contact sheet) via a *temporary*
+  `ffmpeg-static` npm install (`--no-save`, uninstalled right after — not a
+  project dependency; no ffmpeg is installed globally in this environment).
+  Saved to `public/creatives/capsule-launch-poster.jpg`. `PlaylistItem`
+  (`lib/display/resolveContentForDisplay.ts`) now carries `thumbnailUrl`
+  end-to-end, used as the `poster` attribute on both video players (TV
+  `PlaylistPlayer` + hub `DisplayDetailView` preview) so a video shows a real
+  frame immediately instead of black while it buffers, and a real thumbnail
+  in the Library grid instead of a blank `VIDEO` card.
+- **Fixed: an assigned video showed "No content assigned."**
+  `DisplayDetailView`'s `LivePreview` only ever handled images — it bailed to
+  the empty state whenever an item had no `thumbnailUrl` (every video did,
+  before the poster fix above) and only ever rendered `<img>`. Now branches on
+  `item.type` and renders a looping muted `<video>` for VIDEO items.
+- **Fixed: a lone video on a TV froze after one play.** `PlaylistPlayer`'s
+  `onEnded` handler re-selected the same index for a single-item playlist,
+  which doesn't remount/replay a `<video>`. Now loops
+  (`loop={playlist.length === 1}`) when it's the only item; multi-item
+  playlists still advance via `onEnded` (whip-slide behavior unchanged).
+- **Fixed: "Change content" and "Refresh TV" action icons were identical**
+  (both a circular arrow). `SwapIcon` (Change) is now distinct two-way
+  exchange arrows (⇄); `RefreshIcon` stays the circular reload arrow (↻).
+
+### ⚠️ Known issue — in-app Library video/file upload still fails on prod
+
+R2 CORS **is now configured** on the bucket and confirmed saved — this
+resolves the *infra* half of the old "R2 CORS not set" blocker. But the
+in-app uploader (`/hub/customize/library` → Choose File → Upload) **still
+fails on the live site** with `Failed to fetch` on the browser→R2 `PUT`, even
+after the CORS save, a hard refresh, and waiting for propagation. This
+session worked around it by uploading the video server-side via the script
+above instead of diagnosing further. **Next session:** reproduce the upload
+on prod, open DevTools → Console, and read the actual error line on the
+failed `PUT`/`OPTIONS` request to `*.r2.cloudflarestorage.com` — that will
+say whether it's still a CORS mismatch (e.g. an unexpected origin, a header
+the preflight doesn't allow) or something else (e.g. the presigned URL's
+signed headers not matching what the browser actually sends in
+`lib/storage.ts` / `app/api/admin/content-items/upload-url/route.ts`).
+
+### ⚠️ Local `.env` now holds production R2 credentials
+
+To run the upload script, the 5 `CLOUDFLARE_R2_*` values were copied from
+Render into local `.env` (gitignored, never committed). This means local dev
+now writes to the **production** R2 bucket if content is uploaded from local
+dev — harmless so far, but worth knowing. Strip them back out if that's a
+concern.
+
+## Previous session — TV scroll fix, remote refresh, push-slide transitions (all shipped)
 
 - **TV scrollbar on zoom fixed.** A zoomed Samsung/Tizen browser could surface a
   stray scrollbar on `/display/[slug]` and `/tv` (seen on TV 4) because the
@@ -116,7 +184,7 @@ this repo) as the password. Everything through `1c686e7` is pushed to `main`.
   `DisplayDetailView` is still single-item only if a friendlier multi-item
   in-panel playlist builder is wanted later.
 
-## Previous session — quirk fixes (all shipped)
+## Earlier session — quirk fixes (all shipped)
 
 - **Content library named by creative, not room.** The 8 per-display "… sample
   poster" items were collapsed into **4 shared, creative-named** items (Built for
@@ -284,6 +352,9 @@ render the chosen variant during the scheduled screensaver window.
   `customize/*`, `displays/[displayId]` (+ `@modal` intercept), `layout.tsx`.
 - `lib/display/resolveContentForDisplay.ts`, `lib/hub/useHubStatus.ts`, `app/api/hub/status/route.ts`.
 - `auth.ts`, `proxy.ts` (middleware is `proxy.ts`), `prisma/schema.prisma`, `prisma/seed.ts`, `render.yaml`, `DEPLOY.md`.
+- `public/creatives/` — shared library images (+ `capsule-launch-poster.jpg`), all
+  registered via `prisma/seed.ts` `CREATIVES`. `scripts/upload-capsule-video.mjs` —
+  reusable server-side R2 uploader for video (see Known issue above for why).
 - Brand: gold `#B9975B` / `#DFBA7C`, rich-black, blue-black `#2E3339`, Poppins. Logos in `public/brand/`. Don't alter logo art.
 
 ## Stack gotchas (Next 16)

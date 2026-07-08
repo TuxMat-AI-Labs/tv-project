@@ -31,8 +31,13 @@ const CREATIVES: Creative[] = [
   { title: "2.5× the Coverage", fileUrl: "/creatives/coverage-2-5x.jpg" },
   { title: "Why TuxMat Fits Better", fileUrl: "/creatives/why-it-fits-better.jpg" },
   { title: "The Contours Are Different", fileUrl: "/creatives/contours-are-different.jpg" },
-  // The Capsule launch video is uploaded to R2 (server-side) and added here once
-  // its public URL is known — kept out of /public so it stays out of git.
+  // The Capsule launch video — uploaded to R2 server-side (kept out of git).
+  {
+    title: "The Capsule Launch",
+    fileUrl: "https://pub-9d89beb4186842c69d989b78f9674d08.r2.dev/creatives/capsule-launch.mp4",
+    type: "VIDEO",
+    durationSec: null,
+  },
 ];
 
 /**

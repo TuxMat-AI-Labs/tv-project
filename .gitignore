@@ -45,3 +45,8 @@ yarn-error.log*
 next-env.d.ts
 
 /app/generated/prisma
+
+# Video assets belong in R2 (object storage), never in git — see scripts/upload-capsule-video.mjs.
+# Guards against accidentally committing large video blobs into permanent history.
+*.mp4
+*.mov

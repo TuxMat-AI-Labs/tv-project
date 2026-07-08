@@ -128,7 +128,15 @@ function LivePreview({ display }: { display: DisplayDetail }) {
   if (item.type === "VIDEO") {
     return (
       <div className="absolute inset-0 bg-black">
-        <video src={item.fileUrl} className={`h-full w-full ${fit}`} autoPlay muted loop playsInline />
+        <video
+          src={item.fileUrl}
+          poster={item.thumbnailUrl ?? undefined}
+          className={`h-full w-full ${fit}`}
+          autoPlay
+          muted
+          loop
+          playsInline
+        />
       </div>
     );
   }

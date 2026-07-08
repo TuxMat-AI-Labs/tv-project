@@ -8,6 +8,7 @@ export type PlaylistItem = {
   id: string;
   type: "IMAGE" | "VIDEO";
   fileUrl: string;
+  thumbnailUrl: string | null;
   durationSec: number;
 };
 
@@ -51,6 +52,7 @@ function toPlaylist(assignments: AssignmentWithContent[]): PlaylistItem[] {
     id: a.contentItem.id,
     type: a.contentItem.type,
     fileUrl: a.contentItem.fileUrl,
+    thumbnailUrl: a.contentItem.thumbnailUrl,
     durationSec: a.contentItem.durationSec ?? DEFAULT_IMAGE_DURATION_SEC,
   }));
 }

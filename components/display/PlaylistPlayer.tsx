@@ -92,6 +92,7 @@ export function PlaylistPlayer({
           ) : (
             <video
               src={current.fileUrl}
+              poster={current.thumbnailUrl ?? undefined}
               className="h-full w-full"
               style={{ objectFit }}
               autoPlay

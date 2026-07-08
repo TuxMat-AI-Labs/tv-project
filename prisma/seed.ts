@@ -37,6 +37,7 @@ const CREATIVES: Creative[] = [
     fileUrl: "https://pub-9d89beb4186842c69d989b78f9674d08.r2.dev/creatives/capsule-launch.mp4",
     type: "VIDEO",
     durationSec: null,
+    thumbnailUrl: "/creatives/capsule-launch-poster.jpg",
   },
 ];
 

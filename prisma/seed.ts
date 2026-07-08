@@ -4,14 +4,35 @@ import { PrismaPg } from "@prisma/adapter-pg";
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
 
-// Branded TuxMat placeholder creatives (portrait 9:16), served from /public.
-// A single SHARED library named by the CREATIVE — never per-display — so the
-// "Change content" list reads as reusable artwork, not tied to one screen/room.
-const CREATIVES = [
+// Branded TuxMat creatives (portrait 9:16). A single SHARED library named by the
+// CREATIVE — never per-display — so the "Change content" list reads as reusable
+// artwork, not tied to one screen/room. `type` defaults to IMAGE and
+// `durationSec` to 15 when omitted; videos set type VIDEO. Images are served
+// from /public; larger assets (e.g. video) may use an absolute R2 URL.
+type Creative = {
+  title: string;
+  fileUrl: string;
+  type?: "IMAGE" | "VIDEO";
+  durationSec?: number | null;
+  thumbnailUrl?: string | null;
+};
+
+const CREATIVES: Creative[] = [
+  // Original branded placeholders.
   { title: "Built for the Rest", fileUrl: "/placeholders/coverage-reach.jpg" },
   { title: "Not a Standard", fileUrl: "/placeholders/us-vs-them.jpg" },
   { title: "Your Car Isn't Generic", fileUrl: "/placeholders/your-car.jpg" },
   { title: "The Standard Doesn't Change", fileUrl: "/placeholders/the-standard.jpg" },
+  // Paid-social vertical creatives (public/creatives).
+  { title: "The Piece You Were Missing", fileUrl: "/creatives/capsule-missing-piece.jpg" },
+  { title: "Covers What Others Don't", fileUrl: "/creatives/before-after-coverage.jpg" },
+  { title: "Two Very Different Standards", fileUrl: "/creatives/before-after-standards.jpg" },
+  { title: "TuxMat Covers the Rest", fileUrl: "/creatives/covers-the-rest.jpg" },
+  { title: "2.5× the Coverage", fileUrl: "/creatives/coverage-2-5x.jpg" },
+  { title: "Why TuxMat Fits Better", fileUrl: "/creatives/why-it-fits-better.jpg" },
+  { title: "The Contours Are Different", fileUrl: "/creatives/contours-are-different.jpg" },
+  // The Capsule launch video is uploaded to R2 (server-side) and added here once
+  // its public URL is known — kept out of /public so it stays out of git.
 ];
 
 /**
@@ -24,6 +45,10 @@ const CREATIVES = [
 async function normalizeCreatives(adminId: string): Promise<string[]> {
   const ids: string[] = [];
   for (const c of CREATIVES) {
+    const type = c.type ?? "IMAGE";
+    const durationSec = c.durationSec === undefined ? 15 : c.durationSec;
+    const thumbnailUrl = c.thumbnailUrl ?? (type === "IMAGE" ? c.fileUrl : null);
+
     const items = await prisma.contentItem.findMany({
       where: { fileUrl: c.fileUrl },
       orderBy: { createdAt: "asc" },
@@ -34,10 +59,10 @@ async function normalizeCreatives(adminId: string): Promise<string[]> {
       const created = await prisma.contentItem.create({
         data: {
           title: c.title,
-          type: "IMAGE",
+          type,
           fileUrl: c.fileUrl,
-          thumbnailUrl: c.fileUrl,
-          durationSec: 15,
+          thumbnailUrl,
+          durationSec,
           uploadedById: adminId,
         },
       });
@@ -45,7 +70,7 @@ async function normalizeCreatives(adminId: string): Promise<string[]> {
     } else {
       const canonical = await prisma.contentItem.update({
         where: { id: items[0].id },
-        data: { title: c.title, type: "IMAGE", thumbnailUrl: c.fileUrl },
+        data: { title: c.title, type, thumbnailUrl },
       });
       canonicalId = canonical.id;
       // Collapse duplicates: move their assignments to the canonical (same image), then delete.

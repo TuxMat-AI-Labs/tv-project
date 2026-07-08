@@ -84,66 +84,50 @@ credential. The macOS keychain had cached a personal account (`diazcs`, no
 access), which 403'd. Fix: clear it with
 `printf "protocol=https\nhost=github.com\n\n" | git credential-osxkeychain erase`,
 then `git push` and enter the member username + a **PAT** (Contents: Read/write on
-this repo) as the password. Everything through `fa2f282` is pushed to `main`.
+this repo) as the password. Everything through `3a51f90` is pushed to `main`.
 
-## 🔴 NEXT UP: new-device rendering artifacts + stuck video (needs physical TV access)
+## ✅ FIXED (this session): white border on TV output — was a real CSS bug, not zoom/camera
 
-User reported two symptoms on **newly set-up TVs specifically** (not the
-already-running ones): (1) a faint moiré/rainbow interference pattern visible
-in photos of the screen, described as a "white line/border" on images, and
-(2) the assigned video "is stale ... does not play." Photos showed the
-browser chrome itself at **125–133% page zoom** (visible zoom controls in a
-non-kiosk browser), and on the working TVs the same page "brought me to a
-properly loaded connection page" straight away — implying the working TVs
-default to 100% zoom and the new ones don't.
+User reported new-device symptoms: a visible white border/artifact, and a
+stuck/non-playing video. Initial theory (browser-chrome zoom + camera moiré,
+see commit `fa2f282`) was **wrong** — user tried the Refresh-TV button and
+resetting zoom to 100%, neither fixed it, and critically: **the white border
+was still visible even zoomed out to 50%**, proving it was a real, always-
+present rendering gap, not a photo/zoom illusion.
 
-**Working theory (not yet confirmed on hardware):**
-- The moiré/border artifact is very likely caused by the browser rendering at
-  a **non-100% zoom** (a device/browser-chrome setting, not something the
-  page controls) — fractional device-pixel rendering produces exactly this
-  kind of hairline/moiré fringing, and it's also consistent with what a phone
-  camera would exaggerate when photographing the screen.
-- The "stale, does not play" video is almost certainly last commit before
-  this fix, `5f90011` (today) — it fixed a real bug where a display with a
-  **single** video item played once and froze (`PlaylistPlayer`'s `onEnded`
-  re-selected the same index without remounting the `<video>`, so it never
-  looped). A Smart TV browser tab that has been sitting open since **before**
-  that deploy landed has no way to know a new bundle exists — Tizen-style
-  browsers don't auto-refresh a long-lived tab, and Next.js only checks for a
-  build-ID mismatch on a client-side route transition, which never happens on
-  a TV that just sits on one page polling JSON. So the fix is very likely
-  already live — those specific devices just haven't reloaded to pick it up.
+**Actual root cause, found by inspecting `app/globals.css`:** the Hub's
+`body` background (`#faf9f6` warm near-white + a gold radial gradient) was
+**never overridden on TV output routes**. `/tv` and `/display/[slug]` render
+their black `fixed inset-0` player on top of it, which normally covers it
+perfectly — but any sub-pixel rounding gap in that layer (the exact class of
+zoom-driven viewport mismatch `<ViewportLock>` was already built to handle,
+just for the scrollbar case) revealed a sliver of that near-white body
+underneath instead of black. Worse at extreme zoom because rounding error
+grows relative to a smaller effective viewport — consistent with every
+symptom reported.
 
-**Shipped this session as defense-in-depth** (commit `fa2f282`), neither a
-confirmed fix on its own:
-- `/api/displays/[slug]/content` now sends `Cache-Control: no-store`
-  explicitly (closes a gap beyond the client's already-present
-  `fetch({cache:"no-store"})`, in case any intermediate cache/proxy applies
-  heuristic caching).
-- `app/layout.tsx` now exports a locked `viewport` (`maximumScale: 1`,
-  `userScalable: false`) so the *page* can't drift from 100% scale — this
-  cannot override a browser-chrome "page zoom" control (that's a device
-  setting, not a page one), but rules the page out as the source.
+**Fix (commit `3a51f90`):** `html.tv-output` (the class `<ViewportLock>`
+toggles, scoped to `/tv` + `/display/[slug]` only) now forces
+`background: #000; background-image: none` on `html`/`body`, so any such gap
+reveals black — invisible. Verified: computed `body` background is
+`rgb(0,0,0)` with no gradient on `/display/[slug]`, and the Hub route is
+unaffected (still warm off-white with its gradient). `tsc`/lint/build clean.
 
-**What actually needs doing next, at the physical TV(s):**
-1. Wait for this deploy to land (or trigger it), then use the **Refresh TV**
-   button (`app/hub/customize/displays` or the icon in `DisplayDetailView`)
-   on the affected display(s) — or physically reload the page once. Check
-   whether the video now plays/loops correctly. If yes, the stale-bundle
-   theory is confirmed and no further code change is needed for that part.
-2. On the affected device's browser itself, find the **page zoom setting**
-   (the screenshot showed dedicated `−`/`125%`/`+` controls next to the
-   address bar — this is a Samsung/Tizen-style non-kiosk browser) and reset
-   it to 100%. Confirm the moiré/border artifact disappears once at 100%.
-3. If it's practical, **document the exact browser + zoom setting location**
-   as a one-time step in the TV setup process, so future new devices don't
-   hit this — e.g. "after opening the pairing URL, reset browser zoom to
-   100% before scanning the QR code."
-4. If resetting zoom does *not* fully resolve the artifact, get a video (not
-   just a photo) of the live screen — a moiré pattern is often a camera
-   aliasing artifact that isn't actually visible to the naked eye on the
-   panel itself, so a photo alone can't confirm whether it's a real rendering
-   bug or just how a phone camera sees a fine anti-aliased edge.
+**Next session: confirm on real hardware after this deploy lands.**
+1. Check the affected TV(s) **without** doing anything else first (no
+   disconnect/reconnect, no re-pairing) — a plain page reload (or the
+   **Refresh TV** button) should now show a clean black edge at any zoom
+   level. If confirmed, the "disconnect and reconnect via `/tv`" plan
+   discussed earlier is unnecessary — this was a CSS bug, not a
+   pairing/device-identity problem.
+2. Separately confirm whether the **video** now plays — that symptom's
+   working theory (stale JS bundle predating `5f90011`'s video-loop fix,
+   picked up by a reload) was never actually confirmed either way in this
+   session. Check it independently of the border fix.
+3. If a white border is *still* visible after this deploy + a reload, it
+   means there's a second contributing gap somewhere (e.g. inside
+   `TVFrame`/`DisplayPlayer` itself rather than at the document level) —
+   screenshot/video the exact edge it appears on for further narrowing.
 
 ## Latest session — content library expansion, video pipeline, icon/preview fixes (all shipped)
 

@@ -86,6 +86,49 @@ access), which 403'd. Fix: clear it with
 then `git push` and enter the member username + a **PAT** (Contents: Read/write on
 this repo) as the password. Everything through `c55b942` is pushed to `main`.
 
+## 🔴 NEXT UP: pairing/QR screen "does not load properly" (needs repro details first)
+
+At the very end of this session, the user flagged that the pairing-screen
+screenshot shared earlier (the one showing `/tv`'s "Scan to connect this
+display" QR + code) was **the wrong example to reference for the border bug,
+and separately does not load properly** on (at least) that device. This is a
+**distinct, not-yet-investigated symptom** from the border/zoom issue below —
+don't assume the `fixed`→`absolute` fix (commit `c55b942`) addresses it, and
+don't assume it's the same root cause.
+
+**Nothing is diagnosed yet.** Before writing any code, get from the user:
+1. **What "does not load properly" actually means** — stuck on a spinner /
+   blank white or black screen / shows an error / shows a QR or code that
+   looks wrong or garbled / partially renders then freezes / something else
+   entirely. The difference matters a lot for where to look.
+2. **Which device(s)** — the same "new devices" from the border bug, or a
+   different one? Is it 100% of the time or intermittent?
+3. **A fresh screenshot or (ideally) a short screen recording** of the actual
+   failure — the previous screenshot is now known to be a bad example, so
+   don't reason from it.
+4. Whether it happens on **first load** (fresh device, no cookie yet — the
+   `/api/tv/register` POST mints a `Device` + pairing code, see
+   `app/api/tv/register/route.ts`) vs. on a device that's loaded before.
+
+**Where to look once there's a real repro**, roughly in order of likelihood:
+- `components/tv/TvClient.tsx` — polls `/api/tv/register` every 4s while
+  unpaired; if that fetch is failing/hanging (network, cold start, a
+  Render free-tier spin-down delay, etc.) the component just keeps rendering
+  `null`/black (see the `!state` case) with no error state or retry
+  indicator visible to the user — a silent failure would look exactly like
+  "does not load properly" with nothing else to go on.
+- `app/api/tv/register/route.ts` — mints a `Device`, generates a QR via the
+  `qrcode` package (`QRCode.toDataURL`) server-side; if that call throws or
+  is slow, the whole POST fails and the TV never gets a payload back.
+- Whether `AUTH_URL` is set correctly in prod (affects the QR's encoded
+  `pairUrl` per `baseUrl()` in that route) — a wrong/missing origin wouldn't
+  stop the screen from *loading*, but could make the QR scan to a broken
+  link, which the user might describe the same way.
+- Rule out the fix from this session by confirming `c55b942` is actually
+  live on prod (Render auto-deploys on push to `main` — check the Render
+  dashboard's latest deploy matches this commit) before assuming it's
+  unrelated.
+
 ## ✅ FIXED (this session): white border on TV output — root cause was `fixed` vs `absolute`
 
 User reported new-device symptoms: a visible white border/artifact, and a

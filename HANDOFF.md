@@ -84,7 +84,66 @@ credential. The macOS keychain had cached a personal account (`diazcs`, no
 access), which 403'd. Fix: clear it with
 `printf "protocol=https\nhost=github.com\n\n" | git credential-osxkeychain erase`,
 then `git push` and enter the member username + a **PAT** (Contents: Read/write on
-this repo) as the password. Everything through `8537be3` is pushed to `main`.
+this repo) as the password. Everything through `fa2f282` is pushed to `main`.
+
+## 🔴 NEXT UP: new-device rendering artifacts + stuck video (needs physical TV access)
+
+User reported two symptoms on **newly set-up TVs specifically** (not the
+already-running ones): (1) a faint moiré/rainbow interference pattern visible
+in photos of the screen, described as a "white line/border" on images, and
+(2) the assigned video "is stale ... does not play." Photos showed the
+browser chrome itself at **125–133% page zoom** (visible zoom controls in a
+non-kiosk browser), and on the working TVs the same page "brought me to a
+properly loaded connection page" straight away — implying the working TVs
+default to 100% zoom and the new ones don't.
+
+**Working theory (not yet confirmed on hardware):**
+- The moiré/border artifact is very likely caused by the browser rendering at
+  a **non-100% zoom** (a device/browser-chrome setting, not something the
+  page controls) — fractional device-pixel rendering produces exactly this
+  kind of hairline/moiré fringing, and it's also consistent with what a phone
+  camera would exaggerate when photographing the screen.
+- The "stale, does not play" video is almost certainly last commit before
+  this fix, `5f90011` (today) — it fixed a real bug where a display with a
+  **single** video item played once and froze (`PlaylistPlayer`'s `onEnded`
+  re-selected the same index without remounting the `<video>`, so it never
+  looped). A Smart TV browser tab that has been sitting open since **before**
+  that deploy landed has no way to know a new bundle exists — Tizen-style
+  browsers don't auto-refresh a long-lived tab, and Next.js only checks for a
+  build-ID mismatch on a client-side route transition, which never happens on
+  a TV that just sits on one page polling JSON. So the fix is very likely
+  already live — those specific devices just haven't reloaded to pick it up.
+
+**Shipped this session as defense-in-depth** (commit `fa2f282`), neither a
+confirmed fix on its own:
+- `/api/displays/[slug]/content` now sends `Cache-Control: no-store`
+  explicitly (closes a gap beyond the client's already-present
+  `fetch({cache:"no-store"})`, in case any intermediate cache/proxy applies
+  heuristic caching).
+- `app/layout.tsx` now exports a locked `viewport` (`maximumScale: 1`,
+  `userScalable: false`) so the *page* can't drift from 100% scale — this
+  cannot override a browser-chrome "page zoom" control (that's a device
+  setting, not a page one), but rules the page out as the source.
+
+**What actually needs doing next, at the physical TV(s):**
+1. Wait for this deploy to land (or trigger it), then use the **Refresh TV**
+   button (`app/hub/customize/displays` or the icon in `DisplayDetailView`)
+   on the affected display(s) — or physically reload the page once. Check
+   whether the video now plays/loops correctly. If yes, the stale-bundle
+   theory is confirmed and no further code change is needed for that part.
+2. On the affected device's browser itself, find the **page zoom setting**
+   (the screenshot showed dedicated `−`/`125%`/`+` controls next to the
+   address bar — this is a Samsung/Tizen-style non-kiosk browser) and reset
+   it to 100%. Confirm the moiré/border artifact disappears once at 100%.
+3. If it's practical, **document the exact browser + zoom setting location**
+   as a one-time step in the TV setup process, so future new devices don't
+   hit this — e.g. "after opening the pairing URL, reset browser zoom to
+   100% before scanning the QR code."
+4. If resetting zoom does *not* fully resolve the artifact, get a video (not
+   just a photo) of the live screen — a moiré pattern is often a camera
+   aliasing artifact that isn't actually visible to the naked eye on the
+   panel itself, so a photo alone can't confirm whether it's a real rendering
+   bug or just how a phone camera sees a fine anti-aliased edge.
 
 ## Latest session — content library expansion, video pipeline, icon/preview fixes (all shipped)
 

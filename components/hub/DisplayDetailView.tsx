@@ -245,6 +245,9 @@ function EditPanel({
   const [number, setNumber] = useState(display.number);
   const [active, setActive] = useState(display.active);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [slugState, setSlugState] = useState<"idle" | "done" | "error">("idle");
+  const [error, setError] = useState<string | null>(null);
 
   async function save() {
     setSaving(true);
@@ -259,12 +262,34 @@ function EditPanel({
 
   async function regenerateSlug() {
     if (!confirm("Regenerate this display's URL? The TV will need to be re-pointed at the new address.")) return;
-    await fetch(`/api/admin/displays/${display.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ regenerateSlug: true }),
-    });
-    onSaved();
+    setSlugState("idle");
+    try {
+      const res = await fetch(`/api/admin/displays/${display.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ regenerateSlug: true }),
+      });
+      if (!res.ok) throw new Error();
+      onSaved();
+      setSlugState("done");
+      setTimeout(() => setSlugState((cur) => (cur === "done" ? "idle" : cur)), 2500);
+    } catch {
+      setSlugState("error");
+    }
+  }
+
+  async function deleteDisplay() {
+    if (!confirm(`Delete "${display.name}"? This unpairs its TV and cannot be undone.`)) return;
+    setDeleting(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/displays/${display.id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      onClose();
+    } catch {
+      setError("Failed to delete display.");
+      setDeleting(false);
+    }
   }
 
   return (
@@ -299,8 +324,18 @@ function EditPanel({
           Save
         </button>
         <button onClick={regenerateSlug} className="w-full text-left text-xs text-zinc-500 hover:text-zinc-300">
-          Regenerate URL…
+          {slugState === "done" ? "URL regenerated ✓" : slugState === "error" ? "Failed to regenerate — try again" : "Regenerate URL…"}
         </button>
+        <div className="border-t border-zinc-800 pt-3">
+          <button
+            onClick={deleteDisplay}
+            disabled={deleting}
+            className="w-full rounded-md py-1.5 text-xs font-medium text-red-400 hover:bg-red-950/40 hover:text-red-300 disabled:opacity-60"
+          >
+            {deleting ? "Deleting…" : "Delete this display…"}
+          </button>
+          {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
+        </div>
       </div>
     </PanelShell>
   );

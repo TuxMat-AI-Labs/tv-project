@@ -65,6 +65,18 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  await prisma.display.delete({ where: { id } });
-  return NextResponse.json({ ok: true });
+  try {
+    // Clear everything that FK-references this Display first (no onDelete
+    // cascade in the schema) — including its paired Device, so the TV drops
+    // back to a fresh pairing screen instead of leaving an orphaned row.
+    await prisma.$transaction([
+      prisma.assignment.deleteMany({ where: { displayId: id } }),
+      prisma.heartbeat.deleteMany({ where: { displayId: id } }),
+      prisma.device.deleteMany({ where: { displayId: id } }),
+      prisma.display.delete({ where: { id } }),
+    ]);
+    return NextResponse.json({ ok: true });
+  } catch {
+    return NextResponse.json({ error: "Failed to delete display." }, { status: 500 });
+  }
 }

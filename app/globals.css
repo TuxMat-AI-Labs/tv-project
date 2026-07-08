@@ -48,6 +48,16 @@ body {
   background-attachment: fixed;
 }
 
+/* TV output routes (/display/[slug], /tv) lock the document so no browser zoom
+   level can surface a stray scrollbar — the player already fills the screen with
+   a fixed inset-0 layer. Toggled by <ViewportLock> (components/display), so the
+   scrollable Hub is unaffected. */
+html.tv-output,
+html.tv-output body {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
 /* Metallic gold text/fills for the wordmark accent and key figures. */
 .text-gold-metallic {
   background: linear-gradient(180deg, var(--gold-metallic-2) 0%, var(--gold) 55%, var(--gold-metallic-1) 100%);

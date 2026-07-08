@@ -51,11 +51,17 @@ body {
 /* TV output routes (/display/[slug], /tv) lock the document so no browser zoom
    level can surface a stray scrollbar — the player already fills the screen with
    a fixed inset-0 layer. Toggled by <ViewportLock> (components/display), so the
-   scrollable Hub is unaffected. */
+   scrollable Hub is unaffected. Also forces the document background to black:
+   the Hub's warm near-white `body` background (above) otherwise sits directly
+   behind the player, so any sub-pixel rounding gap in that fixed layer — e.g.
+   from a non-100% browser zoom sizing it a hair off from the layout viewport —
+   reveals a visible near-white sliver at the edge instead of black. */
 html.tv-output,
 html.tv-output body {
   overflow: hidden;
   overscroll-behavior: none;
+  background: #000;
+  background-image: none;
 }
 
 /* Metallic gold text/fills for the wordmark accent and key figures. */

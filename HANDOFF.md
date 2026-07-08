@@ -83,9 +83,40 @@ credential. The macOS keychain had cached a personal account (`diazcs`, no
 access), which 403'd. Fix: clear it with
 `printf "protocol=https\nhost=github.com\n\n" | git credential-osxkeychain erase`,
 then `git push` and enter the member username + a **PAT** (Contents: Read/write on
-this repo) as the password. Everything through `6cb6b66` is pushed to `main`.
+this repo) as the password. Everything through `1c686e7` is pushed to `main`.
 
-## Latest session — quirk fixes (all shipped)
+## Latest session — TV scroll fix, remote refresh, push-slide transitions (all shipped)
+
+- **TV scrollbar on zoom fixed.** A zoomed Samsung/Tizen browser could surface a
+  stray scrollbar on `/display/[slug]` and `/tv` (seen on TV 4) because the
+  player's `fixed inset-0` layer could size to the visual viewport, a hair
+  taller than the layout viewport. New `<ViewportLock>` toggles a `tv-output`
+  class on `<html>` while a TV route is mounted; `html.tv-output { overflow:
+  hidden }` in `globals.css` guarantees no zoom level can scroll. Scoped so the
+  Hub is unaffected. **On-device:** nothing to change beyond a normal reload
+  to pick up the deploy — see the Refresh feature below for doing that remotely.
+- **Remote "Refresh TV" action.** New `Display.reloadRequestedAt` field; a POST
+  to `/api/admin/displays/[id]/reload` bumps it, the TV's existing content poll
+  (~15s) notices the change and calls `window.location.reload()` itself — no
+  physical access to the TV needed. Buttons: "Refresh TV" per row in
+  `app/hub/customize/displays/page.tsx`, and an icon action (with brief
+  inline confirmation) in `DisplayDetailView`'s action cluster.
+- **Playlist rotation now slides ("whip push"), no cut.** `PlaylistPlayer`
+  transitions between items with a framer-motion push: outgoing and incoming
+  slides run the identical easing curve simultaneously (`ease [0.22,1,0.36,1]`,
+  0.7s), so the incoming edge always meets the outgoing edge exactly — verified
+  by sampling `incoming_x - outgoing_x` through a live transition and confirming
+  it equals the container width at every frame (no gap, ever). Images preload
+  before the swap so there's no blank/loading flash mid-whip.
+  ⚠️ **Note:** every display currently has exactly one assigned item (seed +
+  the "Change content" panel both replace-to-one), so the slide never fires in
+  practice yet. To actually see ads rotate, assign 2+ items to the same display
+  via `/hub/customize/assignments` (supports multiple assignments per display
+  with `sortOrder`, already existed, just under-used) — the "Change" panel in
+  `DisplayDetailView` is still single-item only if a friendlier multi-item
+  in-panel playlist builder is wanted later.
+
+## Previous session — quirk fixes (all shipped)
 
 - **Content library named by creative, not room.** The 8 per-display "… sample
   poster" items were collapsed into **4 shared, creative-named** items (Built for

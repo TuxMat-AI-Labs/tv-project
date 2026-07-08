@@ -84,50 +84,60 @@ credential. The macOS keychain had cached a personal account (`diazcs`, no
 access), which 403'd. Fix: clear it with
 `printf "protocol=https\nhost=github.com\n\n" | git credential-osxkeychain erase`,
 then `git push` and enter the member username + a **PAT** (Contents: Read/write on
-this repo) as the password. Everything through `3a51f90` is pushed to `main`.
+this repo) as the password. Everything through `c55b942` is pushed to `main`.
 
-## ✅ FIXED (this session): white border on TV output — was a real CSS bug, not zoom/camera
+## ✅ FIXED (this session): white border on TV output — root cause was `fixed` vs `absolute`
 
 User reported new-device symptoms: a visible white border/artifact, and a
-stuck/non-playing video. Initial theory (browser-chrome zoom + camera moiré,
-see commit `fa2f282`) was **wrong** — user tried the Refresh-TV button and
-resetting zoom to 100%, neither fixed it, and critically: **the white border
-was still visible even zoomed out to 50%**, proving it was a real, always-
-present rendering gap, not a photo/zoom illusion.
+stuck/non-playing video. Two theories were tried and superseded before
+landing on the real one — kept here so the reasoning trail is clear:
 
-**Actual root cause, found by inspecting `app/globals.css`:** the Hub's
-`body` background (`#faf9f6` warm near-white + a gold radial gradient) was
-**never overridden on TV output routes**. `/tv` and `/display/[slug]` render
-their black `fixed inset-0` player on top of it, which normally covers it
-perfectly — but any sub-pixel rounding gap in that layer (the exact class of
-zoom-driven viewport mismatch `<ViewportLock>` was already built to handle,
-just for the scrollbar case) revealed a sliver of that near-white body
-underneath instead of black. Worse at extreme zoom because rounding error
-grows relative to a smaller effective viewport — consistent with every
-symptom reported.
-
-**Fix (commit `3a51f90`):** `html.tv-output` (the class `<ViewportLock>`
-toggles, scoped to `/tv` + `/display/[slug]` only) now forces
-`background: #000; background-image: none` on `html`/`body`, so any such gap
-reveals black — invisible. Verified: computed `body` background is
-`rgb(0,0,0)` with no gradient on `/display/[slug]`, and the Hub route is
-unaffected (still warm off-white with its gradient). `tsc`/lint/build clean.
+1. **First theory (commit `fa2f282`, wrong):** browser-chrome zoom + camera
+   moiré. Disproved — the user tried Refresh-TV and resetting zoom to 100%,
+   neither fixed it.
+2. **Second theory (commit `3a51f90`, incomplete):** the Hub's warm
+   near-white `body` background was never overridden on TV routes, so a
+   sub-pixel gap in the player's `fixed inset-0` layer revealed it. This
+   *masked* the symptom (forced `body` black on TV routes) but the user
+   correctly pushed back: "there should not be any gaps, that is the point"
+   — recoloring behind a gap isn't the same as closing it, and the border
+   persisting even at **50% zoom** proved it was a real, always-present
+   mismatch, not fractional rounding noise that a color trick happens to hide.
+3. **Actual root cause (commit `c55b942`, the real fix):** every full-bleed
+   TV-output layer used `position: fixed`. On several embedded/Smart-TV
+   browser engines — Samsung Internet's "page zoom" included — `fixed`
+   elements are sized against the ***visual* viewport**, while `html`/`body`
+   and `position: absolute` elements size against the ***layout* viewport**.
+   Under non-100% page zoom those two differ by a fraction of a pixel,
+   **independent of the zoom percentage** — exactly matching "still there at
+   50%." Changed every full-bleed layer (`app/tv/page.tsx`,
+   `app/display/[slug]/layout.tsx`, `Screensaver`, `InactiveScreen`,
+   `PairingScreen`, `TvClient`'s loading state) from `fixed` to `absolute`,
+   which ties sizing to the layout viewport and eliminates the mismatch
+   outright. `PlaylistPlayer`'s inner layer already used `absolute`, so it
+   was never part of the problem. Verified in preview: the outer layer's
+   bounding rect has **exactly 0 on all four edges** against the viewport at
+   a non-default size, and the pairing screen, playlist video, and
+   screensaver all still render full-bleed correctly.
+   `ViewportLock.tsx`'s and `globals.css`'s comments were updated to describe
+   this accurately — the black-background override from step 2 stays in
+   place as defense-in-depth, not as the fix itself.
 
 **Next session: confirm on real hardware after this deploy lands.**
-1. Check the affected TV(s) **without** doing anything else first (no
-   disconnect/reconnect, no re-pairing) — a plain page reload (or the
-   **Refresh TV** button) should now show a clean black edge at any zoom
-   level. If confirmed, the "disconnect and reconnect via `/tv`" plan
-   discussed earlier is unnecessary — this was a CSS bug, not a
-   pairing/device-identity problem.
+1. Check the affected TV(s) with a plain reload (or the **Refresh TV**
+   button) — no disconnect/reconnect or re-pairing needed; this was always a
+   CSS bug, not a pairing/device-identity problem. Confirm the border is
+   gone at every zoom level, including the problem device's default zoom.
 2. Separately confirm whether the **video** now plays — that symptom's
-   working theory (stale JS bundle predating `5f90011`'s video-loop fix,
-   picked up by a reload) was never actually confirmed either way in this
-   session. Check it independently of the border fix.
-3. If a white border is *still* visible after this deploy + a reload, it
-   means there's a second contributing gap somewhere (e.g. inside
-   `TVFrame`/`DisplayPlayer` itself rather than at the document level) —
-   screenshot/video the exact edge it appears on for further narrowing.
+   working theory (stale JS bundle predating `5f90011`'s earlier video-loop
+   fix, picked up by a reload) was never actually confirmed either way.
+   Check it independently of the border fix.
+3. If a border is *still* visible after this deploy + a reload on the actual
+   hardware, get a video (not just a photo — camera moiré is a real
+   possibility for a *secondary*, purely-visual artifact) of the exact edge
+   it appears on. At that point the fixed/absolute fix would have ruled out
+   the document-level cause, so look inside `PlaylistPlayer`'s `object-fit`
+   handling or `TVFrame` next.
 
 ## Latest session — content library expansion, video pipeline, icon/preview fixes (all shipped)
 

@@ -5,11 +5,16 @@ import { useEffect } from "react";
 /**
  * Locks the document to the viewport while a TV output route (`/display/[slug]`,
  * `/tv`) is mounted, then restores it on unmount so the scrollable Hub is
- * unaffected. The player already fills the screen with a `fixed inset-0` layer,
- * but on a zoomed Samsung/Tizen browser that fixed layer can be sized to the
- * visual viewport and end up a hair taller than the layout viewport, surfacing a
- * stray scrollbar. Forcing `overflow: hidden` on <html>/<body> guarantees no
- * zoom level can produce one. Renders nothing.
+ * unaffected. Some Smart TV browsers (Samsung Internet's "page zoom" included)
+ * size `position: fixed` elements against the *visual* viewport while `html`/
+ * `body` size against the *layout* viewport — under non-100% zoom those two can
+ * differ by a fraction of a pixel, which used to both surface a stray scrollbar
+ * and let a sliver of the (light) Hub background peek through at the edge of an
+ * otherwise full-bleed black player. Every full-bleed TV-output layer now uses
+ * `position: absolute` instead of `fixed` (ties sizing to the layout viewport,
+ * immune to that mismatch); this component's `overflow: hidden` on <html>/
+ * <body> remains as a second guarantee against any residual scrollbar. Renders
+ * nothing.
  */
 export function ViewportLock() {
   useEffect(() => {

@@ -49,13 +49,14 @@ body {
 }
 
 /* TV output routes (/display/[slug], /tv) lock the document so no browser zoom
-   level can surface a stray scrollbar — the player already fills the screen with
-   a fixed inset-0 layer. Toggled by <ViewportLock> (components/display), so the
-   scrollable Hub is unaffected. Also forces the document background to black:
-   the Hub's warm near-white `body` background (above) otherwise sits directly
-   behind the player, so any sub-pixel rounding gap in that fixed layer — e.g.
-   from a non-100% browser zoom sizing it a hair off from the layout viewport —
-   reveals a visible near-white sliver at the edge instead of black. */
+   level can surface a stray scrollbar. Toggled by <ViewportLock>
+   (components/display), so the scrollable Hub is unaffected. Also forces the
+   document background to black as a second guarantee: the real fix for the
+   "white border at the edge" bug was switching every full-bleed TV-output
+   layer from `position: fixed` to `absolute` (see ViewportLock.tsx for why
+   `fixed` was the actual gap) — this background override just ensures that if
+   any future layer is ever misconfigured, it fails black instead of exposing
+   the Hub's warm near-white background underneath. */
 html.tv-output,
 html.tv-output body {
   overflow: hidden;

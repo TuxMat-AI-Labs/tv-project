@@ -6,7 +6,7 @@ export const metadata = {
 
 export default function DisplayLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="fixed inset-0 overflow-hidden bg-black">
+    <div className="absolute inset-0 overflow-hidden bg-black">
       <ViewportLock />
       {children}
     </div>

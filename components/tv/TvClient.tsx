@@ -49,7 +49,7 @@ export function TvClient() {
     };
   }, []);
 
-  if (!state) return <div className="fixed inset-0 bg-black" />;
+  if (!state) return <div className="absolute inset-0 bg-black" />;
 
   if (state.status === "paired") {
     return <DisplayPlayer slug={state.slug} />;

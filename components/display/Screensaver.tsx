@@ -14,7 +14,7 @@ const COLORS = ["#e5c770", "#5ed6d6", "#aa8dec", "#f0a6c8", "#dfba7c", "#7ec8ff"
  */
 export function Screensaver() {
   return (
-    <div className="fixed inset-0 overflow-hidden bg-black">
+    <div className="absolute inset-0 overflow-hidden bg-black">
       <LavaLamp motion="drift" colors={COLORS} blur={72} />
     </div>
   );

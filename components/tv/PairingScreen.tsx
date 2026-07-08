@@ -24,7 +24,7 @@ export function PairingScreen({
   }
 
   return (
-    <div className="fixed inset-0 flex flex-col items-center justify-center overflow-hidden bg-black px-8 text-center text-white">
+    <div className="absolute inset-0 flex flex-col items-center justify-center overflow-hidden bg-black px-8 text-center text-white">
       {/* Soft ambient gold glow so the screen reads as premium, not a bare form. */}
       <div
         aria-hidden

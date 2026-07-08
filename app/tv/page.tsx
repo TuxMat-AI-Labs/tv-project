@@ -10,7 +10,7 @@ export const metadata = {
 // QR + code, paired screens auto-load their content.
 export default function TvPage() {
   return (
-    <div className="fixed inset-0 overflow-hidden bg-black">
+    <div className="absolute inset-0 overflow-hidden bg-black">
       <ViewportLock />
       <TvClient />
     </div>

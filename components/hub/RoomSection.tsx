@@ -1,3 +1,4 @@
+import { ActivateCarouselButton } from "@/components/hub/ActivateCarouselButton";
 import { DisplayCarousel } from "@/components/hub/DisplayCarousel";
 import type { HubRoomStatus } from "@/lib/hub/types";
 
@@ -12,6 +13,7 @@ export function RoomSection({ room, tileSize = "default" }: { room: HubRoomStatu
         displays={room.displays}
         tileSize={tileSize}
         emptyText="No displays in this room yet."
+        titleAction={<ActivateCarouselButton roomId={room.id} />}
       />
     </section>
   );

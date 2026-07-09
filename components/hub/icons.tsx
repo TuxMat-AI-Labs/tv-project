@@ -42,6 +42,18 @@ export function AdjustIcon() {
   );
 }
 
+// Three overlapping cards nudged rightward — reads as "cycle/slide through
+// multiple items", distinct from the two-way SwapIcon (replace with one item).
+export function CarouselIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4">
+      <rect x="2" y="6" width="11" height="14" rx="2" opacity="0.4" />
+      <rect x="7" y="4" width="11" height="14" rx="2" opacity="0.7" />
+      <rect x="12" y="2" width="10" height="14" rx="2" />
+    </svg>
+  );
+}
+
 export function RefreshIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5">

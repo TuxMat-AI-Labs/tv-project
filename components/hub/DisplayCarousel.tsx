@@ -17,12 +17,14 @@ export function DisplayCarousel({
   displays,
   tileSize = "default",
   emptyText = "No displays.",
+  titleAction,
 }: {
   title?: string;
   online?: boolean;
   displays: HubDisplayStatus[];
   tileSize?: "default" | "large";
   emptyText?: string;
+  titleAction?: React.ReactNode;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
@@ -79,6 +81,7 @@ export function DisplayCarousel({
             <h2 className="flex items-center gap-2.5 text-lg font-semibold tracking-wide text-foreground uppercase">
               {title}
               {online !== undefined && <StatusCircle online={online} />}
+              {titleAction}
             </h2>
           ) : (
             <span />

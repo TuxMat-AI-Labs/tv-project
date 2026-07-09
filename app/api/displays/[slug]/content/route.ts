@@ -14,6 +14,13 @@ const NO_STORE_HEADERS = { "Cache-Control": "no-store" };
 
 const DEFAULT_IMAGE_DURATION_SEC = 10;
 
+// Kill switch for the synchronized video-wall carousel. Disabled for now while
+// the toggle-off behavior is sorted out — with this false, every display
+// serves its normal scheduled content regardless of a room's carouselActive
+// flag, so any room stuck "on" reverts on its next poll. Flip back to true to
+// re-enable (the button in RoomSection is also hidden while this is off).
+const CAROUSEL_ENABLED = false;
+
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
 
@@ -40,7 +47,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ slu
   };
 
   // Synchronized video-wall carousel takes precedence over the normal schedule.
-  if (display.active && display.room.carouselActive && display.room.carouselStartedAt) {
+  if (CAROUSEL_ENABLED && display.active && display.room.carouselActive && display.room.carouselStartedAt) {
     const tiles = await buildRoomRing(display.roomId);
     const carousel = resolveRoomCarousel(tiles, display.id, display.room.carouselStartedAt, now);
     if (carousel) {

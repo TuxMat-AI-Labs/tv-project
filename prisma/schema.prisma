@@ -28,6 +28,14 @@ enum ContentFit {
   FILL
 }
 
+// Global key/value settings (e.g. the chosen screensaver style). One row per
+// key; app-wide, not per-display.
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
 model User {
   id            String   @id @default(cuid())
   entraObjectId String   @unique

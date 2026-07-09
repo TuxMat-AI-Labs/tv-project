@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveContentForDisplay, type PlaylistItem } from "@/lib/display/resolveContentForDisplay";
 import { resolveRoomCarousel, type CarouselTile } from "@/lib/display/resolveRoomCarousel";
+import { SCREENSAVER_STYLE_SETTING_KEY, coerceScreensaverVariant } from "@/lib/screensaver";
 
 export const dynamic = "force-dynamic";
 
@@ -64,11 +65,23 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ slu
   }
 
   const resolved = resolveContentForDisplay(display, now);
+
+  if (resolved.mode === "screensaver") {
+    const screensaverStyle = await getScreensaverStyle();
+    return NextResponse.json({ mode: "screensaver", screensaverStyle, ...base }, { headers: NO_STORE_HEADERS });
+  }
+
   const finalResolved =
     FREEZE_TO_SINGLE_SLIDE && resolved.mode === "playlist" && resolved.playlist.length > 1
       ? { mode: "playlist" as const, playlist: resolved.playlist.slice(0, 1) }
       : resolved;
   return NextResponse.json({ ...finalResolved, ...base }, { headers: NO_STORE_HEADERS });
+}
+
+/** The globally-selected screensaver style (falls back to the default). */
+async function getScreensaverStyle() {
+  const row = await prisma.setting.findUnique({ where: { key: SCREENSAVER_STYLE_SETTING_KEY } });
+  return coerceScreensaverVariant(row?.value);
 }
 
 /**

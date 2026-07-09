@@ -1,16 +1,20 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { type ScreensaverVariant, DEFAULT_SCREENSAVER_VARIANT } from "@/lib/screensaver";
 
 /**
  * Full-screen pixel massager: an isometric voxel city that never holds still,
  * washed by a full-spectrum rainbow sweep. Every column of blocks is in
  * constant vertical motion — a per-column bob (unique phase/frequency) layered
- * on a slow "build-out" drift of its target height — so no block, edge, or
- * seam ever sits at a fixed pixel for more than a frame. Combined with the
- * rainbow multiply (every pixel cycles the complete hue range every
- * HUE_LOOP_SEC), both the geometry AND the color of every pixel are always
- * changing: true burn-in prevention, not decoration.
+ * on a slow "build-out" drift of its target height, plus a slow global sway of
+ * the whole field — so no block, edge, or seam ever sits at a fixed pixel for
+ * more than a frame. Combined with the rainbow multiply (every pixel cycles the
+ * complete hue range every hueLoopSec), both the geometry AND the color of
+ * every pixel are always changing: true burn-in prevention, not decoration.
+ *
+ * The `variant` prop only changes personality (block scale, density, height,
+ * speed, hue-loop length) — the massage guarantee holds for all of them.
  *
  * Built for days of unattended runtime on Samsung Tizen TV browsers:
  * - ONE canvas rendered at a low internal resolution and CSS-scaled full-bleed
@@ -29,18 +33,29 @@ import { useEffect, useRef } from "react";
  * visual-vs-layout-viewport fix).
  */
 
-// --- Tuning ------------------------------------------------------------
-const INTERNAL_LONG = 384; // internal canvas size along the longer screen axis
+type VariantConfig = {
+  internalLong: number; // internal canvas px along the longer screen axis
+  tile: number; // scale factor on the base tile/block size (blockiness)
+  maxH: number; // tallest tower, in blocks
+  hueLoopSec: number; // seconds for every pixel to sweep the full spectrum
+  speed: number; // multiplier on bob + sway rates (build/motion tempo)
+};
+
+const VARIANTS: Record<ScreensaverVariant, VariantConfig> = {
+  skyline: { internalLong: 384, tile: 1.0, maxH: 12, hueLoopSec: 40, speed: 1.0 },
+  metropolis: { internalLong: 468, tile: 0.72, maxH: 16, hueLoopSec: 26, speed: 1.55 },
+  horizon: { internalLong: 300, tile: 1.5, maxH: 9, hueLoopSec: 60, speed: 0.6 },
+};
+
+// --- Fixed tuning (variant-independent) --------------------------------
 const RAINBOW_CELL = 4; // rainbow field resolution = internal / this (blocky color cells)
-const HUE_LOOP_SEC = 40; // every pixel sweeps the full spectrum once per loop
 const HUE_BANDS = 20; // quantized hue steps (blockier rainbow)
 const FRAME_MS = 33; // ~30 fps cap
 
-// Isometric geometry, in internal pixels.
-const TILE_W = 24;
-const TILE_H = 12;
-const BLOCK_H = 8;
-const MAX_H = 12;
+// Base isometric geometry, in internal pixels (scaled by the variant's `tile`).
+const BASE_TILE_W = 24;
+const BASE_TILE_H = 12;
+const BASE_BLOCK_H = 8;
 
 // Grayscale luminance per surface (multiplied by the rainbow).
 const LUM_TOP = 235;
@@ -79,14 +94,14 @@ function hash(a: number, b: number, c: number): number {
   return x - Math.floor(x);
 }
 
-function pickTarget(u: number, v: number, epoch: number): number {
+function pickTarget(u: number, v: number, epoch: number, maxH: number): number {
   const district = hash(u >> 2, v >> 2, epoch); // low-freq: downtown vs. low-rise
   const jitter = hash(u, v, epoch * 7 + 1);
-  const span = MAX_H - MIN_BASE - BOB_AMP_MAX;
+  const span = maxH - MIN_BASE - BOB_AMP_MAX;
   return MIN_BASE + BOB_AMP_MAX + span * district * district * (0.35 + jitter * 0.9);
 }
 
-export function PixelMassager() {
+export function PixelMassager({ variant = DEFAULT_SCREENSAVER_VARIANT }: { variant?: ScreensaverVariant }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -101,6 +116,16 @@ export function PixelMassager() {
     const rainbowCanvas = document.createElement("canvas");
     const rainbowCtx = rainbowCanvas.getContext("2d", { alpha: false });
     if (!rainbowCtx) return;
+
+    // Per-variant geometry/tempo.
+    const cfg = VARIANTS[variant] ?? VARIANTS[DEFAULT_SCREENSAVER_VARIANT];
+    const INTERNAL_LONG = cfg.internalLong;
+    const TILE_W = BASE_TILE_W * cfg.tile;
+    const TILE_H = BASE_TILE_H * cfg.tile;
+    const BLOCK_H = BASE_BLOCK_H * cfg.tile;
+    const MAX_H = cfg.maxH;
+    const HUE_LOOP_SEC = cfg.hueLoopSec;
+    const SPEED = cfg.speed;
 
     // Quantized hue band → RGB lookup (full saturation; multiply darkens).
     const hueLut = new Uint8Array(HUE_BANDS * 3);
@@ -174,11 +199,11 @@ export function PixelMassager() {
           const u = uOf(v, k);
           const idx = v * uCols + k;
           epochs[idx] = Math.floor(hash(u, v, 0) * 8);
-          baseTarget[idx] = pickTarget(u, v, epochs[idx]);
+          baseTarget[idx] = pickTarget(u, v, epochs[idx], MAX_H);
           baseCur[idx] = MIN_BASE * hash(u, v, 3); // rise into place from the ground on load
           hold[idx] = HOLD_MIN + hash(u, v, 99) * (HOLD_MAX - HOLD_MIN);
           bobAmp[idx] = BOB_AMP_MIN + hash(u, v, 5) * (BOB_AMP_MAX - BOB_AMP_MIN);
-          bobFreq[idx] = BOB_FREQ_MIN + hash(u, v, 7) * (BOB_FREQ_MAX - BOB_FREQ_MIN);
+          bobFreq[idx] = (BOB_FREQ_MIN + hash(u, v, 7) * (BOB_FREQ_MAX - BOB_FREQ_MIN)) * SPEED;
           bobPhase[idx] = hash(u, v, 11) * TAU;
         }
       }
@@ -193,7 +218,7 @@ export function PixelMassager() {
     // Advance the structural (build-out) layer. The bob is evaluated per frame
     // in draw, so it moves continuously regardless of this cadence.
     function update(dtSec: number) {
-      const ease = Math.min(1, dtSec * EASE_RATE);
+      const ease = Math.min(1, dtSec * EASE_RATE * SPEED);
       for (let v = 0; v < vRows; v++) {
         for (let k = 0; k < uCols; k++) {
           const idx = v * uCols + k;
@@ -203,7 +228,7 @@ export function PixelMassager() {
             if (hold[idx] <= 0) {
               const u = uOf(v, k);
               epochs[idx]++;
-              baseTarget[idx] = pickTarget(u, v, epochs[idx]);
+              baseTarget[idx] = pickTarget(u, v, epochs[idx], MAX_H);
               hold[idx] = HOLD_MIN + hash(u, v, epochs[idx] * 13 + 5) * (HOLD_MAX - HOLD_MIN);
             }
           }
@@ -219,8 +244,8 @@ export function PixelMassager() {
       const HH = TILE_H / 2;
       // Global sway drifts the whole field; the extra margin from setup() keeps
       // it full-bleed. Start rows well above the top so towers always cover it.
-      const ox = iw / 2 + SWAY_X * Math.sin(tSec * SWAY_FREQ_X);
-      const oy = -TILE_H * 2 + SWAY_Y * Math.sin(tSec * SWAY_FREQ_Y);
+      const ox = iw / 2 + SWAY_X * Math.sin(tSec * SWAY_FREQ_X * SPEED);
+      const oy = -TILE_H * 2 + SWAY_Y * Math.sin(tSec * SWAY_FREQ_Y * SPEED);
       ctx!.fillStyle = "#000";
       ctx!.fillRect(0, 0, iw, ih);
 
@@ -346,7 +371,7 @@ export function PixelMassager() {
       cancelAnimationFrame(raf);
       resizeObserver.disconnect();
     };
-  }, []);
+  }, [variant]);
 
   return (
     <div ref={containerRef} className="absolute inset-0 overflow-hidden bg-black">

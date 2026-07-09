@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { TVFrame } from "@/components/hub/TVFrame";
-import { LavaLamp } from "@/components/screensaver/LavaLamp";
+import { PixelMassager } from "@/components/screensaver/PixelMassager";
 import { PencilIcon, SwapIcon, HealthIcon, AdjustIcon, RefreshIcon } from "@/components/hub/icons";
 import { Wordmark } from "@/components/brand/Wordmark";
 
@@ -108,7 +108,7 @@ export function DisplayDetailView({
  */
 function LivePreview({ display }: { display: DisplayDetail }) {
   if (display.screensaverOverride === true) {
-    return <LavaLamp colors={["#e5c770", "#5ed6d6", "#aa8dec", "#f0a6c8"]} blur={30} />;
+    return <PixelMassager />;
   }
 
   const item = display.assignments[0]?.contentItem;

@@ -42,7 +42,7 @@ export function DisplayPlayer({ slug }: { slug: string }) {
   }
 
   if (data.mode === "screensaver") {
-    return <Screensaver />;
+    return <Screensaver variant={data.screensaverStyle} />;
   }
 
   return <InactiveScreen />;

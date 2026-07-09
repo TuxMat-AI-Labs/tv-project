@@ -3,12 +3,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { PlaylistItem } from "@/lib/display/resolveContentForDisplay";
 import type { CarouselPayload } from "@/lib/display/resolveRoomCarousel";
+import type { ScreensaverVariant } from "@/lib/screensaver";
 
 export type DisplayContentResponse = {
   mode: "playlist" | "screensaver" | "inactive" | "carousel";
   playlist?: PlaylistItem[];
   carousel?: CarouselPayload;
   contentFit?: "COVER" | "CONTAIN" | "FILL";
+  screensaverStyle?: ScreensaverVariant;
   reloadRequestedAt?: string | null;
   serverTime: string;
 };

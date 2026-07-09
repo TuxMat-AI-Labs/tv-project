@@ -58,6 +58,50 @@ stop-gaps are currently live and BOTH must be understood before re-enabling:
   logic exists and was verified in dev (identical ring/tick/countdown across
   displays), but the whole flow needs a cleaner on/off story.
 
+## 🟡 NEXT UP: proper full-screen pixel massager (rainbow sweep / "Minecraft city")
+
+Replace the current overnight screensaver with a **true pixel massager** — a
+burn-in-prevention animation that exercises *every* pixel and subpixel and runs
+**continuously for the entire scheduled screensaver window** (no static frame,
+ever, not even briefly).
+
+**The visual the owner wants:**
+- A **rainbow sweep across the entire screen on a constant loop** — a full
+  hue-spectrum wave moving across the whole panel so, over each loop, every
+  pixel passes through the complete color range (exercises all subpixels).
+- Rendered in a **blocky, voxel/pixel-art aesthetic — "like a Minecraft city
+  being built out"**: the screen builds up out of cubes/blocks that assemble
+  into a cityscape (towers rising block-by-block, isometric feel), then keeps
+  evolving / rebuilding on a loop, colored by the rainbow sweep. The *build-out*
+  motion is the personality; the rainbow is what does the pixel exercise.
+
+**Where it plugs in:**
+- The thing rendered for `mode: "screensaver"` is `components/display/Screensaver.tsx`
+  (today it's the CSS `LavaLamp` from `components/screensaver/LavaLamp.tsx`).
+  Build a new `PixelMassager` component and render it there — either replace
+  `LavaLamp` outright or make it a selectable screensaver "motion" (there's
+  already a half-wired screensaver picker; see the existing lava-lamp item
+  below and handoff #2).
+- Scheduling is already handled: `resolveContentForDisplay` returns
+  `mode: "screensaver"` overnight (`isWithinBusinessHours` in `lib/time.ts`) or
+  whenever `Display.screensaverOverride === true`. The massager just needs to
+  render for that whole window — so it must be a self-contained loop that runs
+  safely unattended for hours/days.
+
+**Requirements / gotchas:**
+- Full-bleed: `absolute inset-0`, black base, **no gaps or borders** — honor the
+  `fixed`→`absolute` full-bleed fix (commit `c55b942`) and the `ViewportLock`;
+  a massager with a hairline seam would defeat the purpose and reintroduce the
+  border bug.
+- Every pixel must move/change over the loop — no permanently-static region
+  (that's the whole point vs. a decorative screensaver).
+- Must run on **Samsung Tizen** TV browsers for days without leaking memory or
+  pegging CPU. Prefer a GPU-friendly approach: a single `<canvas>`/WebGL shader
+  for the rainbow field + blocky city, or CSS transforms — avoid thousands of
+  per-frame DOM nodes. Test sustained runtime, not just a 10s preview.
+- Use the TuxMat palette as an accent if desired, but a **full rainbow** is
+  required here (not just the brand 6-color set) so every hue is swept.
+
 ## Current state: LIVE in production
 
 - **App:** https://tuxdisplay.tuxmat.ai (Render web service `tuxdisplay`). Repo

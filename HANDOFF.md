@@ -37,12 +37,19 @@ stop-gaps are currently live and BOTH must be understood before re-enabling:
 
 **Cleanup required before turning either flag back:**
 - **Purge the stray assignments on prod.** Each display should have only the
-  single graphic it's meant to show. There's no admin UI to bulk-clear
-  assignments; do it via a one-off script (note: Prisma 7 needs the pg driver
-  adapter — import the app's configured client from `lib/prisma.ts` via `tsx`,
-  a bare `new PrismaClient()` throws) or SQL against `Assignment`. Verify each
-  display's `/api/displays/<slug>/content` returns a 1-item playlist that is
-  the *intended* creative, then set `FREEZE_TO_SINGLE_SLIDE = false`.
+  single graphic it's meant to show. **The script exists and is tested:**
+  `scripts/cleanup-assignments.ts` — audit by default, `--apply` to delete.
+  It keeps each display's lowest-`sortOrder` assignment (exactly the item
+  `FREEZE_TO_SINGLE_SLIDE` has been showing) and deletes the rest. Verified
+  locally end-to-end by injecting the same whole-library-per-display shape the
+  bug created and purging it. Run it against prod with the **external**
+  connection string from Render's `tuxdisplay-db` page:
+  `DATABASE_URL="<render external url>" npx tsx scripts/cleanup-assignments.ts`
+  (audit first, then `--apply` — get the owner's go-ahead before applying).
+  Local `.env` only holds the local dev DB, so `--env-file=.env` can't touch prod.
+  Afterward verify each display's `/api/displays/<slug>/content` returns a
+  1-item playlist that is the *intended* creative, then set
+  `FREEZE_TO_SINGLE_SLIDE = false`.
 - **Fix the carousel toggle-off before re-enabling** (`CAROUSEL_ENABLED`). The
   reported symptom was the toggle not turning the carousel off. Suspect: the
   hub dashboard polls `/api/hub/status` every 10s and re-renders; the button
@@ -58,12 +65,33 @@ stop-gaps are currently live and BOTH must be understood before re-enabling:
   logic exists and was verified in dev (identical ring/tick/countdown across
   displays), but the whole flow needs a cleaner on/off story.
 
-## 🟡 NEXT UP: proper full-screen pixel massager (rainbow sweep / "Minecraft city")
+## 🟢 BUILT (this session): full-screen pixel massager (rainbow sweep / "Minecraft city")
 
-Replace the current overnight screensaver with a **true pixel massager** — a
-burn-in-prevention animation that exercises *every* pixel and subpixel and runs
-**continuously for the entire scheduled screensaver window** (no static frame,
-ever, not even briefly).
+**Shipped to the codebase, verified in dev preview (landscape + portrait), not
+yet deployed.** `components/screensaver/PixelMassager.tsx` — a single low-res
+canvas CSS-scaled full-bleed (`image-rendering: pixelated`): a dense isometric
+voxel city where **every block moves entirely** — a per-column vertical bob
+(unique phase/frequency, `bobFreq`/`bobPhase`) layered on a slow build-out drift
+of its target height (`baseCur` easing toward `baseTarget`), *plus* a slow
+global sway of the whole field (`SWAY_*`, both axes, long non-harmonic periods)
+so not even the ground grid is anchored. Grayscale
+city redrawn *every frame* (it's always moving), multiplied by a small
+quantized rainbow hue field so **every pixel sweeps the full spectrum every
+40 s**. No flat ground — `MIN_BASE` keeps even the bob trough above the floor so
+no block ever holds still (owner requirement: "all the blocks have to move").
+Verified in preview via a vertical-gradient edge map (isolates geometry from the
+smooth color field): the block edges fully relocate frame-to-frame (a static
+city would score ~0). Fixed typed arrays, no per-frame allocations, heap flat at
+~13 MB, ~30 fps cap, `absolute` not `fixed` (per `c55b942`).
+`components/display/Screensaver.tsx` now renders it (LavaLamp remains for the
+`/hub/screensaver` picker previews). **Still to do on real hardware:** soak it
+on a Samsung Tizen TV overnight — the per-frame full redraw (~600 columns at the
+low internal res) is the main cost to watch; if a TV struggles, raise
+`INTERNAL_LONG`'s divisor (fewer/bigger tiles) or lower the fps cap.
+
+Original spec (kept for reference): a burn-in-prevention animation that
+exercises *every* pixel and subpixel and runs **continuously for the entire
+scheduled screensaver window** (no static frame, ever, not even briefly).
 
 **The visual the owner wants:**
 - A **rainbow sweep across the entire screen on a constant loop** — a full

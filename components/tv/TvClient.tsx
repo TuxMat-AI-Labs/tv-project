@@ -31,7 +31,9 @@ export function TvClient() {
   const [state, setState] = useState<RegisterResponse | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stateRef = useRef(state);
-  stateRef.current = state;
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
 
   // Runs once on mount, independent of the poll loop below, so it fires even
   // if the very first render is the broken/unstyled one this is guarding

@@ -39,8 +39,8 @@ export function CarouselPlayer({
   onCurrentItemChange?: (id: string | null) => void;
 }) {
   const [tick, setTick] = useState(carousel.tick);
+  // Every setTick below also writes tickRef, so the ref never goes stale.
   const tickRef = useRef(tick);
-  tickRef.current = tick;
 
   // Preload every ring image once so an incoming slide never flashes blank
   // mid-push (the whole point is no empty gap between one ad and the next).
@@ -58,6 +58,7 @@ export function CarouselPlayer({
   // tick to the server's and re-scheduling the next push from the fresh
   // server-derived delay — so long-run drift is corrected each beat.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: snap the local ticker to the server beat on every poll
     setTick(carousel.tick);
     tickRef.current = carousel.tick;
 

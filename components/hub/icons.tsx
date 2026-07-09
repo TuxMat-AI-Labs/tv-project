@@ -42,14 +42,19 @@ export function AdjustIcon() {
   );
 }
 
-// Three overlapping cards nudged rightward — reads as "cycle/slide through
-// multiple items", distinct from the two-way SwapIcon (replace with one item).
+// A fairground carousel/merry-go-round — tent roof, center pole, flared
+// support struts down to the platform — reads as "carousel" literally rather
+// than as a generic "cycle through items" glyph.
 export function CarouselIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4">
-      <rect x="2" y="6" width="11" height="14" rx="2" opacity="0.4" />
-      <rect x="7" y="4" width="11" height="14" rx="2" opacity="0.7" />
-      <rect x="12" y="2" width="10" height="14" rx="2" />
+      <circle cx="12" cy="2.4" r="0.9" fill="currentColor" stroke="none" />
+      <path d="M12 3.3V6" strokeLinecap="round" />
+      <path d="M3 9c1.5-3.2 6-4.7 9-4.7S19.5 5.8 21 9" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M12 6v13" strokeLinecap="round" />
+      <path d="M6 9l1 10" strokeLinecap="round" />
+      <path d="M18 9l-1 10" strokeLinecap="round" />
+      <ellipse cx="12" cy="20" rx="9" ry="1.6" />
     </svg>
   );
 }

@@ -13,6 +13,51 @@ full source, git repo, `node_modules`, committed assets — is at
 The Claude_Preview MCP is rooted at the stub, so its `.claude/launch.json`
 (`tuxdisplay-dev`) `cd`s into the real project before `npm run dev`.
 
+## 🔴 NEXT UP: carousel disabled + emergency freeze active — needs cleanup + rethink
+
+The synchronized video-wall carousel was built, shipped, then **disabled in
+prod** after it "wouldn't turn off" and TVs kept rotating. Two independent
+stop-gaps are currently live and BOTH must be understood before re-enabling:
+
+1. **`CAROUSEL_ENABLED = false`** in `app/api/displays/[slug]/content/route.ts`
+   — the synchronized carousel (rotate each display's home graphic to the next
+   on a shared server beat; see `lib/display/resolveRoomCarousel.ts` +
+   `components/display/CarouselPlayer.tsx`). With this false the content route
+   ignores a room's `carouselActive` flag entirely. The activate button is also
+   hidden from `components/hub/RoomSection.tsx` (commented, with re-enable note).
+
+2. **`FREEZE_TO_SINGLE_SLIDE = true`** in the same route — the ACTUAL cause of
+   "still rotating after the carousel was disabled." The **first** version of
+   the activate-carousel button (since replaced) stuffed the *entire content
+   library* into **every display** as a multi-item playlist. Those stray
+   assignments persist in the prod DB, so the normal `PlaylistPlayer` kept
+   cycling them (~10s/item) even with the carousel off. This flag collapses any
+   playlist to its first item server-side so every display shows ONE static
+   graphic. It's a blunt stop-gap, not a fix.
+
+**Cleanup required before turning either flag back:**
+- **Purge the stray assignments on prod.** Each display should have only the
+  single graphic it's meant to show. There's no admin UI to bulk-clear
+  assignments; do it via a one-off script (note: Prisma 7 needs the pg driver
+  adapter — import the app's configured client from `lib/prisma.ts` via `tsx`,
+  a bare `new PrismaClient()` throws) or SQL against `Assignment`. Verify each
+  display's `/api/displays/<slug>/content` returns a 1-item playlist that is
+  the *intended* creative, then set `FREEZE_TO_SINGLE_SLIDE = false`.
+- **Fix the carousel toggle-off before re-enabling** (`CAROUSEL_ENABLED`). The
+  reported symptom was the toggle not turning the carousel off. Suspect: the
+  hub dashboard polls `/api/hub/status` every 10s and re-renders; the button
+  holds local optimistic state (`components/hub/ActivateCarouselButton.tsx`)
+  that can fight a stale poll. Make hub status authoritative for the button
+  state and confirm the off-write (`carouselActive=false`, `carouselStartedAt`
+  cleared) actually sticks. All carousel code (resolver, player, toggle route
+  `app/api/admin/rooms/[id]/activate-carousel`, schema cols `Room.carouselActive`
+  / `carouselStartedAt`, migration `20260709160000_add_room_carousel`) is intact.
+- **Rethink the mechanic itself** per the owner: the carousel should rotate each
+  display's single home graphic to the neighbor, all sliding + landing together
+  (Display 2→1, 3→2, 4→3, 1→last), NOT cycle a library on each screen. That v2
+  logic exists and was verified in dev (identical ring/tick/countdown across
+  displays), but the whole flow needs a cleaner on/off story.
+
 ## Current state: LIVE in production
 
 - **App:** https://tuxdisplay.tuxmat.ai (Render web service `tuxdisplay`). Repo

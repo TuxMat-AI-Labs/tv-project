@@ -42,19 +42,19 @@ export function AdjustIcon() {
   );
 }
 
-// A fairground carousel/merry-go-round — tent roof, center pole, flared
-// support struts down to the platform — reads as "carousel" literally rather
-// than as a generic "cycle through items" glyph.
-export function CarouselIcon() {
+// A filled center slide flanked by two receding bracket outlines on each
+// side — the classic "image carousel / slider" glyph. A solid rect in the
+// middle reads as "the current item"; the brackets read as peeking
+// neighbors. className is forwarded so ActivateCarouselButton can render two
+// copies at a fixed size for its seamless hover-scroll track.
+export function CarouselIcon({ className = "h-4 w-4" }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4">
-      <circle cx="12" cy="2.4" r="0.9" fill="currentColor" stroke="none" />
-      <path d="M12 3.3V6" strokeLinecap="round" />
-      <path d="M3 9c1.5-3.2 6-4.7 9-4.7S19.5 5.8 21 9" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M12 6v13" strokeLinecap="round" />
-      <path d="M6 9l1 10" strokeLinecap="round" />
-      <path d="M18 9l-1 10" strokeLinecap="round" />
-      <ellipse cx="12" cy="20" rx="9" ry="1.6" />
+    <svg viewBox="0 0 32 20" fill="none" className={className}>
+      <path d="M4 6H2V14H4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M10 4H8V16H10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <rect x="13" y="2" width="6" height="16" rx="0.6" fill="currentColor" />
+      <path d="M22 4H24V16H22" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M28 6H30V14H28" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }

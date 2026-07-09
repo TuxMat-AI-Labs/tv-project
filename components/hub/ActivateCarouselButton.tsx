@@ -38,11 +38,19 @@ export function ActivateCarouselButton({ roomId }: { roomId: string }) {
       aria-label={title}
       onClick={activate}
       disabled={state === "requesting"}
-      className={`glass-btn flex h-8 w-8 items-center justify-center rounded-full disabled:opacity-60 ${
+      className={`group flex h-6 w-8 items-center justify-center text-muted transition-colors hover:text-gold disabled:opacity-60 ${
         state === "error" ? "text-red-500" : ""
       }`}
     >
-      <CarouselIcon />
+      {/* Clipped one-glyph-wide window; the track inside is two glyphs wide
+          and scrolls left by exactly one glyph on hover — since both copies
+          are identical, the loop is seamless (see carousel-track-slide). */}
+      <span className="relative block h-4 w-6 overflow-hidden">
+        <span className="motion-reduce:animate-none flex h-4 w-12 animate-[carousel-track-slide_0.9s_linear_infinite] [animation-play-state:paused] group-hover:[animation-play-state:running]">
+          <CarouselIcon className="h-4 w-6 shrink-0" />
+          <CarouselIcon className="h-4 w-6 shrink-0" />
+        </span>
+      </span>
     </button>
   );
 }

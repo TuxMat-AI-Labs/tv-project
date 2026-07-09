@@ -30,6 +30,7 @@ export async function GET() {
       id: room.id,
       name: room.name,
       slug: room.slug,
+      carouselActive: room.carouselActive,
       displays: room.displays.map((display) => {
         const resolved = resolveContentForDisplay(display, now);
         // Online = an actually-synced TV is checking in: a paired device polling

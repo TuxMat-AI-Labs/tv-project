@@ -13,7 +13,7 @@ export function RoomSection({ room, tileSize = "default" }: { room: HubRoomStatu
         displays={room.displays}
         tileSize={tileSize}
         emptyText="No displays in this room yet."
-        titleAction={<ActivateCarouselButton roomId={room.id} />}
+        titleAction={<ActivateCarouselButton roomId={room.id} initialActive={room.carouselActive} />}
       />
     </section>
   );

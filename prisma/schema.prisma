@@ -49,6 +49,13 @@ model Room {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
+  // Video-wall carousel: when active, every display in the room rotates its
+  // "home" graphic to the next display on a shared, server-timed beat (all
+  // screens push and land together). `carouselStartedAt` is the anchor the
+  // rotation tick is computed from; null when the carousel is off.
+  carouselActive    Boolean   @default(false)
+  carouselStartedAt DateTime?
+
   displays Display[]
 }
 

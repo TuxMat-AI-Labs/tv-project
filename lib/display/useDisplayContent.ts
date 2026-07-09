@@ -2,10 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { PlaylistItem } from "@/lib/display/resolveContentForDisplay";
+import type { CarouselPayload } from "@/lib/display/resolveRoomCarousel";
 
 export type DisplayContentResponse = {
-  mode: "playlist" | "screensaver" | "inactive";
+  mode: "playlist" | "screensaver" | "inactive" | "carousel";
   playlist?: PlaylistItem[];
+  carousel?: CarouselPayload;
   contentFit?: "COVER" | "CONTAIN" | "FILL";
   reloadRequestedAt?: string | null;
   serverTime: string;
@@ -13,6 +15,10 @@ export type DisplayContentResponse = {
 
 const POLL_INTERVAL_MS = 15_000;
 const JITTER_MS = 3_000;
+// While the carousel is active, poll faster (and without the anti-herd jitter)
+// so each display re-anchors its local rotation timer to server time roughly
+// once per beat — that keeps the wall from drifting apart over a long session.
+const CAROUSEL_POLL_INTERVAL_MS = 6_000;
 const MAX_CONSECUTIVE_FAILURES = 10;
 
 function jitterFor(slug: string) {
@@ -34,12 +40,14 @@ export function useDisplayContent(slug: string) {
     let cancelled = false;
 
     async function poll() {
+      let carouselActive = false;
       try {
         const res = await fetch(`/api/displays/${slug}/content`, { cache: "no-store" });
         if (!res.ok && res.status !== 404) throw new Error(`status ${res.status}`);
         const json = (await res.json()) as DisplayContentResponse;
         if (cancelled) return;
         failuresRef.current = 0;
+        carouselActive = json.mode === "carousel";
 
         const reloadMarker = json.reloadRequestedAt ?? null;
         if (reloadBaselineRef.current === undefined) {
@@ -57,7 +65,10 @@ export function useDisplayContent(slug: string) {
         }
       } finally {
         if (!cancelled) {
-          timerRef.current = setTimeout(poll, POLL_INTERVAL_MS + jitterFor(slug));
+          const delay = carouselActive
+            ? CAROUSEL_POLL_INTERVAL_MS
+            : POLL_INTERVAL_MS + jitterFor(slug);
+          timerRef.current = setTimeout(poll, delay);
         }
       }
     }

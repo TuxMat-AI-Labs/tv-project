@@ -14,6 +14,7 @@ export type HubRoomStatus = {
   id: string;
   name: string;
   slug: string;
+  carouselActive: boolean;
   displays: HubDisplayStatus[];
 };
 

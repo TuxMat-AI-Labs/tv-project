@@ -4,49 +4,56 @@ import { useState } from "react";
 import { CarouselIcon } from "@/components/hub/icons";
 
 /**
- * Icon-only button next to a room's heading. Assigns the whole content
- * library to every display in the room as a playlist, so the existing
- * push-slide carousel (PlaylistPlayer) has multiple items to cycle through
- * for testing — see app/api/admin/rooms/[id]/activate-carousel/route.ts.
+ * Icon-only toggle next to a room's heading. Starts/stops the room's
+ * synchronized video-wall carousel (see
+ * app/api/admin/rooms/[id]/activate-carousel/route.ts). Turns green while
+ * active; the slider glyph scrolls continuously when active, and on hover
+ * when idle.
  */
-export function ActivateCarouselButton({ roomId }: { roomId: string }) {
-  const [state, setState] = useState<"idle" | "requesting" | "done" | "error">("idle");
+export function ActivateCarouselButton({ roomId, initialActive }: { roomId: string; initialActive: boolean }) {
+  const [active, setActive] = useState(initialActive);
+  const [pending, setPending] = useState(false);
 
-  async function activate() {
-    if (state === "requesting") return;
-    if (!confirm("Activate the test carousel? This replaces every display's current content in this room with the full content library, cycling through it.")) {
-      return;
-    }
-    setState("requesting");
+  async function toggle() {
+    if (pending) return;
+    setPending(true);
+    const optimistic = !active;
+    setActive(optimistic); // reflect intent immediately; reconcile with the server below
     try {
       const res = await fetch(`/api/admin/rooms/${roomId}/activate-carousel`, { method: "POST" });
-      setState(res.ok ? "done" : "error");
+      const data = (await res.json().catch(() => null)) as { active?: boolean } | null;
+      if (!res.ok || !data) setActive(!optimistic);
+      else setActive(Boolean(data.active));
     } catch {
-      setState("error");
+      setActive(!optimistic);
     } finally {
-      setTimeout(() => setState("idle"), 2000);
+      setPending(false);
     }
   }
 
-  const title =
-    state === "requesting" ? "Activating carousel…" : state === "error" ? "Failed to activate carousel" : "Activate test carousel";
+  const title = active ? "Carousel running — click to stop" : "Activate carousel";
+  // Scroll the track forever while active; only on hover when idle.
+  const trackAnimation = active
+    ? "animate-[carousel-track-slide_0.9s_linear_infinite]"
+    : "animate-[carousel-track-slide_0.9s_linear_infinite] [animation-play-state:paused] group-hover:[animation-play-state:running]";
 
   return (
     <button
       type="button"
       title={title}
       aria-label={title}
-      onClick={activate}
-      disabled={state === "requesting"}
-      className={`group flex h-6 w-8 items-center justify-center text-muted transition-colors hover:text-gold disabled:opacity-60 ${
-        state === "error" ? "text-red-500" : ""
+      aria-pressed={active}
+      onClick={toggle}
+      disabled={pending}
+      className={`group flex h-6 w-8 items-center justify-center transition-colors disabled:opacity-60 ${
+        active ? "text-emerald-500" : "text-muted hover:text-gold"
       }`}
     >
-      {/* Clipped one-glyph-wide window; the track inside is two glyphs wide
-          and scrolls left by exactly one glyph on hover — since both copies
-          are identical, the loop is seamless (see carousel-track-slide). */}
+      {/* Clipped one-glyph-wide window; the track inside is two identical
+          glyphs and scrolls left by exactly one glyph, so the loop is seamless
+          (see the carousel-track-slide keyframes). */}
       <span className="relative block h-4 w-6 overflow-hidden">
-        <span className="motion-reduce:animate-none flex h-4 w-12 animate-[carousel-track-slide_0.9s_linear_infinite] [animation-play-state:paused] group-hover:[animation-play-state:running]">
+        <span className={`motion-reduce:animate-none flex h-4 w-12 ${trackAnimation}`}>
           <CarouselIcon className="h-4 w-6 shrink-0" />
           <CarouselIcon className="h-4 w-6 shrink-0" />
         </span>

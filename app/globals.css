@@ -190,17 +190,18 @@ html.tv-output body {
    a thin bright line snaps in, expands to fill the panel, and the backlight
    settles. `--tile-index` staggers the wave; base delay clears the reveal.
    Skipped under prefers-reduced-motion (screens are simply on). */
-/* Hover animation for the "activate carousel" icon (ActivateCarouselButton):
-   two identical copies of the glyph sit side by side in a clipped track and
-   scroll left by exactly one glyph-width, forever — since both copies are
-   identical, the loop point is seamless, giving the illusion of an endless
-   parade of items circulating past, rather than one item visibly resetting. */
-@keyframes carousel-track-slide {
+/* Animation for the "activate carousel" icon (ActivateCarouselButton): only
+   the center slide moves. A filmstrip of identical slides (spaced one period
+   apart) scrolls left inside the fixed center frame while the flanking
+   brackets stay put — one slide pushes out the left as the next enters from
+   the right, exactly like the video-wall carousel it triggers. Translating by
+   exactly one period lands on an identical frame, so the loop is seamless. */
+@keyframes carousel-slide-strip {
   from {
     transform: translateX(0);
   }
   to {
-    transform: translateX(-100%);
+    transform: translateX(-8px);
   }
 }
 

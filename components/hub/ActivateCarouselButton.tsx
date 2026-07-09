@@ -32,10 +32,10 @@ export function ActivateCarouselButton({ roomId, initialActive }: { roomId: stri
   }
 
   const title = active ? "Carousel running — click to stop" : "Activate carousel";
-  // Scroll the track forever while active; only on hover when idle.
-  const trackAnimation = active
-    ? "animate-[carousel-track-slide_0.9s_linear_infinite]"
-    : "animate-[carousel-track-slide_0.9s_linear_infinite] [animation-play-state:paused] group-hover:[animation-play-state:running]";
+  // The center slide scrolls forever while active; only on hover when idle.
+  const stripClassName = active
+    ? "motion-reduce:animate-none animate-[carousel-slide-strip_1.2s_linear_infinite]"
+    : "motion-reduce:animate-none animate-[carousel-slide-strip_1.2s_linear_infinite] [animation-play-state:paused] group-hover:[animation-play-state:running]";
 
   return (
     <button
@@ -49,15 +49,7 @@ export function ActivateCarouselButton({ roomId, initialActive }: { roomId: stri
         active ? "text-emerald-500" : "text-muted hover:text-gold"
       }`}
     >
-      {/* Clipped one-glyph-wide window; the track inside is two identical
-          glyphs and scrolls left by exactly one glyph, so the loop is seamless
-          (see the carousel-track-slide keyframes). */}
-      <span className="relative block h-4 w-6 overflow-hidden">
-        <span className={`motion-reduce:animate-none flex h-4 w-12 ${trackAnimation}`}>
-          <CarouselIcon className="h-4 w-6 shrink-0" />
-          <CarouselIcon className="h-4 w-6 shrink-0" />
-        </span>
-      </span>
+      <CarouselIcon className="h-5 w-8" stripClassName={stripClassName} />
     </button>
   );
 }

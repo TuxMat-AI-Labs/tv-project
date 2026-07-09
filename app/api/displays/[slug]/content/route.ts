@@ -21,6 +21,14 @@ const DEFAULT_IMAGE_DURATION_SEC = 10;
 // re-enable (the button in RoomSection is also hidden while this is off).
 const CAROUSEL_ENABLED = false;
 
+// EMERGENCY FREEZE: the first version of the carousel button stuffed the whole
+// content library into each display as a multi-item playlist, so those
+// displays keep cycling via the normal PlaylistPlayer even with the carousel
+// disabled. Until those assignments are cleaned up (see handoff), collapse
+// every playlist to its first item so nothing rotates — each display shows a
+// single static graphic. Set false once assignments are sorted out.
+const FREEZE_TO_SINGLE_SLIDE = true;
+
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
 
@@ -56,7 +64,11 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ slu
   }
 
   const resolved = resolveContentForDisplay(display, now);
-  return NextResponse.json({ ...resolved, ...base }, { headers: NO_STORE_HEADERS });
+  const finalResolved =
+    FREEZE_TO_SINGLE_SLIDE && resolved.mode === "playlist" && resolved.playlist.length > 1
+      ? { mode: "playlist" as const, playlist: resolved.playlist.slice(0, 1) }
+      : resolved;
+  return NextResponse.json({ ...finalResolved, ...base }, { headers: NO_STORE_HEADERS });
 }
 
 /**

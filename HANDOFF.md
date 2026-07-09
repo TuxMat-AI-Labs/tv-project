@@ -67,8 +67,10 @@ stop-gaps are currently live and BOTH must be understood before re-enabling:
 
 ## 🟢 BUILT (this session): full-screen pixel massager (rainbow sweep / "Minecraft city")
 
-**Shipped to the codebase, verified in dev preview (landscape + portrait), not
-yet deployed.** `components/screensaver/PixelMassager.tsx` — a single low-res
+**Shipped + deployed** (pushed to main, commits `e729a39` + `514fd0b`). Now has
+**3 selectable variants** wired through the hub picker → backend → TVs (see the
+"screensaver style → backend" note below, which this closes).
+`components/screensaver/PixelMassager.tsx` — a single low-res
 canvas CSS-scaled full-bleed (`image-rendering: pixelated`): a dense isometric
 voxel city where **every block moves entirely** — a per-column vertical bob
 (unique phase/frequency, `bobFreq`/`bobPhase`) layered on a slow build-out drift
@@ -83,11 +85,29 @@ Verified in preview via a vertical-gradient edge map (isolates geometry from the
 smooth color field): the block edges fully relocate frame-to-frame (a static
 city would score ~0). Fixed typed arrays, no per-frame allocations, heap flat at
 ~13 MB, ~30 fps cap, `absolute` not `fixed` (per `c55b942`).
-`components/display/Screensaver.tsx` now renders it (LavaLamp remains for the
-`/hub/screensaver` picker previews). **Still to do on real hardware:** soak it
+
+**Variants + picker wiring (closes old handoff #2):** `variant` prop —
+`skyline` (medium/steady, default), `metropolis` (dense/fast), `horizon`
+(big/calm) — differ in block scale/density/height/tempo/hue-loop; all keep the
+all-blocks-move + full-bleed guarantees. Shared server-safe identity in
+`lib/screensaver.ts` (`ScreensaverVariant`, `SCREENSAVER_VARIANTS`,
+`coerceScreensaverVariant`, `SCREENSAVER_STYLE_SETTING_KEY`). New global
+key/value `Setting` model (migration `20260709170000_add_setting`) stores the
+chosen style; `GET`/`PUT /api/admin/screensaver` reads/writes it; the content
+route serves it as `screensaverStyle`; `DisplayPlayer` → `Screensaver` →
+`PixelMassager`. The `/hub/screensaver` picker (`ScreensaverPicker.tsx`) now
+previews the real massager per variant, loads the current selection on mount,
+and persists on activate (**no more localStorage**). The detail-view
+forced-screensaver preview shows the massager (default variant) too.
+
+**To test on real TVs:** the massager only renders during a screensaver window
+— overnight (outside 06:00–23:00 America/Toronto) or with `screensaverOverride`
+on. To see it now, flip a display into screensaver override, or open
+`/hub/screensaver` and pick a variant. **Still to do on real hardware:** soak it
 on a Samsung Tizen TV overnight — the per-frame full redraw (~600 columns at the
-low internal res) is the main cost to watch; if a TV struggles, raise
-`INTERNAL_LONG`'s divisor (fewer/bigger tiles) or lower the fps cap.
+low internal res) is the main cost to watch; `metropolis` is the heaviest
+(higher internal res); if a TV struggles, prefer `horizon`/`skyline` or lower
+the fps cap.
 
 Original spec (kept for reference): a burn-in-prevention animation that
 exercises *every* pixel and subpixel and runs **continuously for the entire
@@ -523,6 +543,13 @@ Extend it to stamp `Device.lastSeenAt`.
 - [x] Extend heartbeat → `Device.lastSeenAt` (stamped on each `/api/tv/register` poll).
 
 ### 2. Screensaver style → backend
+
+> ✅ **DONE (this session).** The picker now offers 3 **pixel-massager** variants
+> (skyline/metropolis/horizon), persists the choice to a global `Setting` row via
+> `PUT /api/admin/screensaver`, and the content route serves it to each TV as
+> `screensaverStyle` → rendered by `PixelMassager`. No more localStorage. See the
+> "pixel massager" section above for the full wiring. The note below is the
+> now-superseded lava-lamp state, kept for context.
 
 > Note: the screensaver is now a flowing **lava lamp** — soft colour blobs that
 > drift/scale continuously over black with no static gradient, line, or logo (an

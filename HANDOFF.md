@@ -152,10 +152,11 @@ scheduled screensaver window** (no static frame, ever, not even briefly).
 
 ## 🟢 BUILT (this session): per-display horizontal (landscape) orientation
 
-**In the codebase + passes `tsc`/`lint`; NOT yet visually verified in a browser
-(the local preview couldn't be driven this session) — the owner is testing in
-prod.** ⚠️ Confirm the landscape frame + a landscape TV actually look right on
-prod before trusting it.
+**Shipped + deployed** (commit `0b2b3da`); tile-sizing follow-up in `30cbbd9`
+(below). Passes `tsc`/`lint`/`build`. **NOT visually verified in a browser** —
+the owner verifies UI on prod (they decline local browser preview). ⚠️ Still
+worth confirming the landscape synthetic bezel + a real landscape-mounted TV
+look right on prod.
 
 Each `Display` now has an **`orientation`** (`PORTRAIT` default / `LANDSCAPE`),
 settable per display in the hub. Key insight that kept this small: the **live
@@ -184,6 +185,12 @@ What was changed:
 - **`app/hub/customize/displays/page.tsx`:** an **Orientation** column with a
   Portrait/Landscape `<select>` (optimistic + PATCH), same pattern as the Room
   select.
+- **Hub tiles now size by a shared HEIGHT** (`30cbbd9`, `DisplayCarousel.tsx`):
+  tiles used one fixed width, so a landscape (16:9) tile rendered short next to a
+  portrait (9:16) one. Landscape tiles are now ~3.05× wider so every tile in a
+  row is the same height and lines up top + bottom (the carousel scrolls to
+  absorb the width). ⚠️ Owner may find full-height landscape tiles too wide — if
+  so, cap the height (shorter than portrait, less wide) as a middle ground.
 
 **Not done / decisions left for the owner:**
 - Content fit for portrait creatives on a landscape panel is still governed by
@@ -192,24 +199,27 @@ What was changed:
 - The synthetic landscape bezel is functional but plainer than the portrait
   photo frame — swap in a real landscape render if fidelity matters.
 
-## ⏳ Deploy status (read this first)
+## ⏳ Deploy status
 
-- Pushed to `main` / **LIVE-deploying:** `e729a39` (pixel massager) + `514fd0b`
-  (screensaver picker → 3 massager variants, wired to TVs via a new `Setting`
-  row; migration `20260709170000_add_setting`).
-- **Committed locally but NOT pushed:** `3921c7a` (handoff: picker done). The
-  horizontal-orientation work above (+ this handoff update) is **staged/working
-  but not yet committed** — the shell/Bash tool wedged mid-session so the final
-  `build` + `git commit`/`push` could not run from here. **To ship it:**
-  ```sh
-  export PATH="$HOME/.local/node-v24/bin:$PATH"
-  cd /Users/diaz/Desktop/TuxMat/Claude/tuxdisplay/tv-project
-  npx tsc --noEmit && npm run lint && npm run build   # gate (tsc+lint already passed)
-  git add -A && git commit -m "Per-display landscape orientation + handoff"
-  git push origin main
-  ```
-  Render auto-deploys and runs `prisma migrate deploy` (applies
-  `20260709180000_add_display_orientation`) in preDeploy.
+All work through **`30cbbd9`** is pushed to `main` and auto-deployed on Render.
+Recent commits, newest first:
+- `30cbbd9` — hub equal-height tiles (landscape lines up with portrait).
+- `0b2b3da` — per-display landscape orientation (migration
+  `20260709180000_add_display_orientation`).
+- `3921c7a` — handoff: screensaver picker done.
+- `514fd0b` — screensaver picker → 3 massager variants, wired to TVs via a new
+  `Setting` row (migration `20260709170000_add_setting`).
+- `e729a39` — pixel massager (voxel-city screensaver) + assignment cleanup script.
+
+Nothing pending to push. **The carousel emergency freeze is still ON** (see the
+top section) — that's the next real work, and it needs prod-data cleanup + owner
+sign-off before lifting.
+
+⚠️ **Local Mac process-limit gotcha (this session):** leaving multiple
+`npm run dev` / Turbopack servers running exhausted the OS fork limit
+(`zsh: fork failed: resource temporarily unavailable`), which froze the shell.
+Keep **one** dev server at a time and stop it when done; Force-Quit stray `node`
+processes (or reboot) to recover.
 
 ## Current state: LIVE in production
 

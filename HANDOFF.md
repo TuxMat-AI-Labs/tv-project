@@ -37,28 +37,38 @@ pool** instead of one item per display:
   two landscape displays ever show the same image at the same tick**, and the
   whole pool cycles through over time (not just a fixed swap among N items).
   `CAROUSEL_ENABLED` is back to `true`.
-- **Global Slide/Fade toggle.** `Room.carouselTransition` (`SLIDE` default /
+- **Global Slide/Fade transition.** `Room.carouselTransition` (`SLIDE` default /
   `FADE`) drives both the synchronized carousel (`CarouselPlayer.tsx`) *and*
   any display's own multi-item playlist (`PlaylistPlayer.tsx`) — one setting
   per room, shared by both mechanisms (`lib/display/transition.ts`). FADE is
   a 1s crossfade "bleed" (opacity only, both layers overlap in place); SLIDE is
-  the existing whip-push. New `PATCH /api/admin/rooms/[id]/carousel-transition`.
-- **Hub controls, every room, main dashboard page:** each room's heading in
-  `components/hub/RoomSection.tsx` now shows a Slide/Fade segmented toggle
-  (`CarouselTransitionToggle.tsx`) next to the re-enabled carousel
-  activate/deactivate button.
-- **Fixed the reported toggle-off bug in passing:** `ActivateCarouselButton`
-  used to seed local state from a `initialActive` prop once and never
-  reconcile with later hub-status polls, so it could get stuck fighting the
-  server. It's now driven by a `serverActive` prop every render, with a local
-  optimistic override that's dropped (adjusted during render, not in an
-  effect) the instant the server's own value matches it.
+  the existing whip-push. `PATCH /api/admin/rooms/[id]/carousel-transition`.
+- **Hub controls, every room heading, main dashboard page**
+  (`components/hub/RoomCarouselControls.tsx`): plain-text **Slide / Fade**
+  choice + an **ON/OFF switch** to its right that starts/stops the room's
+  landscape rotation. (The old carousel *icon* button and the segmented
+  Slide/Fade pill were removed at the owner's request — "we'll rethink" the
+  carousel visual/mechanic. `ActivateCarouselButton.tsx` +
+  `CarouselTransitionToggle.tsx` deleted; `CarouselIcon` in `icons.tsx` and the
+  `carousel-slide-strip` keyframe in `globals.css` are now unused but left in
+  place for a possible future rework.)
+- **Turning the switch OFF now reliably returns each landscape screen to its
+  original image.** Two things guarantee it: (1) the ON/OFF switch is
+  server-authoritative (fed by the hub's ~10s poll) with only a short-lived
+  optimistic override, dropped the instant the server's value matches — so it
+  can't get stuck fighting a stale poll like before; (2) the content route
+  now handles landscape displays explicitly — carousel ON → rotate the pool;
+  carousel OFF → serve a **static single-item playlist of `ring[position]`**
+  (exactly the tick-0 image that display started the rotation on). So OFF never
+  leaves a landscape screen cycling; it snaps back to its home graphic. This
+  also means a landscape display carrying multiple pool assignments won't
+  cycle when the room's rotation is off — it holds `ring[position]`.
+  Screensaver windows still win (checked before the carousel branch).
 - Assignment/library UI now shows orientation (`/hub/customize/assignments`
   display + content dropdowns, library cards) so it's obvious which images are
   landscape-tagged when assigning them to a room's landscape displays.
 
-**Passes `tsc`/`lint`/`build`. Not yet committed or pushed — ask before
-pushing per usual.**
+**Passes `tsc`/`lint`/`build`.**
 
 **To actually use this on Multi-Purpose:**
 1. In `/hub/customize/library`, tag the landscape-formatted creatives as
@@ -68,16 +78,15 @@ pushing per usual.**
    display's/item's orientation). Assign at least as many landscape items as
    there are landscape displays in the room, ideally more, so the pool has
    room to actually rotate instead of just permuting a small set.
-3. On the hub dashboard, click Multi-Purpose's activate-carousel button, and
-   pick Slide or Fade with the new toggle next to it.
-4. **The still-pending emergency freeze matters here too:** `FREEZE_TO_SINGLE_SLIDE`
-   (see below) collapses any playlist >1 item to its first item — but only
-   for displays that *fall through* to normal schedule resolution. A
-   landscape display whose room carousel is ON bypasses that entirely (the
-   carousel branch returns before the freeze check ever runs), so this new
-   rotation is not blocked by the freeze. It only matters if the carousel is
-   OFF: then a landscape display with 2+ directly-assigned items would get
-   frozen to its first one, same as everywhere else today.
+3. On the hub dashboard, flip Multi-Purpose's ON/OFF switch on, and pick
+   Slide or Fade with the text control next to it.
+4. **The emergency freeze does not block this.** Landscape displays are now
+   handled entirely inside the carousel branch (rotate when ON, static
+   `ring[position]` when OFF) and return before the `FREEZE_TO_SINGLE_SLIDE`
+   check ever runs. The freeze only still affects *portrait* displays (and
+   landscape displays with no landscape pool) that fall through to normal
+   resolution. Purging the stray assignments (below) is still worth doing so
+   the freeze can come off for portrait displays too.
 5. **Not verified on real hardware yet** — the owner verifies UI on prod. On
    the next deploy, confirm on the actual Multi-Purpose TVs that (a) only the
    landscape screens rotate, (b) they never show the same graphic at once, and

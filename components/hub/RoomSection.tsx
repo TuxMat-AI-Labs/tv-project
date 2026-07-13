@@ -1,13 +1,12 @@
 import { DisplayCarousel } from "@/components/hub/DisplayCarousel";
-import { ActivateCarouselButton } from "@/components/hub/ActivateCarouselButton";
-import { CarouselTransitionToggle } from "@/components/hub/CarouselTransitionToggle";
+import { RoomCarouselControls } from "@/components/hub/RoomCarouselControls";
 import type { HubRoomStatus } from "@/lib/hub/types";
 
-// The activate button starts/stops the room's synchronized landscape
-// carousel (only the room's LANDSCAPE-oriented displays participate — see
-// app/api/displays/[slug]/content/route.ts). The Slide/Fade toggle sets this
-// room's rotation transition, which also governs any display's own
-// multi-item playlist here, carousel on or off.
+// Each room heading carries a Slide/Fade transition choice + an ON/OFF switch
+// that starts/stops the room's landscape rotation (only the room's
+// LANDSCAPE-oriented displays participate — see
+// app/api/displays/[slug]/content/route.ts). The transition also governs any
+// display's own multi-item playlist here, rotation on or off.
 export function RoomSection({ room, tileSize = "default" }: { room: HubRoomStatus; tileSize?: "default" | "large" }) {
   const allOnline = room.displays.length > 0 && room.displays.every((d) => d.online);
 
@@ -20,10 +19,11 @@ export function RoomSection({ room, tileSize = "default" }: { room: HubRoomStatu
         tileSize={tileSize}
         emptyText="No displays in this room yet."
         titleAction={
-          <div className="flex items-center gap-2">
-            <CarouselTransitionToggle roomId={room.id} transition={room.carouselTransition} />
-            <ActivateCarouselButton roomId={room.id} serverActive={room.carouselActive} />
-          </div>
+          <RoomCarouselControls
+            roomId={room.id}
+            transition={room.carouselTransition}
+            active={room.carouselActive}
+          />
         }
       />
     </section>

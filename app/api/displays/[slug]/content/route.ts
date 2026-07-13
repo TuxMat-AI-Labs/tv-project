@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { resolveContentForDisplay, type PlaylistItem } from "@/lib/display/resolveContentForDisplay";
 import { resolveRoomCarousel } from "@/lib/display/resolveRoomCarousel";
 import { coerceCarouselTransition } from "@/lib/display/transition";
-import { isWithinDateRange, isWithinDaypart } from "@/lib/time";
+import { isWithinBusinessHours, isWithinDateRange, isWithinDaypart } from "@/lib/time";
 import { SCREENSAVER_STYLE_SETTING_KEY, coerceScreensaverVariant } from "@/lib/screensaver";
 
 export const dynamic = "force-dynamic";
@@ -56,20 +56,37 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ slu
     serverTime: now.toISOString(),
   };
 
-  // Synchronized landscape-room carousel takes precedence over the normal
-  // schedule, but only for LANDSCAPE-oriented displays — portrait displays in
-  // the same room keep showing their own assigned content untouched.
-  if (
-    CAROUSEL_ENABLED &&
-    display.active &&
-    display.orientation === "LANDSCAPE" &&
-    display.room.carouselActive &&
-    display.room.carouselStartedAt
-  ) {
+  // Landscape displays in a room draw from the room's shared landscape pool.
+  // Portrait displays in the same room keep showing their own assigned content
+  // untouched (they fall through to the normal resolution below).
+  if (CAROUSEL_ENABLED && display.active && display.orientation === "LANDSCAPE") {
     const { ring, position } = await buildLandscapeRoomRing(display.roomId, display.id, now);
-    const carousel = resolveRoomCarousel(ring, position, display.room.carouselStartedAt, now);
-    if (carousel) {
-      return NextResponse.json({ mode: "carousel", carousel, ...base }, { headers: NO_STORE_HEADERS });
+    if (ring.length > 0 && position >= 0) {
+      // Screensaver still wins (overnight burn-in care / an explicit override),
+      // even mid-rotation — the pool counts as "has content" so a display
+      // feeding off the pool isn't forced to the screensaver during the day.
+      const wantsScreensaver =
+        display.screensaverOverride === true ||
+        (display.screensaverOverride !== false && !isWithinBusinessHours(now));
+      if (wantsScreensaver) {
+        const screensaverStyle = await getScreensaverStyle();
+        return NextResponse.json({ mode: "screensaver", screensaverStyle, ...base }, { headers: NO_STORE_HEADERS });
+      }
+
+      // Carousel ON: rotate the whole wall through the pool in lockstep.
+      if (display.room.carouselActive && display.room.carouselStartedAt) {
+        const carousel = resolveRoomCarousel(ring, position, display.room.carouselStartedAt, now);
+        if (carousel) {
+          return NextResponse.json({ mode: "carousel", carousel, ...base }, { headers: NO_STORE_HEADERS });
+        }
+      }
+
+      // Carousel OFF (or a single-item pool that can't rotate): hold the one
+      // image this display starts the rotation on — ring[position] is exactly
+      // what tick 0 shows — as a static single-item playlist. So flipping the
+      // switch off always drops every screen back to its original graphic.
+      const home = ring[((position % ring.length) + ring.length) % ring.length];
+      return NextResponse.json({ mode: "playlist", playlist: [home], ...base }, { headers: NO_STORE_HEADERS });
     }
   }
 

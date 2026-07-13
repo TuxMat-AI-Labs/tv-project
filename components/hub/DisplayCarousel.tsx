@@ -71,7 +71,14 @@ export function DisplayCarousel({
     if (el) el.scrollBy({ left: dir * el.clientWidth * 0.85, behavior: "smooth" });
   }
 
-  const tileWidth = tileSize === "large" ? "w-56 sm:w-64" : "w-40 sm:w-44";
+  // Tiles share one HEIGHT regardless of orientation so a row of mixed
+  // portrait/landscape panels lines up (tops + bottoms aligned), like TVs hung
+  // at the same height. A landscape (16:9) tile of the same height as a portrait
+  // (9:16) one is ~3.05× as wide — the carousel scrolls, so the width is fine.
+  const tileWidths =
+    tileSize === "large"
+      ? { PORTRAIT: "w-56 sm:w-64", LANDSCAPE: "w-[42.65rem] sm:w-[48.75rem]" }
+      : { PORTRAIT: "w-40 sm:w-44", LANDSCAPE: "w-[30.5rem] sm:w-[33.5rem]" };
 
   return (
     <div>
@@ -103,7 +110,7 @@ export function DisplayCarousel({
           className="no-scrollbar flex gap-6 overflow-x-auto scroll-smooth px-2 py-10 overscroll-x-contain"
         >
           {displays.map((display, i) => (
-            <div key={display.id} className={`shrink-0 ${tileWidth}`}>
+            <div key={display.id} className={`shrink-0 ${tileWidths[display.orientation] ?? tileWidths.PORTRAIT}`}>
               <DisplayTile display={display} index={i} />
             </div>
           ))}

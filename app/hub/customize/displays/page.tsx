@@ -189,8 +189,107 @@ export default function DisplaysPage() {
         )}
       </div>
 
-      <div className="mt-6 overflow-hidden brand-card">
-        <table className="w-full text-left text-sm">
+      {loading && <p className="mt-6 text-sm text-muted">Loading…</p>}
+      {!loading && displays.length === 0 && <p className="mt-6 text-sm text-muted">No displays yet.</p>}
+
+      {/* Mobile: one card per display, big tap targets. Table (below) takes over at sm+. */}
+      {!loading && displays.length > 0 && (
+        <div className="mt-6 space-y-3 sm:hidden">
+          {displays.map((display) => (
+            <div key={display.id} className="brand-card space-y-3 p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate font-medium text-foreground">
+                    {display.name} <span className="text-muted">#{display.number}</span>
+                  </p>
+                  <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                    <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[10px] text-muted">
+                      {display.screensaverOverride === null
+                        ? "Auto"
+                        : display.screensaverOverride
+                          ? "Forced on"
+                          : "Forced off"}
+                    </span>
+                    <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[10px] text-muted capitalize">
+                      {display.contentFit.toLowerCase()}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => toggleActive(display)}
+                  className={`shrink-0 rounded-full px-3 py-2 text-xs font-medium ${
+                    display.active
+                      ? "bg-emerald-950 text-emerald-300"
+                      : "bg-surface-2 text-muted"
+                  }`}
+                >
+                  {display.active ? "Active" : "Inactive"}
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <label className="block">
+                  <span className="text-[10px] text-muted uppercase">Room</span>
+                  <select
+                    value={display.roomId}
+                    onChange={(e) => changeRoom(display, e.target.value)}
+                    className="mt-0.5 block w-full rounded border border-black/10 bg-white px-2 py-2 text-sm text-foreground"
+                    aria-label={`Room for ${display.name}`}
+                  >
+                    {rooms.map((room) => (
+                      <option key={room.id} value={room.id}>
+                        {room.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="text-[10px] text-muted uppercase">Orientation</span>
+                  <select
+                    value={display.orientation}
+                    onChange={(e) => changeOrientation(display, e.target.value as Display["orientation"])}
+                    className="mt-0.5 block w-full rounded border border-black/10 bg-white px-2 py-2 text-sm text-foreground"
+                    aria-label={`Orientation for ${display.name}`}
+                  >
+                    <option value="PORTRAIT">Portrait</option>
+                    <option value="LANDSCAPE">Landscape</option>
+                  </select>
+                </label>
+              </div>
+
+              <div className="flex flex-wrap gap-2 border-t brand-hairline pt-3">
+                <button
+                  onClick={() => copyUrl(display)}
+                  className="glass-btn rounded px-3 py-2 text-xs font-medium"
+                >
+                  {copiedId === display.id ? "Copied!" : "Copy URL"}
+                </button>
+                <button
+                  onClick={() => refreshTv(display)}
+                  className="glass-btn rounded px-3 py-2 text-xs font-medium"
+                >
+                  {refreshedId === display.id ? "Requested!" : "Refresh TV"}
+                </button>
+                <Link
+                  href={`/hub/displays/${display.id}`}
+                  className="glass-btn rounded px-3 py-2 text-xs font-medium"
+                >
+                  Open
+                </Link>
+                <button
+                  onClick={() => deleteDisplay(display.id)}
+                  className="rounded px-3 py-2 text-xs font-medium text-red-600"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="mt-6 hidden overflow-x-auto brand-card sm:block">
+        <table className="w-full min-w-[860px] text-left text-sm">
           <thead>
             <tr className="border-b brand-hairline text-xs text-muted">
               <th className="px-4 py-3 font-medium">Room</th>

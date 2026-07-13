@@ -140,8 +140,79 @@ export default function RoomsPage() {
         </p>
       )}
 
-      <div className="mt-6 overflow-hidden brand-card">
-        <table className="w-full text-left text-sm">
+      {loading && <p className="mt-6 text-sm text-muted">Loading…</p>}
+      {!loading && rooms.length === 0 && <p className="mt-6 text-sm text-muted">No rooms yet.</p>}
+
+      {/* Mobile: one card per room, big tap targets. Table (below) takes over at sm+. */}
+      {!loading && rooms.length > 0 && (
+        <div className="mt-6 space-y-3 sm:hidden">
+          {rooms.map((room) =>
+            editingId === room.id ? (
+              <div key={room.id} className="brand-card space-y-3 p-4">
+                <label className="block">
+                  <span className="text-xs text-muted">Name</span>
+                  <input
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="mt-1 block w-full rounded border border-black/10 bg-white px-3 py-2 text-base text-foreground"
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-xs text-muted">Sort order</span>
+                  <input
+                    type="number"
+                    value={editSortOrder}
+                    onChange={(e) => setEditSortOrder(Number(e.target.value))}
+                    className="mt-1 block w-24 rounded border border-black/10 bg-white px-3 py-2 text-base text-foreground"
+                  />
+                </label>
+                <div className="flex gap-2 pt-1">
+                  <button
+                    onClick={() => saveEdit(room.id)}
+                    disabled={savingEdit}
+                    className="glass-btn glass-btn--gold flex-1 rounded px-3 py-2.5 text-sm font-medium"
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={() => setEditingId(null)}
+                    className="glass-btn flex-1 rounded px-3 py-2.5 text-sm font-medium"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div key={room.id} className="brand-card flex items-center justify-between gap-3 p-4">
+                <div className="min-w-0">
+                  <p className="truncate font-medium text-foreground">{room.name}</p>
+                  <p className="mt-0.5 text-xs text-muted">
+                    Sort {room.sortOrder} &middot; {room.slug}
+                  </p>
+                </div>
+                <div className="flex shrink-0 gap-2">
+                  <button
+                    onClick={() => startEdit(room)}
+                    className="glass-btn rounded px-3 py-2.5 text-sm font-medium"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => deleteRoom(room.id)}
+                    className="rounded px-3 py-2.5 text-sm font-medium text-red-600"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            )
+          )}
+        </div>
+      )}
+
+      {/* sm+: table. */}
+      <div className="mt-6 hidden overflow-x-auto brand-card sm:block">
+        <table className="w-full min-w-[520px] text-left text-sm">
           <thead>
             <tr className="border-b brand-hairline text-xs text-muted">
               <th className="px-4 py-3 font-medium">Name</th>

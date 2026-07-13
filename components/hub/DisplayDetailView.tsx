@@ -68,8 +68,8 @@ export function DisplayDetailView({
       </button>
 
       {display && (
-        <div className="fixed top-7 left-1/2 z-30 -translate-x-1/2 text-center">
-          <p className="text-sm font-semibold tracking-wide text-white/90 uppercase">
+        <div className="fixed top-7 left-1/2 z-30 max-w-[55vw] -translate-x-1/2 text-center">
+          <p className="truncate text-sm font-semibold tracking-wide text-white/90 uppercase">
             {display.room.name} <span className="text-gold-light">{display.number}</span>
           </p>
         </div>
@@ -172,13 +172,14 @@ function ActionCluster({
     { key: "adjust", label: "Adjust", icon: <AdjustIcon /> },
   ];
   return (
-    <div className="fixed right-5 bottom-5 z-20 flex flex-col gap-2">
+    <div className="fixed right-4 bottom-4 z-30 flex flex-col gap-2 sm:right-5 sm:bottom-5">
       {items.map((item) => (
         <button
           key={item.key}
           title={item.label}
+          aria-label={item.label}
           onClick={() => setPanel(panel === item.key ? null : item.key)}
-          className={`glass-btn glass-btn--dark rounded-full p-3 ${panel === item.key ? "is-active" : ""}`}
+          className={`glass-btn glass-btn--dark flex h-11 w-11 items-center justify-center rounded-full ${panel === item.key ? "is-active" : ""}`}
         >
           {item.icon}
         </button>
@@ -210,9 +211,10 @@ function RefreshButton({ displayId }: { displayId: string }) {
   return (
     <button
       title={state === "done" ? "Refresh requested" : "Refresh this TV's page"}
+      aria-label={state === "done" ? "Refresh requested" : "Refresh this TV's page"}
       onClick={request}
       disabled={state === "requesting"}
-      className="glass-btn glass-btn--dark rounded-full p-3 disabled:opacity-60"
+      className="glass-btn glass-btn--dark flex h-11 w-11 items-center justify-center rounded-full disabled:opacity-60"
     >
       {state === "done" ? (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5">
@@ -225,17 +227,30 @@ function RefreshButton({ displayId }: { displayId: string }) {
   );
 }
 
+/**
+ * On a phone this renders as a full-width bottom sheet anchored to the
+ * screen's bottom edge (the floating w-80 panel used to run off the left
+ * edge of a narrow viewport entirely). At `sm:` and up it's the original
+ * floating panel next to the action cluster.
+ */
 function PanelShell({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
-    <div className="fixed right-5 bottom-24 z-20 w-80 rounded-xl border border-zinc-700 bg-zinc-900/95 p-4 shadow-2xl backdrop-blur">
+    <motion.div
+      initial={{ y: 40, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+      className="fixed inset-x-0 bottom-0 z-20 max-h-[75vh] overflow-y-auto rounded-t-2xl border-t border-zinc-700 bg-zinc-900/95 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-2xl backdrop-blur sm:inset-x-auto sm:right-5 sm:bottom-24 sm:max-h-[70vh] sm:w-80 sm:rounded-xl sm:border sm:pb-4"
+    >
+      {/* Drag-handle affordance — mobile bottom-sheet convention, hidden on the floating desktop panel. */}
+      <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-zinc-700 sm:hidden" />
       <div className="mb-3 flex items-center justify-between">
         <h3 className="text-sm font-semibold text-white">{title}</h3>
-        <button onClick={onClose} className="text-zinc-500 hover:text-white">
+        <button onClick={onClose} className="flex h-8 w-8 items-center justify-center text-zinc-500 hover:text-white">
           ✕
         </button>
       </div>
       {children}
-    </div>
+    </motion.div>
   );
 }
 
@@ -307,7 +322,7 @@ function EditPanel({
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="mt-1 w-full rounded border border-zinc-700 bg-zinc-800 px-2 py-1 text-white"
+            className="mt-1 w-full rounded border border-zinc-700 bg-zinc-800 px-3 py-2 text-white"
           />
         </label>
         <label className="block">
@@ -316,7 +331,7 @@ function EditPanel({
             type="number"
             value={number}
             onChange={(e) => setNumber(Number(e.target.value))}
-            className="mt-1 w-full rounded border border-zinc-700 bg-zinc-800 px-2 py-1 text-white"
+            className="mt-1 w-full rounded border border-zinc-700 bg-zinc-800 px-3 py-2 text-white"
           />
         </label>
         <label className="flex items-center gap-2">
@@ -451,7 +466,7 @@ function HealthPanel({
             <button
               key={String(opt.value)}
               onClick={() => setOverride(opt.value)}
-              className={`mb-1 block w-full rounded px-2 py-1 text-left ${
+              className={`mb-1 block w-full rounded px-3 py-2.5 text-left ${
                 current === opt.value ? "bg-gold text-black" : "text-zinc-300 hover:bg-zinc-800"
               }`}
             >
@@ -489,7 +504,7 @@ function AdjustPanel({
           <button
             key={fit}
             onClick={() => setFit(fit)}
-            className={`block w-full rounded px-2 py-1 text-left capitalize ${
+            className={`block w-full rounded px-3 py-2.5 text-left capitalize ${
               display.contentFit === fit ? "bg-gold text-black" : "text-zinc-300 hover:bg-zinc-800"
             }`}
           >

@@ -49,7 +49,7 @@ export function ContactMenu({
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label="Account menu"
-        className="glass-btn flex h-9 w-9 items-center justify-center rounded-full text-xs font-semibold"
+        className="glass-btn flex h-11 w-11 items-center justify-center rounded-full text-xs font-semibold"
         style={{ color: "var(--gold)" }}
       >
         {initials}

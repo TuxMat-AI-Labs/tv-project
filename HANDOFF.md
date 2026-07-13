@@ -186,6 +186,110 @@ library item itself.
    its neighbors rotate, and (d) Fade actually reads as a soft bleed rather
    than a slide on real Tizen browsers.
 
+## 🟢 BUILT (this session, part 4): mobile-optimized hub + installable PWA — NOT YET PUSHED
+
+The owner wants to set up displays / fix things from a phone, and asked for
+this to be installable ("I will download it") rather than just a bookmarked
+URL. Ran a full audit of the admin hub UI first (not the TV-facing routes,
+which were already full-bleed at any size) before touching anything — see the
+findings baked into the bullets below. Two explicit design calls from the
+owner: the 3 customize tables become **stacked cards** on mobile (not just
+horizontally scrollable), and the display detail panel becomes a **bottom
+sheet** (not just a resized floating box).
+
+**Installable PWA:**
+- **Icons generated from the brand monogram**
+  (`public/brand/tuxmat-monogram.png`) padded onto a Rich Black (`#000000`)
+  square background via `sips` (no ImageMagick in this environment) — two
+  padding ratios: `any` icons (~75% fill) and `maskable` icons (~50% fill, safe
+  inside Android's adaptive-icon crop). Output: `public/icons/icon-{192,512}.png`
+  and `icon-maskable-{192,512}.png`, plus `app/apple-icon.png` (Next's special
+  file convention — auto-injects the iOS `apple-touch-icon` tag, no manual
+  `<link>` needed).
+- **`app/manifest.ts`** — Next's file-based manifest convention (auto-generates
+  `/manifest.webmanifest` + the `<link rel="manifest">` tag). `start_url: "/hub"`
+  (root `/` just redirects there anyway), `display: "standalone"`,
+  `background_color: "#000000"` (matches the icons so the Android splash
+  screen doesn't show a visible box around the mark), `theme_color: "#faf9f6"`
+  (the hub's own background, for browser-chrome tinting).
+- **`app/layout.tsx`** — added `appleWebApp: { capable: true, ... }` metadata
+  (iOS Safari's own "Add to Home Screen" ignores the manifest and needs this
+  separately) and `themeColor` on the root `viewport` export.
+- **`public/sw.js` + `components/hub/RegisterServiceWorker.tsx`** (mounted only
+  in `app/hub/layout.tsx`, never on the TV routes) — a deliberately minimal
+  service worker. Chrome/Android require *an* active service worker with a
+  fetch handler for the install prompt, but this app is a **live
+  display-status dashboard** — caching `/api/*` or any page response would
+  mean showing a stale online/offline state or a stale rotation, which is
+  actively harmful, not just imperfect. So the SW caches ONLY the four static
+  icon files and lets every other request (every page, every `/api/*` call)
+  hit the network untouched, always.
+- **Pinch-zoom re-enabled for the hub only.** The root layout's viewport locks
+  zoom to 100% — that's a deliberate fix for Smart TV browsers' fractional
+  page-zoom rendering bug (see the border-fix history below), not something
+  the admin hub needs. `app/hub/layout.tsx` now exports its own `viewport`
+  (Next lets a nested layout override the root's) re-allowing pinch-zoom,
+  since locking zoom in a data-dense admin tool actively hurts phone usability
+  (e.g. zooming into a table). The TV-facing routes (`/display`, `/tv`) don't
+  use the hub layout, so they keep the original lock.
+
+**Mobile-responsive rework (the audit's findings, in priority order):**
+- **The 3 customize tables** (`/hub/customize/rooms`, `displays`,
+  `assignments`) were wrapped in `overflow-hidden`, not scrollable — columns
+  just squeezed illegibly instead of scrolling (worst on Displays, 9 columns).
+  Each page now renders **stacked cards below `sm:`** (one card per
+  room/display/assignment, big tap targets for Edit/Delete/etc., inline
+  selects for Room/Orientation) and keeps the original `<table>` at `sm:` and
+  up (now properly `overflow-x-auto` with a `min-w` too, so even the desktop
+  table degrades to scroll instead of squeeze on an in-between width).
+- **`DisplayDetailView`'s edit/change/health/adjust panel** was a `fixed`
+  `w-80` (320px) floating box — on an iPhone SE (320px viewport) it ran off
+  the screen edge entirely. `PanelShell` now renders as a **full-width bottom
+  sheet anchored to the bottom edge** below `sm:` (with a drag-handle bar, a
+  slide-up entrance via framer-motion, `env(safe-area-inset-bottom)` padding
+  for the iPhone home-indicator area, and `max-h-[75vh]` + internal scroll for
+  tall content), and keeps the original floating panel at `sm:` and up. The
+  action-cluster icon buttons (Edit/Change/Pixel Health/Adjust/Refresh) are
+  now `h-11 w-11` (44px) and `z-30` (above the sheet, so they stay reachable
+  even when a panel is open); the room name/number header now truncates
+  instead of risking a collision with the back button on a narrow screen.
+- **Touch targets bumped to a comfortable size app-wide:** the contact-menu
+  avatar (36px → 44px), the dashboard carousel's prev/next arrows (32px → 44px,
+  and hidden below `sm:` entirely — touch swipe already scrolls the row
+  natively, so they were just consuming header space next to the room
+  title/controls on a phone), the room-heading Slide/Fade text buttons and
+  ON/OFF switch (invisible 44px hit-areas added around both without visually
+  bloating the compact control), every customize-table row action, and the
+  main nav tabs (`HubNav.tsx`).
+- **iOS auto-zoom-on-focus fix, one global rule:** several forms set
+  `text-sm` (14px) directly on inputs — iOS Safari auto-zooms the whole page
+  when a focused field is under 16px, then zooms back out on blur, a jarring
+  jump on every form interaction. Added one rule to `app/globals.css`
+  (`input, select, textarea { font-size: 16px }` under `max-width: 640px`)
+  instead of hunting down every input's className individually.
+- **Dashboard tile widths:** the LANDSCAPE tile width was hard-coded (682–780px
+  for the "large" tileSize used by `/hub/displays`, `/hub/online`, and each
+  room's own page) — on a phone that's up to ~1.8× the viewport width per
+  tile. Recomputed a genuine phone-sized tier for both `tileSize` variants,
+  preserving the underlying invariant that made the original numbers what
+  they were (PORTRAIT height × 16/9 = LANDSCAPE width at that breakpoint, so
+  mixed portrait/landscape rows still line up) — see the comment in
+  `DisplayCarousel.tsx`. `StatusSummary`'s 3-stat-card grid also got smaller
+  padding/type sizing below `sm:` so "Screensaver" doesn't feel cramped.
+
+**Passes `tsc`/`lint`/`build`; confirmed `/manifest.webmanifest` and
+`/apple-icon.png` both generate correctly via a local production build.**
+**Not committed or pushed yet.**
+
+**Not verified on an actual phone yet** — the owner verifies UI on prod, and a
+PWA install prompt / "Add to Home Screen" behavior can't be exercised from a
+desktop browser dev tools alone. Once deployed, worth explicitly checking:
+Android Chrome's install banner appears and the installed icon/splash look
+right; iOS Safari's "Add to Home Screen" picks up the apple-touch-icon and
+launches standalone (no Safari chrome); the bottom sheet, stacked cards, and
+touch targets actually feel right on a real device, not just a resized
+desktop browser window.
+
 ## 🔴 NEXT UP: emergency freeze still active — purge stray assignments before lifting
 
 Two flags in `app/api/displays/[slug]/content/route.ts`:
@@ -369,13 +473,14 @@ Recent commits, newest first:
   `Setting` row (migration `20260709170000_add_setting`).
 - `e729a39` — pixel massager (voxel-city screensaver) + assignment cleanup script.
 
-**Uncommitted right now:** parts 2 and 3 above (dashboard visibility,
-video-aware pooling, and the direct per-room Rotation toggle on the library) —
-passes `tsc`/`lint`/`build` locally but has not been committed or pushed yet.
-Part 3 includes a new migration
-(`20260713140000_add_content_rotation_room`). **The carousel emergency freeze
-is still ON** (see the next section) — that's still the other open item, and
-it needs prod-data cleanup + owner sign-off before lifting.
+**Uncommitted right now:** parts 2, 3, and 4 above (dashboard visibility,
+video-aware pooling, the direct per-room Rotation toggle on the library, and
+the mobile/PWA rework) — passes `tsc`/`lint`/`build` locally but has not been
+committed or pushed yet. Part 3 includes a new migration
+(`20260713140000_add_content_rotation_room`); part 4 has no schema change.
+**The carousel emergency freeze is still ON** (see the next section) — that's
+still the other open item, and it needs prod-data cleanup + owner sign-off
+before lifting.
 
 **Also flagged by the owner, not yet started:** once ON/OFF + Slide/Fade are
 confirmed working end-to-end, the SLIDE animation itself needs to be checked

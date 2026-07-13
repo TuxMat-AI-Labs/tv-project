@@ -1,8 +1,19 @@
+import type { Viewport } from "next";
 import { prisma } from "@/lib/prisma";
 import { auth, signOut } from "@/auth";
 import { Wordmark } from "@/components/brand/Wordmark";
 import { HubNav } from "@/components/hub/HubNav";
 import { ContactMenu } from "@/components/hub/ContactMenu";
+import { RegisterServiceWorker } from "@/components/hub/RegisterServiceWorker";
+
+// Overrides the root layout's zoom-locked viewport (that lock exists for the
+// TV-facing routes' pixel-perfect full-bleed rendering — see app/layout.tsx).
+// The admin hub is a normal, zoomable web app; locking pinch-zoom here would
+// only hurt usability on a phone (e.g. zooming into a dense table).
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+};
 
 export default async function HubLayout({
   children,
@@ -30,6 +41,7 @@ export default async function HubLayout({
 
   return (
     <div className="min-h-screen text-foreground">
+      <RegisterServiceWorker />
       <header className="sticky top-0 z-40 border-b brand-hairline bg-white/70 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 pt-5 pb-3">
           <Wordmark subtitle="Display Hub" />

@@ -398,3 +398,16 @@ html.tv-output body {
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+/* iOS Safari auto-zooms the page on focusing any form field smaller than
+   16px — several hub forms set a 14px `text-sm` input directly. Bumping the
+   effective size back up below this width kills that zoom-in/zoom-out jump
+   without having to touch every input's className individually. Desktop
+   keeps whatever size each input actually declares. */
+@media (max-width: 640px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}

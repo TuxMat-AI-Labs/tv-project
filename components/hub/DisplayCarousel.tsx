@@ -75,17 +75,22 @@ export function DisplayCarousel({
   // portrait/landscape panels lines up (tops + bottoms aligned), like TVs hung
   // at the same height. A landscape (16:9) tile of the same height as a portrait
   // (9:16) one is ~3.05× as wide — the carousel scrolls, so the width is fine.
+  // Each width below is chosen so PORTRAIT-height × 16/9 = the LANDSCAPE width
+  // at that same breakpoint (the invariant above) — the phone tier exists
+  // because the old two-tier scale's smallest size (meant for a laptop-narrow
+  // window) still put a "large" landscape tile at ~682px, ~1.8× a phone's
+  // viewport width.
   const tileWidths =
     tileSize === "large"
-      ? { PORTRAIT: "w-56 sm:w-64", LANDSCAPE: "w-[42.65rem] sm:w-[48.75rem]" }
-      : { PORTRAIT: "w-40 sm:w-44", LANDSCAPE: "w-[30.5rem] sm:w-[33.5rem]" };
+      ? { PORTRAIT: "w-36 sm:w-56 md:w-64", LANDSCAPE: "w-[27.4rem] sm:w-[42.65rem] md:w-[48.75rem]" }
+      : { PORTRAIT: "w-28 sm:w-40 md:w-44", LANDSCAPE: "w-[21.3rem] sm:w-[30.5rem] md:w-[33.5rem]" };
 
   return (
     <div>
       {(title || nav.overflow) && (
-        <div className="mb-5 flex items-center justify-between gap-4">
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
           {title ? (
-            <h2 className="flex items-center gap-2.5 text-lg font-semibold tracking-wide text-foreground uppercase">
+            <h2 className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-lg font-semibold tracking-wide text-foreground uppercase">
               {title}
               {online !== undefined && <StatusCircle online={online} />}
               {titleAction}
@@ -94,7 +99,10 @@ export function DisplayCarousel({
             <span />
           )}
           {nav.overflow && (
-            <div className="flex items-center gap-2">
+            // Hidden below sm: touch swipe already scrolls the row natively, and
+            // hiding these frees up header space next to the title on a phone
+            // (which is often already crowded with a status circle + room controls).
+            <div className="hidden items-center gap-2 sm:flex">
               <CarouselArrow dir="left" disabled={nav.atStart} onClick={() => page(-1)} />
               <CarouselArrow dir="right" disabled={nav.atEnd} onClick={() => page(1)} />
             </div>
@@ -127,7 +135,7 @@ function CarouselArrow({ dir, disabled, onClick }: { dir: "left" | "right"; disa
       aria-label={dir === "left" ? "Previous displays" : "Next displays"}
       onClick={onClick}
       disabled={disabled}
-      className="glass-btn flex h-8 w-8 items-center justify-center rounded-full disabled:pointer-events-none"
+      className="glass-btn flex h-11 w-11 items-center justify-center rounded-full disabled:pointer-events-none"
     >
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
         <polyline points={dir === "left" ? "15 18 9 12 15 6" : "9 18 15 12 9 6"} />

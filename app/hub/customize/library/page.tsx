@@ -237,7 +237,7 @@ export default function LibraryPage() {
                     setItemOrientation(item.id, item.orientation === "LANDSCAPE" ? "PORTRAIT" : "LANDSCAPE")
                   }
                   title="Click to toggle orientation"
-                  className={`inline-block rounded-full px-2 py-0.5 text-[10px] uppercase transition-colors ${
+                  className={`inline-block min-h-[32px] rounded-full px-2.5 py-1.5 text-[10px] uppercase transition-colors ${
                     item.orientation === "LANDSCAPE"
                       ? "bg-gold text-white"
                       : "bg-surface-2 text-muted hover:text-foreground"
@@ -252,7 +252,7 @@ export default function LibraryPage() {
                   <select
                     value={item.rotationRoomId ?? ""}
                     onChange={(e) => setItemRotation(item.id, e.target.value || null)}
-                    className={`mt-0.5 block w-full rounded border px-1.5 py-1 text-[11px] ${
+                    className={`mt-0.5 block w-full rounded border px-1.5 py-2 text-[11px] ${
                       item.rotationRoomId
                         ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700"
                         : "border-black/10 bg-white text-foreground"

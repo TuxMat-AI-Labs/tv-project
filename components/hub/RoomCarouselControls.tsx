@@ -76,15 +76,15 @@ export function RoomCarouselControls({
   }
 
   return (
-    <span className="flex items-center gap-3 text-[11px] font-medium tracking-wide">
-      <span className="flex items-center gap-2">
+    <span className="flex items-center gap-1 text-[11px] font-medium tracking-wide">
+      <span className="flex items-center">
         {(["SLIDE", "FADE"] as const).map((option) => (
           <button
             key={option}
             type="button"
             onClick={() => chooseTransition(option)}
             aria-pressed={currentTransition === option}
-            className={`uppercase transition-colors ${
+            className={`rounded px-2 py-2.5 uppercase transition-colors ${
               currentTransition === option ? "text-gold" : "text-muted hover:text-foreground"
             }`}
           >
@@ -101,15 +101,17 @@ export function RoomCarouselControls({
         title={isOn ? "Rotation on — click to turn off" : "Rotation off — click to turn on"}
         onClick={toggleActive}
         disabled={pending}
-        className={`relative h-5 w-9 shrink-0 rounded-full transition-colors disabled:opacity-60 ${
-          isOn ? "bg-emerald-500" : "bg-black/20"
-        }`}
+        className="flex h-11 w-11 shrink-0 items-center justify-center disabled:opacity-60"
       >
         <span
-          className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
-            isOn ? "translate-x-4" : "translate-x-0"
-          }`}
-        />
+          className={`relative h-7 w-12 rounded-full transition-colors ${isOn ? "bg-emerald-500" : "bg-black/20"}`}
+        >
+          <span
+            className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow-sm transition-transform ${
+              isOn ? "translate-x-5" : "translate-x-0"
+            }`}
+          />
+        </span>
       </button>
     </span>
   );

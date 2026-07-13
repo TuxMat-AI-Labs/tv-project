@@ -214,8 +214,56 @@ export default function AssignmentsPage() {
         )}
       </div>
 
-      <div className="mt-6 overflow-hidden brand-card">
-        <table className="w-full text-left text-sm">
+      {loading && <p className="mt-6 text-sm text-muted">Loading…</p>}
+      {!loading && assignments.length === 0 && <p className="mt-6 text-sm text-muted">No assignments yet.</p>}
+
+      {/* Mobile: one card per assignment, big tap target for Delete. Table (below) takes over at sm+. */}
+      {!loading && assignments.length > 0 && (
+        <div className="mt-6 space-y-3 sm:hidden">
+          {assignments.map((a) => (
+            <div key={a.id} className="brand-card flex items-start gap-3 p-4">
+              <div className="h-12 w-9 flex-shrink-0 overflow-hidden rounded bg-surface-2">
+                {a.contentItem.thumbnailUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={a.contentItem.thumbnailUrl} alt="" className="h-full w-full object-cover" />
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-medium text-foreground">{a.contentItem.title}</p>
+                <p className="mt-0.5 truncate text-xs text-muted">
+                  {a.display.room.name} &middot; {a.display.name} &middot; order {a.sortOrder}
+                </p>
+                <p className="mt-1 text-xs text-muted">
+                  {a.startsAt || a.endsAt ? (
+                    <>
+                      {formatDate(a.startsAt) ?? "…"} &rarr; {formatDate(a.endsAt) ?? "…"}
+                    </>
+                  ) : (
+                    "Always"
+                  )}
+                  {" · "}
+                  {a.daypartStart || a.daypartEnd ? (
+                    <>
+                      {a.daypartStart ?? "00:00"}&ndash;{a.daypartEnd ?? "23:59"}
+                    </>
+                  ) : (
+                    "All day"
+                  )}
+                </p>
+              </div>
+              <button
+                onClick={() => deleteAssignment(a.id)}
+                className="shrink-0 rounded px-3 py-2 text-xs font-medium text-red-600"
+              >
+                Delete
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="mt-6 hidden overflow-x-auto brand-card sm:block">
+        <table className="w-full min-w-[720px] text-left text-sm">
           <thead>
             <tr className="border-b brand-hairline text-xs text-muted">
               <th className="px-4 py-3 font-medium">Display</th>

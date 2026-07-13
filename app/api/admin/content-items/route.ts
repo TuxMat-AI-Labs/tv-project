@@ -6,7 +6,7 @@ import { canManageContent } from "@/lib/auth/roles";
 export async function GET() {
   const items = await prisma.contentItem.findMany({
     orderBy: { createdAt: "desc" },
-    select: { id: true, title: true, type: true, thumbnailUrl: true, fileUrl: true },
+    select: { id: true, title: true, type: true, thumbnailUrl: true, fileUrl: true, orientation: true },
   });
   return NextResponse.json({ items });
 }
@@ -23,6 +23,7 @@ export async function POST(req: NextRequest) {
     fileUrl: string;
     thumbnailUrl?: string;
     durationSec?: number;
+    orientation?: "PORTRAIT" | "LANDSCAPE";
   };
 
   const item = await prisma.contentItem.create({
@@ -32,6 +33,7 @@ export async function POST(req: NextRequest) {
       fileUrl: body.fileUrl,
       thumbnailUrl: body.thumbnailUrl ?? (body.type === "IMAGE" ? body.fileUrl : null),
       durationSec: body.durationSec,
+      orientation: body.orientation ?? "PORTRAIT",
       uploadedById: session.user.id,
     },
   });

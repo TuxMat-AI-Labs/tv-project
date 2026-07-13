@@ -13,29 +13,92 @@ full source, git repo, `node_modules`, committed assets — is at
 The Claude_Preview MCP is rooted at the stub, so its `.claude/launch.json`
 (`tuxdisplay-dev`) `cd`s into the real project before `npm run dev`.
 
-## 🔴 NEXT UP: carousel disabled + emergency freeze active — needs cleanup + rethink
+## 🟢 BUILT (this session): landscape-only room carousel + global Slide/Fade transition — NOT YET PUSHED
 
-The synchronized video-wall carousel was built, shipped, then **disabled in
-prod** after it "wouldn't turn off" and TVs kept rotating. Two independent
-stop-gaps are currently live and BOTH must be understood before re-enabling:
+The carousel rethink is done: it no longer treats a room as one undifferentiated
+ring of "every display's first assignment" (that was the old, disabled
+mechanic). It's now **orientation-aware** and pulls from a **shared image
+pool** instead of one item per display:
 
-1. **`CAROUSEL_ENABLED = false`** in `app/api/displays/[slug]/content/route.ts`
-   — the synchronized carousel (rotate each display's home graphic to the next
-   on a shared server beat; see `lib/display/resolveRoomCarousel.ts` +
-   `components/display/CarouselPlayer.tsx`). With this false the content route
-   ignores a room's `carouselActive` flag entirely. The activate button is also
-   hidden from `components/hub/RoomSection.tsx` (commented, with re-enable note).
+- **`ContentItem.orientation`** (`PORTRAIT` default / `LANDSCAPE`) — a new tag
+  on library items, set at upload or after the fact (`/hub/customize/library`,
+  each card has a Portrait/Landscape toggle chip; migration
+  `20260713120000_add_content_orientation_and_carousel_transition`).
+- **The room carousel now only runs across a room's `LANDSCAPE`-oriented
+  displays.** Portrait displays in the same room are untouched — they keep
+  showing whatever's normally assigned to them, carousel on or off.
+- **Pool, not per-display ring:** `buildLandscapeRoomRing` in
+  `app/api/displays/[slug]/content/route.ts` collects every currently-in-window
+  `LANDSCAPE`-tagged item assigned to any of the room's active landscape
+  displays (deduped, sorted by id for a stable shared order), and
+  `lib/display/resolveRoomCarousel.ts` was generalized so the pool size (M) and
+  the number of participating displays (N) are independent — each display's
+  slot (0..N-1) advances through the pool by 1 tick, so **as long as M ≥ N no
+  two landscape displays ever show the same image at the same tick**, and the
+  whole pool cycles through over time (not just a fixed swap among N items).
+  `CAROUSEL_ENABLED` is back to `true`.
+- **Global Slide/Fade toggle.** `Room.carouselTransition` (`SLIDE` default /
+  `FADE`) drives both the synchronized carousel (`CarouselPlayer.tsx`) *and*
+  any display's own multi-item playlist (`PlaylistPlayer.tsx`) — one setting
+  per room, shared by both mechanisms (`lib/display/transition.ts`). FADE is
+  a 1s crossfade "bleed" (opacity only, both layers overlap in place); SLIDE is
+  the existing whip-push. New `PATCH /api/admin/rooms/[id]/carousel-transition`.
+- **Hub controls, every room, main dashboard page:** each room's heading in
+  `components/hub/RoomSection.tsx` now shows a Slide/Fade segmented toggle
+  (`CarouselTransitionToggle.tsx`) next to the re-enabled carousel
+  activate/deactivate button.
+- **Fixed the reported toggle-off bug in passing:** `ActivateCarouselButton`
+  used to seed local state from a `initialActive` prop once and never
+  reconcile with later hub-status polls, so it could get stuck fighting the
+  server. It's now driven by a `serverActive` prop every render, with a local
+  optimistic override that's dropped (adjusted during render, not in an
+  effect) the instant the server's own value matches it.
+- Assignment/library UI now shows orientation (`/hub/customize/assignments`
+  display + content dropdowns, library cards) so it's obvious which images are
+  landscape-tagged when assigning them to a room's landscape displays.
 
-2. **`FREEZE_TO_SINGLE_SLIDE = true`** in the same route — the ACTUAL cause of
-   "still rotating after the carousel was disabled." The **first** version of
-   the activate-carousel button (since replaced) stuffed the *entire content
+**Passes `tsc`/`lint`/`build`. Not yet committed or pushed — ask before
+pushing per usual.**
+
+**To actually use this on Multi-Purpose:**
+1. In `/hub/customize/library`, tag the landscape-formatted creatives as
+   Landscape.
+2. In `/hub/customize/assignments`, assign those landscape items to
+   Multi-Purpose's landscape-oriented displays (the dropdowns now show each
+   display's/item's orientation). Assign at least as many landscape items as
+   there are landscape displays in the room, ideally more, so the pool has
+   room to actually rotate instead of just permuting a small set.
+3. On the hub dashboard, click Multi-Purpose's activate-carousel button, and
+   pick Slide or Fade with the new toggle next to it.
+4. **The still-pending emergency freeze matters here too:** `FREEZE_TO_SINGLE_SLIDE`
+   (see below) collapses any playlist >1 item to its first item — but only
+   for displays that *fall through* to normal schedule resolution. A
+   landscape display whose room carousel is ON bypasses that entirely (the
+   carousel branch returns before the freeze check ever runs), so this new
+   rotation is not blocked by the freeze. It only matters if the carousel is
+   OFF: then a landscape display with 2+ directly-assigned items would get
+   frozen to its first one, same as everywhere else today.
+5. **Not verified on real hardware yet** — the owner verifies UI on prod. On
+   the next deploy, confirm on the actual Multi-Purpose TVs that (a) only the
+   landscape screens rotate, (b) they never show the same graphic at once, and
+   (c) Fade actually reads as a soft bleed rather than a slide on real Tizen
+   browsers.
+
+## 🔴 NEXT UP: emergency freeze still active — purge stray assignments before lifting
+
+Two flags in `app/api/displays/[slug]/content/route.ts`:
+
+1. **`CAROUSEL_ENABLED`** — now back to `true` (see above; this used to be the
+   kill switch for the old, disabled carousel).
+2. **`FREEZE_TO_SINGLE_SLIDE = true`** — still on. The **first** version of the
+   activate-carousel button (long since replaced) stuffed the *entire content
    library* into **every display** as a multi-item playlist. Those stray
-   assignments persist in the prod DB, so the normal `PlaylistPlayer` kept
-   cycling them (~10s/item) even with the carousel off. This flag collapses any
-   playlist to its first item server-side so every display shows ONE static
-   graphic. It's a blunt stop-gap, not a fix.
+   assignments persist in the prod DB, so any display whose room carousel is
+   off still has the normal `PlaylistPlayer` cycling through all of them
+   (~10s/item) unless this flag collapses it back to one. Set `false` once
+   cleaned up.
 
-**Cleanup required before turning either flag back:**
+**Cleanup required before turning this off:**
 - **Purge the stray assignments on prod.** Each display should have only the
   single graphic it's meant to show. **The script exists and is tested:**
   `scripts/cleanup-assignments.ts` — audit by default, `--apply` to delete.
@@ -48,22 +111,10 @@ stop-gaps are currently live and BOTH must be understood before re-enabling:
   (audit first, then `--apply` — get the owner's go-ahead before applying).
   Local `.env` only holds the local dev DB, so `--env-file=.env` can't touch prod.
   Afterward verify each display's `/api/displays/<slug>/content` returns a
-  1-item playlist that is the *intended* creative, then set
+  1-item playlist that is the *intended* creative (or, for a Multi-Purpose
+  landscape display now deliberately carrying 2+ landscape assignments, that
+  those are the *intended* pool items, not leftover stray ones), then set
   `FREEZE_TO_SINGLE_SLIDE = false`.
-- **Fix the carousel toggle-off before re-enabling** (`CAROUSEL_ENABLED`). The
-  reported symptom was the toggle not turning the carousel off. Suspect: the
-  hub dashboard polls `/api/hub/status` every 10s and re-renders; the button
-  holds local optimistic state (`components/hub/ActivateCarouselButton.tsx`)
-  that can fight a stale poll. Make hub status authoritative for the button
-  state and confirm the off-write (`carouselActive=false`, `carouselStartedAt`
-  cleared) actually sticks. All carousel code (resolver, player, toggle route
-  `app/api/admin/rooms/[id]/activate-carousel`, schema cols `Room.carouselActive`
-  / `carouselStartedAt`, migration `20260709160000_add_room_carousel`) is intact.
-- **Rethink the mechanic itself** per the owner: the carousel should rotate each
-  display's single home graphic to the neighbor, all sliding + landing together
-  (Display 2→1, 3→2, 4→3, 1→last), NOT cycle a library on each screen. That v2
-  logic exists and was verified in dev (identical ring/tick/countdown across
-  displays), but the whole flow needs a cleaner on/off story.
 
 ## 🟢 BUILT (this session): full-screen pixel massager (rainbow sweep / "Minecraft city")
 
@@ -201,8 +252,9 @@ What was changed:
 
 ## ⏳ Deploy status
 
-All work through **`30cbbd9`** is pushed to `main` and auto-deployed on Render.
+Everything through **`42a1fcc`** is pushed to `main` and auto-deployed on Render.
 Recent commits, newest first:
+- `42a1fcc` — handoff: current deploy state (all shipped through `30cbbd9`).
 - `30cbbd9` — hub equal-height tiles (landscape lines up with portrait).
 - `0b2b3da` — per-display landscape orientation (migration
   `20260709180000_add_display_orientation`).
@@ -211,9 +263,14 @@ Recent commits, newest first:
   `Setting` row (migration `20260709170000_add_setting`).
 - `e729a39` — pixel massager (voxel-city screensaver) + assignment cleanup script.
 
-Nothing pending to push. **The carousel emergency freeze is still ON** (see the
-top section) — that's the next real work, and it needs prod-data cleanup + owner
-sign-off before lifting.
+**Uncommitted right now:** the landscape-only room carousel + global Slide/Fade
+transition (see the top section) — passes `tsc`/`lint`/`build` locally but has
+not been committed or pushed. Includes a new migration
+(`20260713120000_add_content_orientation_and_carousel_transition`) that will
+run via Render's `prisma migrate deploy` preDeploy step on the next push.
+**The carousel emergency freeze is still ON** (see the next section) — that's
+still the other open item, and it needs prod-data cleanup + owner sign-off
+before lifting.
 
 ⚠️ **Local Mac process-limit gotcha (this session):** leaving multiple
 `npm run dev` / Turbopack servers running exhausted the OS fork limit

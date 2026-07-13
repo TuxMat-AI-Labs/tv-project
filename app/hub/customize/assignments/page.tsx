@@ -3,8 +3,20 @@
 import { useEffect, useState } from "react";
 import { CustomizeSubNav } from "@/components/hub/CustomizeSubNav";
 
-type ContentItemLite = { id: string; title: string; type: "IMAGE" | "VIDEO"; thumbnailUrl: string | null };
-type DisplayLite = { id: string; name: string; number: number; room: { name: string } };
+type ContentItemLite = {
+  id: string;
+  title: string;
+  type: "IMAGE" | "VIDEO";
+  thumbnailUrl: string | null;
+  orientation: "PORTRAIT" | "LANDSCAPE";
+};
+type DisplayLite = {
+  id: string;
+  name: string;
+  number: number;
+  orientation: "PORTRAIT" | "LANDSCAPE";
+  room: { name: string };
+};
 type Assignment = {
   id: string;
   sortOrder: number;
@@ -122,7 +134,7 @@ export default function AssignmentsPage() {
             >
               {displays.map((d) => (
                 <option key={d.id} value={d.id}>
-                  {d.room.name} · {d.name}
+                  {d.room.name} · {d.name} ({d.orientation === "LANDSCAPE" ? "Landscape" : "Portrait"})
                 </option>
               ))}
             </select>
@@ -136,7 +148,7 @@ export default function AssignmentsPage() {
             >
               {items.map((item) => (
                 <option key={item.id} value={item.id}>
-                  {item.title}
+                  {item.title} ({item.orientation === "LANDSCAPE" ? "Landscape" : "Portrait"})
                 </option>
               ))}
             </select>

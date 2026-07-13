@@ -33,6 +33,11 @@ enum Orientation {
   LANDSCAPE
 }
 
+enum CarouselTransition {
+  SLIDE
+  FADE
+}
+
 // Global key/value settings (e.g. the chosen screensaver style). One row per
 // key; app-wide, not per-display.
 model Setting {
@@ -68,6 +73,9 @@ model Room {
   // rotation tick is computed from; null when the carousel is off.
   carouselActive    Boolean   @default(false)
   carouselStartedAt DateTime?
+  // How the carousel (and any display's own multi-item playlist) transitions
+  // between items in this room: a hard push-slide, or a soft crossfade.
+  carouselTransition CarouselTransition @default(SLIDE)
 
   displays Display[]
 }
@@ -101,6 +109,10 @@ model ContentItem {
   fileUrl      String
   thumbnailUrl String?
   durationSec  Int?
+  // Tags an item as shot/cropped for a landscape (16:9) panel vs the default
+  // portrait creative. Drives the landscape-only room carousel pool (see
+  // lib/display/resolveRoomCarousel.ts) — not otherwise enforced.
+  orientation  Orientation @default(PORTRAIT)
   uploadedById String
   uploadedBy   User      @relation(fields: [uploadedById], references: [id])
   createdAt    DateTime  @default(now())

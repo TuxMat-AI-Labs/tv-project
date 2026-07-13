@@ -26,6 +26,7 @@ export function DisplayPlayer({ slug }: { slug: string }) {
       <CarouselPlayer
         carousel={data.carousel}
         contentFit={data.contentFit ?? "COVER"}
+        transition={data.carouselTransition}
         onCurrentItemChange={reportHeartbeat}
       />
     );
@@ -36,6 +37,7 @@ export function DisplayPlayer({ slug }: { slug: string }) {
       <PlaylistPlayer
         playlist={data.playlist}
         contentFit={data.contentFit ?? "COVER"}
+        transition={data.carouselTransition}
         onCurrentItemChange={reportHeartbeat}
       />
     );

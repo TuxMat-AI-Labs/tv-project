@@ -9,6 +9,7 @@ type ContentItem = {
   type: "IMAGE" | "VIDEO";
   thumbnailUrl: string | null;
   fileUrl: string;
+  orientation: "PORTRAIT" | "LANDSCAPE";
 };
 
 export default function LibraryPage() {
@@ -19,6 +20,7 @@ export default function LibraryPage() {
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
   const [durationSec, setDurationSec] = useState(10);
+  const [orientation, setOrientation] = useState<"PORTRAIT" | "LANDSCAPE">("PORTRAIT");
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -43,6 +45,22 @@ export default function LibraryPage() {
   useEffect(() => {
     refresh();
   }, []);
+
+  async function setItemOrientation(id: string, next: "PORTRAIT" | "LANDSCAPE") {
+    const prev = items;
+    setItems((cur) => cur.map((it) => (it.id === id ? { ...it, orientation: next } : it)));
+    try {
+      const res = await fetch(`/api/admin/content-items/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orientation: next }),
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      setItems(prev);
+      setError("Failed to update orientation.");
+    }
+  }
 
   function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const selected = e.target.files?.[0] ?? null;
@@ -81,6 +99,7 @@ export default function LibraryPage() {
           fileUrl: publicUrl,
           thumbnailUrl: mediaType === "IMAGE" ? publicUrl : undefined,
           durationSec: mediaType === "IMAGE" ? durationSec : undefined,
+          orientation,
         }),
       });
       if (!createRes.ok) throw new Error("Could not save the content item.");
@@ -88,6 +107,7 @@ export default function LibraryPage() {
       setFile(null);
       setTitle("");
       setDurationSec(10);
+      setOrientation("PORTRAIT");
       if (fileInputRef.current) fileInputRef.current.value = "";
       await refresh();
     } catch (err) {
@@ -140,6 +160,17 @@ export default function LibraryPage() {
             />
             {mediaType === "VIDEO" && <p className="mt-1 text-[10px] text-muted">Uses the video&apos;s own length</p>}
           </label>
+          <label className="block">
+            <span className="text-xs text-muted">Orientation</span>
+            <select
+              value={orientation}
+              onChange={(e) => setOrientation(e.target.value as "PORTRAIT" | "LANDSCAPE")}
+              className="mt-1 block rounded border border-black/10 bg-white px-2 py-1.5 text-sm text-foreground"
+            >
+              <option value="PORTRAIT">Portrait</option>
+              <option value="LANDSCAPE">Landscape</option>
+            </select>
+          </label>
           <button
             onClick={upload}
             disabled={uploading || !file || !title.trim()}
@@ -168,9 +199,25 @@ export default function LibraryPage() {
             </div>
             <div className="p-2">
               <p className="truncate text-xs font-medium text-foreground">{item.title}</p>
-              <span className="mt-1 inline-block rounded-full bg-surface-2 px-2 py-0.5 text-[10px] text-muted uppercase">
-                {item.type}
-              </span>
+              <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                <span className="inline-block rounded-full bg-surface-2 px-2 py-0.5 text-[10px] text-muted uppercase">
+                  {item.type}
+                </span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setItemOrientation(item.id, item.orientation === "LANDSCAPE" ? "PORTRAIT" : "LANDSCAPE")
+                  }
+                  title="Click to toggle orientation"
+                  className={`inline-block rounded-full px-2 py-0.5 text-[10px] uppercase transition-colors ${
+                    item.orientation === "LANDSCAPE"
+                      ? "bg-gold text-white"
+                      : "bg-surface-2 text-muted hover:text-foreground"
+                  }`}
+                >
+                  {item.orientation === "LANDSCAPE" ? "Landscape" : "Portrait"}
+                </button>
+              </div>
             </div>
           </div>
         ))}

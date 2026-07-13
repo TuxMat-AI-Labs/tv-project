@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { PlaylistItem } from "@/lib/display/resolveContentForDisplay";
 import type { CarouselPayload } from "@/lib/display/resolveRoomCarousel";
+import type { CarouselTransition } from "@/lib/display/transition";
 import type { ScreensaverVariant } from "@/lib/screensaver";
 
 export type DisplayContentResponse = {
@@ -10,6 +11,7 @@ export type DisplayContentResponse = {
   playlist?: PlaylistItem[];
   carousel?: CarouselPayload;
   contentFit?: "COVER" | "CONTAIN" | "FILL";
+  carouselTransition?: CarouselTransition;
   screensaverStyle?: ScreensaverVariant;
   reloadRequestedAt?: string | null;
   serverTime: string;

@@ -5,27 +5,43 @@ import { CarouselIcon } from "@/components/hub/icons";
 
 /**
  * Icon-only toggle next to a room's heading. Starts/stops the room's
- * synchronized video-wall carousel (see
+ * synchronized landscape carousel (see
  * app/api/admin/rooms/[id]/activate-carousel/route.ts). Turns green while
  * active; the slider glyph scrolls continuously when active, and on hover
  * when idle.
+ *
+ * `serverActive` is authoritative (from the hub's ~10s status poll, via
+ * RoomSection). A click sets a local optimistic override so the click feels
+ * instant, but that override is dropped the moment the server's own value
+ * catches up (adjusted during render, React's prescribed way to reset state
+ * when a prop changes — see https://react.dev/learn/you-might-not-need-an-effect)
+ * — it never permanently diverges from the server, which is what let a stale
+ * poll fight a stuck "on" button before.
  */
-export function ActivateCarouselButton({ roomId, initialActive }: { roomId: string; initialActive: boolean }) {
-  const [active, setActive] = useState(initialActive);
+export function ActivateCarouselButton({ roomId, serverActive }: { roomId: string; serverActive: boolean }) {
+  const [override, setOverride] = useState<boolean | null>(null);
+  const [prevServerActive, setPrevServerActive] = useState(serverActive);
   const [pending, setPending] = useState(false);
+
+  if (serverActive !== prevServerActive) {
+    setPrevServerActive(serverActive);
+    if (override !== null && override === serverActive) setOverride(null);
+  }
+
+  const active = override ?? serverActive;
 
   async function toggle() {
     if (pending) return;
     setPending(true);
     const optimistic = !active;
-    setActive(optimistic); // reflect intent immediately; reconcile with the server below
+    setOverride(optimistic); // reflect intent immediately; the effect above reconciles once the poll confirms
     try {
       const res = await fetch(`/api/admin/rooms/${roomId}/activate-carousel`, { method: "POST" });
       const data = (await res.json().catch(() => null)) as { active?: boolean } | null;
-      if (!res.ok || !data) setActive(!optimistic);
-      else setActive(Boolean(data.active));
+      if (!res.ok || !data) setOverride(!optimistic);
+      else setOverride(Boolean(data.active));
     } catch {
-      setActive(!optimistic);
+      setOverride(!optimistic);
     } finally {
       setPending(false);
     }

@@ -16,6 +16,7 @@ export type HubRoomStatus = {
   name: string;
   slug: string;
   carouselActive: boolean;
+  carouselTransition: "SLIDE" | "FADE";
   displays: HubDisplayStatus[];
 };
 

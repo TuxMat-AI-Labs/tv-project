@@ -70,6 +70,51 @@ pool** instead of one item per display:
 
 **Passes `tsc`/`lint`/`build`.**
 
+## 🟢 BUILT (this session, part 2): dashboard visibility + video-aware pooling — NOT YET PUSHED
+
+After part 1 shipped, the owner turned Fade on for Multi-Purpose and reported
+"nothing changes" and asked the hub dashboard itself show that rotation is
+actually happening, with minimal delay. Root cause: **the hub status route
+(`/api/hub/status`) had zero awareness of the landscape pool/carousel at
+all** — it only ever called the old per-display `resolveContentForDisplay`, so
+the dashboard tiles could never reflect rotation even when it was genuinely
+running on the TVs. Also added, per the owner's reminder: video-aware pooling.
+
+- **Extracted `lib/display/landscapeCarousel.ts`** — `resolveLandscapeDisplay()`
+  is now the single source of truth for what a LANDSCAPE display should show
+  (screensaver / carousel / static-home-image / "none, fall through"), used by
+  BOTH the TV content route and the hub status route. Before, the pool-building
+  logic lived only in the content route and the dashboard had no way to agree
+  with it.
+- **The hub dashboard now reflects rotation, live:** `/api/hub/status` runs
+  the exact same resolution as the TV, computes which pool item is showing at
+  the current tick, and returns `mode: "carousel"` + that item as
+  `currentContent`. `DisplayTile.tsx` shows a small pulsing **"Rotating"**
+  badge on any tile that's actually cycling, and its thumbnail updates to the
+  real current pool image each poll — so you can watch a room rotate from the
+  dashboard without needing to check a physical TV.
+- **Faster dashboard polling while any room is rotating:** `useHubStatus.ts`
+  polls every 10s normally but drops to every 3s while `carouselActive` is
+  true anywhere, so the ON/OFF switch and the rotating thumbnail catch up with
+  minimal delay after a change.
+- **Video-aware pooling ("only the statics rotate"):** a landscape display
+  currently showing a live VIDEO assignment now sits out the rotation
+  entirely — it's excluded from both the shared pool (videos never enter the
+  ring) and from the position count of participating displays, and just
+  plays its video normally on its own screen while the room's other landscape
+  (static-only) displays keep rotating among themselves.
+
+**Passes `tsc`/`lint`/`build`. Not yet pushed.**
+
+**Note on "nothing changes":** this batch doesn't rule out the simpler
+explanation too — Fade (or any transition) is only visible while something is
+actually rotating. If Multi-Purpose's ON/OFF switch was off, or fewer than 2
+landscape-tagged images were assigned to its landscape displays at the time,
+there was nothing to transition regardless of Slide vs Fade. Worth confirming
+directly on the dashboard now that it shows a live "Rotating" badge + updating
+thumbnail — if a room's switch is on and the badge isn't showing, that's a real
+bug to chase (most likely: no landscape pool exists yet for that room).
+
 **To actually use this on Multi-Purpose:**
 1. In `/hub/customize/library`, tag the landscape-formatted creatives as
    Landscape.
@@ -261,8 +306,12 @@ What was changed:
 
 ## ⏳ Deploy status
 
-Everything through **`42a1fcc`** is pushed to `main` and auto-deployed on Render.
+Everything through **`40201d3`** is pushed to `main` and auto-deployed on Render.
 Recent commits, newest first:
+- `40201d3` — room heading: text Slide/Fade + ON/OFF switch; off returns to
+  original image.
+- `30c49b2` — landscape-only room carousel + global Slide/Fade transition
+  (migration `20260713120000_add_content_orientation_and_carousel_transition`).
 - `42a1fcc` — handoff: current deploy state (all shipped through `30cbbd9`).
 - `30cbbd9` — hub equal-height tiles (landscape lines up with portrait).
 - `0b2b3da` — per-display landscape orientation (migration
@@ -272,14 +321,18 @@ Recent commits, newest first:
   `Setting` row (migration `20260709170000_add_setting`).
 - `e729a39` — pixel massager (voxel-city screensaver) + assignment cleanup script.
 
-**Uncommitted right now:** the landscape-only room carousel + global Slide/Fade
-transition (see the top section) — passes `tsc`/`lint`/`build` locally but has
-not been committed or pushed. Includes a new migration
-(`20260713120000_add_content_orientation_and_carousel_transition`) that will
-run via Render's `prisma migrate deploy` preDeploy step on the next push.
-**The carousel emergency freeze is still ON** (see the next section) — that's
-still the other open item, and it needs prod-data cleanup + owner sign-off
-before lifting.
+**Uncommitted right now:** part 2 above (dashboard visibility + video-aware
+pooling) — passes `tsc`/`lint`/`build` locally but has not been committed or
+pushed yet; no new migration this round. **The carousel emergency freeze is
+still ON** (see the next section) — that's still the other open item, and it
+needs prod-data cleanup + owner sign-off before lifting.
+
+**Also flagged by the owner, not yet started:** once ON/OFF + Slide/Fade are
+confirmed working end-to-end, the SLIDE animation itself needs to be checked
+against exactly what the owner wants (direction, easing, whether it reads as
+one continuous wall-wide push) — see `CarouselPlayer.tsx`'s `SLIDE_TRANSITION`
+and the whip-push comment. This is separate from, and comes after, verifying
+the on/off + transition-selection mechanics.
 
 ⚠️ **Local Mac process-limit gotcha (this session):** leaving multiple
 `npm run dev` / Turbopack servers running exhausted the OS fork limit

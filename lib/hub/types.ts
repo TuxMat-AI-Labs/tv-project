@@ -5,7 +5,7 @@ export type HubDisplayStatus = {
   number: number;
   active: boolean;
   orientation: "PORTRAIT" | "LANDSCAPE";
-  mode: "playlist" | "screensaver" | "inactive";
+  mode: "playlist" | "screensaver" | "inactive" | "carousel";
   currentContent: { id: string; type: "IMAGE" | "VIDEO"; thumbnailUrl: string | null; title: string } | null;
   online: boolean;
   lastSeenAt: string | null;

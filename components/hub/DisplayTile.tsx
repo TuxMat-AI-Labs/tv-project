@@ -11,6 +11,7 @@ const MODE_LABEL: Record<HubDisplayStatus["mode"], string> = {
   playlist: "Playing",
   screensaver: "Screensaver",
   inactive: "Inactive",
+  carousel: "Rotating",
 };
 
 // Max degrees the tile rotates toward the cursor on hover (Task E).
@@ -96,6 +97,14 @@ export function DisplayTile({
                 className="screen-flash pointer-events-none absolute inset-0 z-30"
                 style={{ "--tile-index": index } as CSSProperties}
               />
+              {/* Live indicator so the hub dashboard itself proves the room
+                  carousel is actually rotating, not just the physical TV. */}
+              {display.mode === "carousel" && (
+                <span className="pointer-events-none absolute top-2 left-2 z-20 flex items-center gap-1 rounded-full bg-black/55 px-2 py-0.5 text-[9px] font-medium tracking-wide text-white uppercase backdrop-blur-sm">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 motion-safe:animate-pulse" />
+                  Rotating
+                </span>
+              )}
               {/* Hover edge glow. */}
               <span className="pointer-events-none absolute inset-0 z-20 ring-1 ring-inset ring-transparent transition group-hover:ring-gold/50" />
           </TVFrame>

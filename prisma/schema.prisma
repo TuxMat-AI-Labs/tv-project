@@ -28,6 +28,11 @@ enum ContentFit {
   FILL
 }
 
+enum Orientation {
+  PORTRAIT
+  LANDSCAPE
+}
+
 // Global key/value settings (e.g. the chosen screensaver style). One row per
 // key; app-wide, not per-display.
 model Setting {
@@ -77,6 +82,7 @@ model Display {
   active              Boolean  @default(true)
   screensaverOverride Boolean?
   contentFit          ContentFit @default(COVER)
+  orientation         Orientation @default(PORTRAIT)
   reloadRequestedAt   DateTime? // bumped by the hub's "Refresh" action; the TV reloads on its next content poll when this changes
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt

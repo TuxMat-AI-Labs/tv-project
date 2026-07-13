@@ -62,6 +62,7 @@ export async function GET() {
           name: display.name,
           number: display.number,
           active: display.active,
+          orientation: display.orientation,
           mode: resolved.mode,
           currentContent: content
             ? {

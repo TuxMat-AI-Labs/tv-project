@@ -19,6 +19,7 @@ type DisplayDetail = {
   active: boolean;
   screensaverOverride: boolean | null;
   contentFit: "COVER" | "CONTAIN" | "FILL";
+  orientation: "PORTRAIT" | "LANDSCAPE";
   assignments: { id: string; contentItem: ContentItemLite }[];
   mode: "playlist" | "screensaver" | "inactive";
   online: boolean;
@@ -79,9 +80,15 @@ export function DisplayDetailView({
         <motion.div
           layoutId={`display-frame-${displayId}`}
           className="relative"
-          style={{ height: "86vh", maxWidth: "94vw", aspectRatio: "824 / 1412" }}
+          style={
+            display?.orientation === "LANDSCAPE"
+              ? { width: "min(94vw, 152vh)", maxHeight: "86vh", aspectRatio: "16 / 9" }
+              : { height: "86vh", maxWidth: "94vw", aspectRatio: "824 / 1412" }
+          }
         >
-          <TVFrame>{display && <LivePreview display={display} />}</TVFrame>
+          <TVFrame orientation={display?.orientation ?? "PORTRAIT"}>
+            {display && <LivePreview display={display} />}
+          </TVFrame>
         </motion.div>
       </div>
 

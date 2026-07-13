@@ -150,6 +150,67 @@ scheduled screensaver window** (no static frame, ever, not even briefly).
 - Use the TuxMat palette as an accent if desired, but a **full rainbow** is
   required here (not just the brand 6-color set) so every hue is swept.
 
+## 🟢 BUILT (this session): per-display horizontal (landscape) orientation
+
+**In the codebase + passes `tsc`/`lint`; NOT yet visually verified in a browser
+(the local preview couldn't be driven this session) — the owner is testing in
+prod.** ⚠️ Confirm the landscape frame + a landscape TV actually look right on
+prod before trusting it.
+
+Each `Display` now has an **`orientation`** (`PORTRAIT` default / `LANDSCAPE`),
+settable per display in the hub. Key insight that kept this small: the **live
+`/display` and `/tv` output is frameless full-bleed** (`absolute inset-0`), so a
+landscape-mounted TV's browser reports a landscape viewport and content fills it
+upright **automatically — no rotation code on the TV side**. `orientation` is
+therefore metadata that drives the **hub's representation** (and is available to
+drive fit defaults later); it does not transform the live output.
+
+What was changed:
+- **Schema:** `enum Orientation { PORTRAIT LANDSCAPE }` + `Display.orientation`
+  (`@default(PORTRAIT)`); migration `20260709180000_add_display_orientation`.
+- **API:** `PATCH /api/admin/displays/[id]` accepts `orientation`; the list
+  (`/api/admin/displays`) + detail (`/api/admin/displays/[id]` GET) already
+  return the whole row, and `/api/hub/status` + `lib/hub/types.ts` now carry it.
+- **`components/hub/TVFrame.tsx`:** new `orientation` prop. PORTRAIT keeps the
+  photographic `public/tv-frame.png` (9:16). LANDSCAPE renders a **clean
+  synthetic 16:9 bezel** (dark metallic border + the same dark-glass base +
+  diagonal glare) — I did NOT rotate the portrait photo because that would
+  rotate the content inside it; content stays upright in the landscape glass.
+  *If the owner wants a photographic landscape frame, add a landscape
+  `tv-frame` asset and branch on it here.*
+- **`DisplayTile.tsx`** (hub grid) + **`DisplayDetailView.tsx`** (detail/modal
+  preview) pass `orientation` to `TVFrame` and swap the wrapper aspect
+  (`16/9` landscape vs `824/1412` portrait; landscape sizes by width).
+- **`app/hub/customize/displays/page.tsx`:** an **Orientation** column with a
+  Portrait/Landscape `<select>` (optimistic + PATCH), same pattern as the Room
+  select.
+
+**Not done / decisions left for the owner:**
+- Content fit for portrait creatives on a landscape panel is still governed by
+  `contentFit` (COVER crops to fill, CONTAIN letterboxes). Consider defaulting a
+  landscape display to `CONTAIN`, or commissioning landscape (16:9) creatives.
+- The synthetic landscape bezel is functional but plainer than the portrait
+  photo frame — swap in a real landscape render if fidelity matters.
+
+## ⏳ Deploy status (read this first)
+
+- Pushed to `main` / **LIVE-deploying:** `e729a39` (pixel massager) + `514fd0b`
+  (screensaver picker → 3 massager variants, wired to TVs via a new `Setting`
+  row; migration `20260709170000_add_setting`).
+- **Committed locally but NOT pushed:** `3921c7a` (handoff: picker done). The
+  horizontal-orientation work above (+ this handoff update) is **staged/working
+  but not yet committed** — the shell/Bash tool wedged mid-session so the final
+  `build` + `git commit`/`push` could not run from here. **To ship it:**
+  ```sh
+  export PATH="$HOME/.local/node-v24/bin:$PATH"
+  cd /Users/diaz/Desktop/TuxMat/Claude/tuxdisplay/tv-project
+  npx tsc --noEmit && npm run lint && npm run build   # gate (tsc+lint already passed)
+  git add -A && git commit -m "Per-display landscape orientation + handoff"
+  git push origin main
+  ```
+  Render auto-deploys and runs `prisma migrate deploy` (applies
+  `20260709180000_add_display_orientation`) in preDeploy.
+
 ## Current state: LIVE in production
 
 - **App:** https://tuxdisplay.tuxmat.ai (Render web service `tuxdisplay`). Repo

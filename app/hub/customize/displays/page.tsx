@@ -15,6 +15,7 @@ type Display = {
   active: boolean;
   screensaverOverride: boolean | null;
   contentFit: "COVER" | "CONTAIN" | "FILL";
+  orientation: "PORTRAIT" | "LANDSCAPE";
 };
 
 export default function DisplaysPage() {
@@ -93,6 +94,18 @@ export default function DisplaysPage() {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ roomId }),
+    });
+    await refresh();
+  }
+
+  async function changeOrientation(display: Display, orientation: Display["orientation"]) {
+    if (orientation === display.orientation) return;
+    // Optimistic — the hub tile + preview re-render in the new aspect at once.
+    setDisplays((cur) => cur.map((d) => (d.id === display.id ? { ...d, orientation } : d)));
+    await fetch(`/api/admin/displays/${display.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orientation }),
     });
     await refresh();
   }
@@ -186,6 +199,7 @@ export default function DisplaysPage() {
               <th className="px-4 py-3 font-medium">Active</th>
               <th className="px-4 py-3 font-medium">Screensaver</th>
               <th className="px-4 py-3 font-medium">Fit</th>
+              <th className="px-4 py-3 font-medium">Orientation</th>
               <th className="px-4 py-3 font-medium">URL</th>
               <th className="px-4 py-3 font-medium"></th>
             </tr>
@@ -193,14 +207,14 @@ export default function DisplaysPage() {
           <tbody>
             {loading && (
               <tr>
-                <td className="px-4 py-4 text-muted" colSpan={8}>
+                <td className="px-4 py-4 text-muted" colSpan={9}>
                   Loading…
                 </td>
               </tr>
             )}
             {!loading && displays.length === 0 && (
               <tr>
-                <td className="px-4 py-4 text-muted" colSpan={8}>
+                <td className="px-4 py-4 text-muted" colSpan={9}>
                   No displays yet.
                 </td>
               </tr>
@@ -248,6 +262,17 @@ export default function DisplaysPage() {
                   <span className="rounded-full bg-surface-2 px-2 py-0.5 text-xs text-muted capitalize">
                     {display.contentFit.toLowerCase()}
                   </span>
+                </td>
+                <td className="px-4 py-3">
+                  <select
+                    value={display.orientation}
+                    onChange={(e) => changeOrientation(display, e.target.value as Display["orientation"])}
+                    className="rounded border border-black/10 bg-white px-2 py-1 text-sm text-foreground"
+                    aria-label={`Orientation for ${display.name}`}
+                  >
+                    <option value="PORTRAIT">Portrait</option>
+                    <option value="LANDSCAPE">Landscape</option>
+                  </select>
                 </td>
                 <td className="px-4 py-3">
                   <button

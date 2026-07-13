@@ -72,7 +72,7 @@ export function DisplayTile({
             transition: "transform 0.2s ease-out, box-shadow 0.3s ease-out",
           }}
         >
-          <TVFrame>
+          <TVFrame orientation={display.orientation}>
               {/* Screen content — wakes with the staggered power-on (Task F). */}
               <div
                 className="screen-content absolute inset-0 z-0"

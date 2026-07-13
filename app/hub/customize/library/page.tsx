@@ -10,10 +10,14 @@ type ContentItem = {
   thumbnailUrl: string | null;
   fileUrl: string;
   orientation: "PORTRAIT" | "LANDSCAPE";
+  rotationRoomId: string | null;
 };
+
+type RoomLite = { id: string; name: string };
 
 export default function LibraryPage() {
   const [items, setItems] = useState<ContentItem[]>([]);
+  const [rooms, setRooms] = useState<RoomLite[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,10 +36,13 @@ export default function LibraryPage() {
     : null;
 
   function refresh() {
-    return fetch("/api/admin/content-items")
-      .then((r) => r.json())
-      .then((data) => {
-        setItems(data.items ?? []);
+    return Promise.all([
+      fetch("/api/admin/content-items").then((r) => r.json()),
+      fetch("/api/admin/rooms").then((r) => r.json()),
+    ])
+      .then(([itemsData, roomsData]) => {
+        setItems(itemsData.items ?? []);
+        setRooms(roomsData.rooms ?? []);
         setError(null);
       })
       .catch(() => setError("Failed to load library."))
@@ -48,7 +55,12 @@ export default function LibraryPage() {
 
   async function setItemOrientation(id: string, next: "PORTRAIT" | "LANDSCAPE") {
     const prev = items;
-    setItems((cur) => cur.map((it) => (it.id === id ? { ...it, orientation: next } : it)));
+    // Dropping out of LANDSCAPE evicts it from any rotation too — mirrors the
+    // server's invariant so the UI doesn't show a stale rotation for a
+    // portrait item while waiting on the response.
+    setItems((cur) =>
+      cur.map((it) => (it.id === id ? { ...it, orientation: next, rotationRoomId: next === "LANDSCAPE" ? it.rotationRoomId : null } : it))
+    );
     try {
       const res = await fetch(`/api/admin/content-items/${id}`, {
         method: "PATCH",
@@ -59,6 +71,22 @@ export default function LibraryPage() {
     } catch {
       setItems(prev);
       setError("Failed to update orientation.");
+    }
+  }
+
+  async function setItemRotation(id: string, roomId: string | null) {
+    const prev = items;
+    setItems((cur) => cur.map((it) => (it.id === id ? { ...it, rotationRoomId: roomId } : it)));
+    try {
+      const res = await fetch(`/api/admin/content-items/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rotationRoomId: roomId }),
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      setItems(prev);
+      setError("Failed to update rotation.");
     }
   }
 
@@ -218,6 +246,27 @@ export default function LibraryPage() {
                   {item.orientation === "LANDSCAPE" ? "Landscape" : "Portrait"}
                 </button>
               </div>
+              {item.type === "IMAGE" && item.orientation === "LANDSCAPE" && (
+                <label className="mt-1.5 block">
+                  <span className="text-[10px] text-muted uppercase">Rotation</span>
+                  <select
+                    value={item.rotationRoomId ?? ""}
+                    onChange={(e) => setItemRotation(item.id, e.target.value || null)}
+                    className={`mt-0.5 block w-full rounded border px-1.5 py-1 text-[11px] ${
+                      item.rotationRoomId
+                        ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700"
+                        : "border-black/10 bg-white text-foreground"
+                    }`}
+                  >
+                    <option value="">Off</option>
+                    {rooms.map((room) => (
+                      <option key={room.id} value={room.id}>
+                        {room.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
             </div>
           </div>
         ))}

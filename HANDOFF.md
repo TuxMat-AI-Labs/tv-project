@@ -115,28 +115,76 @@ directly on the dashboard now that it shows a live "Rotating" badge + updating
 thumbnail — if a room's switch is on and the badge isn't showing, that's a real
 bug to chase (most likely: no landscape pool exists yet for that room).
 
-**To actually use this on Multi-Purpose:**
-1. In `/hub/customize/library`, tag the landscape-formatted creatives as
-   Landscape.
-2. In `/hub/customize/assignments`, assign those landscape items to
-   Multi-Purpose's landscape-oriented displays (the dropdowns now show each
-   display's/item's orientation). Assign at least as many landscape items as
-   there are landscape displays in the room, ideally more, so the pool has
-   room to actually rotate instead of just permuting a small set.
+**To actually use this on Multi-Purpose** — see part 3 below for the current
+(simpler) way to get images into a room's rotation; step 2 originally
+described here (assigning via `/hub/customize/assignments`) has been replaced.
+
+## 🟢 BUILT (this session, part 3): direct per-room Rotation toggle on the library — NOT YET PUSHED
+
+The owner found the assignment-based path to pool membership indirect: to get
+an image rotating you had to tag it Landscape, then go to
+`/hub/customize/assignments` and manually assign it to a specific display just
+to get it into the room's shared pool. Replaced with a direct control on the
+library item itself.
+
+- **`ContentItem.rotationRoomId`** (nullable FK to `Room`, migration
+  `20260713140000_add_content_rotation_room`, `onDelete: SetNull`) — which
+  room's rotation this item is in, if any. Set directly on the library item,
+  independent of any `Assignment` row.
+- **Library page (`/hub/customize/library`):** each item now has a
+  **Rotation** dropdown (Off / room name), shown only for `IMAGE` items tagged
+  `LANDSCAPE` — a video can never rotate, and neither can a portrait image, so
+  the control simply doesn't appear otherwise. Picking a room PATCHes
+  `rotationRoomId` immediately.
+- **`buildLandscapeRoomRing` (`lib/display/landscapeCarousel.ts`) rewritten:**
+  the pool is now a direct query — every `IMAGE` `ContentItem` with
+  `rotationRoomId` = this room (sorted by id for a stable order) — instead of
+  unioning whatever happens to be assigned to the room's landscape displays.
+  Much simpler, and the pool no longer silently depends on which display an
+  image happened to be assigned to. **Assignment-based pool membership is
+  gone** — assigning a `LANDSCAPE` image to a display via
+  `/hub/customize/assignments` no longer does anything for rotation (per the
+  owner's answer: Rotation is now the *only* way in).
+- **The video-exclusion logic is unchanged and still assignment-based:** a
+  landscape display currently playing a live VIDEO **assignment** still sits
+  out the rotation entirely (see part 2) — that's a genuinely different
+  concept (which physical display is showing a video right now) from pool
+  *membership* (which images are in the pool), so it still reads
+  `display.assignments` for that one check.
+- **Invariant enforced server-side, not just hidden in the UI**
+  (`PATCH /api/admin/content-items/[id]`): a `VIDEO` can never get a
+  `rotationRoomId` (400 if attempted); an item's `rotationRoomId` can only be
+  set while its orientation is `LANDSCAPE`; and toggling an item's orientation
+  away from `LANDSCAPE` while it's still in a rotation auto-clears
+  `rotationRoomId` (both server-side and optimistically in the library UI)
+  rather than leaving a stale/inconsistent pointer.
+- Per the owner's clarification: **date-range/daypart scheduling is
+  intentionally dropped for rotation membership** — Rotation is a plain
+  on/off per room, no scheduling window. (Scheduling still exists as before
+  for normal `Assignment` rows — portrait displays, and a landscape display's
+  dedicated video.)
+
+**Passes `tsc`/`lint`/`build`. Not yet pushed.**
+
+**To actually use this on Multi-Purpose now:**
+1. In `/hub/customize/library`, tag each landscape-formatted creative as
+   Landscape (if not already).
+2. On that same card, use the new **Rotation** dropdown to pick
+   **Multi-Purpose**. Repeat for at least as many images as there are
+   landscape displays in the room, ideally more, so the pool has room to
+   actually rotate instead of just permuting a small set.
 3. On the hub dashboard, flip Multi-Purpose's ON/OFF switch on, and pick
-   Slide or Fade with the text control next to it.
-4. **The emergency freeze does not block this.** Landscape displays are now
-   handled entirely inside the carousel branch (rotate when ON, static
-   `ring[position]` when OFF) and return before the `FREEZE_TO_SINGLE_SLIDE`
-   check ever runs. The freeze only still affects *portrait* displays (and
-   landscape displays with no landscape pool) that fall through to normal
-   resolution. Purging the stray assignments (below) is still worth doing so
-   the freeze can come off for portrait displays too.
+   Slide or Fade with the text control next to it. Watch for the "Rotating"
+   badge on the landscape tiles (part 2) to confirm it's live.
+4. **The emergency freeze does not block this** — landscape displays with a
+   non-empty pool are handled entirely inside `resolveLandscapeDisplay` and
+   return before `FREEZE_TO_SINGLE_SLIDE` ever runs.
 5. **Not verified on real hardware yet** — the owner verifies UI on prod. On
    the next deploy, confirm on the actual Multi-Purpose TVs that (a) only the
-   landscape screens rotate, (b) they never show the same graphic at once, and
-   (c) Fade actually reads as a soft bleed rather than a slide on real Tizen
-   browsers.
+   landscape screens rotate, (b) they never show the same graphic at once,
+   (c) a display with a dedicated video keeps playing it uninterrupted while
+   its neighbors rotate, and (d) Fade actually reads as a soft bleed rather
+   than a slide on real Tizen browsers.
 
 ## 🔴 NEXT UP: emergency freeze still active — purge stray assignments before lifting
 
@@ -321,11 +369,13 @@ Recent commits, newest first:
   `Setting` row (migration `20260709170000_add_setting`).
 - `e729a39` — pixel massager (voxel-city screensaver) + assignment cleanup script.
 
-**Uncommitted right now:** part 2 above (dashboard visibility + video-aware
-pooling) — passes `tsc`/`lint`/`build` locally but has not been committed or
-pushed yet; no new migration this round. **The carousel emergency freeze is
-still ON** (see the next section) — that's still the other open item, and it
-needs prod-data cleanup + owner sign-off before lifting.
+**Uncommitted right now:** parts 2 and 3 above (dashboard visibility,
+video-aware pooling, and the direct per-room Rotation toggle on the library) —
+passes `tsc`/`lint`/`build` locally but has not been committed or pushed yet.
+Part 3 includes a new migration
+(`20260713140000_add_content_rotation_room`). **The carousel emergency freeze
+is still ON** (see the next section) — that's still the other open item, and
+it needs prod-data cleanup + owner sign-off before lifting.
 
 **Also flagged by the owner, not yet started:** once ON/OFF + Slide/Fade are
 confirmed working end-to-end, the SLIDE animation itself needs to be checked

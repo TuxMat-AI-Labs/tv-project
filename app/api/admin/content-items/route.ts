@@ -6,7 +6,15 @@ import { canManageContent } from "@/lib/auth/roles";
 export async function GET() {
   const items = await prisma.contentItem.findMany({
     orderBy: { createdAt: "desc" },
-    select: { id: true, title: true, type: true, thumbnailUrl: true, fileUrl: true, orientation: true },
+    select: {
+      id: true,
+      title: true,
+      type: true,
+      thumbnailUrl: true,
+      fileUrl: true,
+      orientation: true,
+      rotationRoomId: true,
+    },
   });
   return NextResponse.json({ items });
 }

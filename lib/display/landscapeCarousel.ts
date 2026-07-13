@@ -67,27 +67,38 @@ export async function resolveLandscapeDisplay(
 }
 
 /**
- * The room's shared landscape-image pool: every currently-in-window
- * LANDSCAPE-tagged IMAGE assigned to any of the room's active, PARTICIPATING
- * landscape displays (deduped, sorted by id for a stable shared order), plus
- * this display's slot (0..N-1) among the participating displays (ordered by
- * `number`).
+ * The room's shared landscape-image pool, and this display's slot (0..N-1)
+ * among the room's PARTICIPATING landscape displays (ordered by `number`).
  *
- * A display currently showing a live VIDEO assignment sits out the rotation
- * entirely — "only the statics rotate" — so it's excluded from the
- * participant list (no ring contribution, no position) and just plays its
- * video normally via the caller's normal-resolution fallback.
+ * The pool is every IMAGE content item directly tagged into this room's
+ * rotation (`ContentItem.rotationRoomId`, set via the library's "Rotation"
+ * dropdown — not derived from any Assignment), sorted by id for a stable
+ * shared order. A VIDEO can never be in the pool regardless of its
+ * `rotationRoomId` (enforced server-side when it's set, but re-checked here
+ * too) — only statics rotate.
+ *
+ * A display currently showing a live VIDEO *assignment* sits out the
+ * rotation entirely (excluded from the participant list — no position, no
+ * effect on the ring) and just plays its video normally via the caller's
+ * normal-resolution fallback, so the video keeps playing uninterrupted on
+ * its own screen while the room's other landscape displays keep rotating.
  */
 async function buildLandscapeRoomRing(
   roomId: string,
   thisDisplayId: string,
   now: Date
 ): Promise<{ ring: PlaylistItem[]; position: number }> {
-  const displays = await prisma.display.findMany({
-    where: { roomId, active: true, orientation: "LANDSCAPE" },
-    orderBy: { number: "asc" },
-    include: { assignments: { include: { contentItem: true } } },
-  });
+  const [displays, poolItems] = await Promise.all([
+    prisma.display.findMany({
+      where: { roomId, active: true, orientation: "LANDSCAPE" },
+      orderBy: { number: "asc" },
+      include: { assignments: { include: { contentItem: true } } },
+    }),
+    prisma.contentItem.findMany({
+      where: { rotationRoomId: roomId, type: "IMAGE", orientation: "LANDSCAPE" },
+      orderBy: { id: "asc" },
+    }),
+  ]);
 
   const isLive = (a: { startsAt: Date | null; endsAt: Date | null; daypartStart: string | null; daypartEnd: string | null }) =>
     isWithinDateRange(now, a.startsAt, a.endsAt) && isWithinDaypart(now, a.daypartStart, a.daypartEnd);
@@ -98,26 +109,13 @@ async function buildLandscapeRoomRing(
 
   const position = participating.findIndex((d) => d.id === thisDisplayId);
 
-  const seen = new Set<string>();
-  const ring: PlaylistItem[] = [];
-  for (const d of participating) {
-    for (const a of d.assignments) {
-      const ci = a.contentItem;
-      if (ci.type !== "IMAGE" || ci.orientation !== "LANDSCAPE") continue;
-      if (!isLive(a)) continue;
-      if (seen.has(ci.id)) continue;
-      seen.add(ci.id);
-      ring.push({
-        id: ci.id,
-        type: ci.type,
-        fileUrl: ci.fileUrl,
-        thumbnailUrl: ci.thumbnailUrl,
-        durationSec: ci.durationSec ?? DEFAULT_IMAGE_DURATION_SEC,
-      });
-    }
-  }
-  // Stable pool order regardless of assignment iteration order above.
-  ring.sort((a, b) => a.id.localeCompare(b.id));
+  const ring: PlaylistItem[] = poolItems.map((ci) => ({
+    id: ci.id,
+    type: ci.type,
+    fileUrl: ci.fileUrl,
+    thumbnailUrl: ci.thumbnailUrl,
+    durationSec: ci.durationSec ?? DEFAULT_IMAGE_DURATION_SEC,
+  }));
 
   return { ring, position };
 }

@@ -77,7 +77,8 @@ model Room {
   // between items in this room: a hard push-slide, or a soft crossfade.
   carouselTransition CarouselTransition @default(SLIDE)
 
-  displays Display[]
+  displays     Display[]
+  rotationPool ContentItem[] @relation("RoomRotationPool")
 }
 
 model Display {
@@ -110,15 +111,24 @@ model ContentItem {
   thumbnailUrl String?
   durationSec  Int?
   // Tags an item as shot/cropped for a landscape (16:9) panel vs the default
-  // portrait creative. Drives the landscape-only room carousel pool (see
-  // lib/display/resolveRoomCarousel.ts) — not otherwise enforced.
+  // portrait creative. A LANDSCAPE item can only ever join a room's rotation
+  // (never shown on a PORTRAIT display) — see lib/display/landscapeCarousel.ts.
   orientation  Orientation @default(PORTRAIT)
+  // Which room's shared landscape rotation this item is in, if any — set
+  // directly on the library item ("Rotation" dropdown), independent of any
+  // Assignment. Only ever meaningful for a LANDSCAPE, IMAGE item: a VIDEO
+  // never rotates, and only a LANDSCAPE item can join a room's landscape
+  // rotation — both invariants are enforced server-side, not just in the UI.
+  rotationRoomId String?
+  rotationRoom   Room?   @relation("RoomRotationPool", fields: [rotationRoomId], references: [id], onDelete: SetNull)
   uploadedById String
   uploadedBy   User      @relation(fields: [uploadedById], references: [id])
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
   assignments Assignment[]
+
+  @@index([rotationRoomId])
 }
 
 model Assignment {

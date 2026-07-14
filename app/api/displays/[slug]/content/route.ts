@@ -48,11 +48,11 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ slu
     serverTime: now.toISOString(),
   };
 
-  // Landscape displays in a room draw from the room's shared landscape pool
+  // Displays in a room draw from their room's shared same-orientation pool
   // (see lib/display/landscapeCarousel.ts — shared with the hub status route
   // so the dashboard preview always matches what's actually on screen).
-  // Portrait displays, and a landscape display currently showing its own
-  // video, fall through to the normal resolution below untouched.
+  // A display currently showing its own video, or one with no pool to join,
+  // falls through to the normal resolution below untouched.
   const landscape = await resolveLandscapeDisplay(
     {
       id: display.id,

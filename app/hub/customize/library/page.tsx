@@ -55,12 +55,10 @@ export default function LibraryPage() {
 
   async function setItemOrientation(id: string, next: "PORTRAIT" | "LANDSCAPE") {
     const prev = items;
-    // Dropping out of LANDSCAPE evicts it from any rotation too — mirrors the
-    // server's invariant so the UI doesn't show a stale rotation for a
-    // portrait item while waiting on the response.
-    setItems((cur) =>
-      cur.map((it) => (it.id === id ? { ...it, orientation: next, rotationRoomId: next === "LANDSCAPE" ? it.rotationRoomId : null } : it))
-    );
+    // A rotation assignment (`rotationRoomId`) is independent of orientation —
+    // flipping orientation just moves the item into the other orientation's
+    // pool within the same room, it doesn't evict it from the rotation.
+    setItems((cur) => cur.map((it) => (it.id === id ? { ...it, orientation: next } : it)));
     try {
       const res = await fetch(`/api/admin/content-items/${id}`, {
         method: "PATCH",
@@ -246,7 +244,7 @@ export default function LibraryPage() {
                   {item.orientation === "LANDSCAPE" ? "Landscape" : "Portrait"}
                 </button>
               </div>
-              {item.type === "IMAGE" && item.orientation === "LANDSCAPE" && (
+              {item.type === "IMAGE" && (
                 <label className="mt-1.5 block">
                   <span className="text-[10px] text-muted uppercase">Rotation</span>
                   <select

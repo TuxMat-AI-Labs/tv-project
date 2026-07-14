@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import type { CarouselPayload } from "@/lib/display/resolveRoomCarousel";
+import { currentRingIndex, type CarouselPayload } from "@/lib/display/resolveRoomCarousel";
 import type { CarouselTransition } from "@/lib/display/transition";
 
 const FIT_TO_OBJECT_FIT: Record<"COVER" | "CONTAIN" | "FILL", string> = {
@@ -12,9 +12,10 @@ const FIT_TO_OBJECT_FIT: Record<"COVER" | "CONTAIN" | "FILL", string> = {
 };
 
 // Same "whip" curve as the single-screen PlaylistPlayer so a push reads the
-// same everywhere. Content moves toward lower display numbers, so on every
-// screen the incoming graphic enters from the right and the outgoing exits
-// left — across the wall that reads as one continuous leftward conveyor.
+// same everywhere. Content moves toward higher display numbers, so on every
+// screen the incoming graphic enters from the left and the outgoing exits
+// right — across the wall that reads as one continuous left-to-right
+// conveyor.
 const SLIDE_TRANSITION = { duration: 0.7, ease: [0.22, 1, 0.36, 1] as const };
 
 // Soft crossfade "bleed" between images — both layers overlap and blend
@@ -25,13 +26,12 @@ const TRANSITION_VARIANTS: Record<
   CarouselTransition,
   { initial: Record<string, string | number>; animate: Record<string, string | number>; exit: Record<string, string | number>; transition: typeof SLIDE_TRANSITION | typeof FADE_TRANSITION }
 > = {
-  SLIDE: { initial: { x: "100%" }, animate: { x: 0 }, exit: { x: "-100%" }, transition: SLIDE_TRANSITION },
+  SLIDE: { initial: { x: "-100%" }, animate: { x: 0 }, exit: { x: "100%" }, transition: SLIDE_TRANSITION },
   FADE: { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 }, transition: FADE_TRANSITION },
 };
 
 function ringItem(carousel: CarouselPayload, tick: number) {
-  const n = carousel.ring.length;
-  return carousel.ring[(((carousel.position + tick) % n) + n) % n];
+  return carousel.ring[currentRingIndex(carousel.position, tick, carousel.ring.length)];
 }
 
 /**

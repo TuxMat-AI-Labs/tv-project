@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveContentForDisplay } from "@/lib/display/resolveContentForDisplay";
 import { resolveLandscapeDisplay } from "@/lib/display/landscapeCarousel";
+import { currentRingIndex } from "@/lib/display/resolveRoomCarousel";
 import type { HubDisplayStatus, HubStatusResponse } from "@/lib/hub/types";
 
 export const dynamic = "force-dynamic";
@@ -91,8 +92,7 @@ export async function GET() {
             } else if (landscape.mode === "carousel") {
               mode = "carousel";
               const { ring, position, tick } = landscape.carousel;
-              const n = ring.length;
-              const idx = (((position + tick) % n) + n) % n;
+              const idx = currentRingIndex(position, tick, ring.length);
               content = contentById.get(ring[idx].id);
             } else if (landscape.mode === "playlist") {
               mode = "playlist";

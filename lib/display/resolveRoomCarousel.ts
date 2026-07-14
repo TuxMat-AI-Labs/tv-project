@@ -7,7 +7,9 @@ export const CAROUSEL_PERIOD_MS = 8_000;
 
 export type CarouselPayload = {
   periodMs: number;
-  // The rotation index at `now`. Display at position p shows ring[(p + tick) % ring.length].
+  // The rotation index at `now`. Use `currentRingIndex` to turn this and a
+  // display's `position` into a ring index — see that function for the
+  // direction the wall pushes.
   tick: number;
   // ms from `now` until the next push. Clients schedule the slide off this
   // *server-derived delta* (not their own clock, which is unreliable on TVs),
@@ -51,4 +53,18 @@ export function resolveRoomCarousel(
     position,
     ring,
   };
+}
+
+/**
+ * The ring index a display at `position` shows at a given `tick`. Shared by
+ * the TV's `CarouselPlayer` and the hub status route so both always agree on
+ * what's currently on screen.
+ *
+ * Subtracting `tick` (rather than adding) makes a given ring item move from
+ * position p to position p + 1 as tick advances — i.e. content pushes toward
+ * HIGHER display numbers, left-to-right across the wall (positions are
+ * assigned by ascending `Display.number`).
+ */
+export function currentRingIndex(position: number, tick: number, ringLength: number): number {
+  return (((position - tick) % ringLength) + ringLength) % ringLength;
 }

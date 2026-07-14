@@ -1,3 +1,4 @@
+import type { Orientation } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { isWithinBusinessHours, isWithinDateRange, isWithinDaypart } from "@/lib/time";
 import { resolveRoomCarousel, type CarouselPayload } from "@/lib/display/resolveRoomCarousel";
@@ -5,10 +6,9 @@ import type { PlaylistItem } from "@/lib/display/resolveContentForDisplay";
 
 const DEFAULT_IMAGE_DURATION_SEC = 10;
 
-// Kill switch for the whole landscape-room mechanic (pool + rotation + the
-// "hold at home image when off" behavior). With this false every LANDSCAPE
-// display falls through to normal per-display scheduling, same as a PORTRAIT
-// one.
+// Kill switch for the whole room-rotation mechanic (pool + rotation + the
+// "hold at home image when off" behavior). With this false every display
+// falls through to normal per-display scheduling.
 export const CAROUSEL_ENABLED = true;
 
 export type LandscapeResolution =
@@ -24,24 +24,31 @@ type LandscapeDisplayInput = {
   id: string;
   roomId: string;
   active: boolean;
-  orientation: string;
+  orientation: Orientation;
   screensaverOverride: boolean | null;
   room: { carouselActive: boolean; carouselStartedAt: Date | null };
 };
 
 /**
- * Resolves what a LANDSCAPE display should show from its room's shared
- * landscape-image pool. Used by BOTH the TV content route and the hub status
- * route so the dashboard preview always matches what's actually on screen —
- * previously the dashboard had no awareness of this mechanic at all.
+ * Resolves what a display should show from its room's shared same-orientation
+ * image pool (LANDSCAPE displays draw from a LANDSCAPE pool, PORTRAIT from a
+ * PORTRAIT pool — the two never mix). Used by BOTH the TV content route and
+ * the hub status route so the dashboard preview always matches what's
+ * actually on screen — previously the dashboard had no awareness of this
+ * mechanic at all.
  */
 export async function resolveLandscapeDisplay(
   display: LandscapeDisplayInput,
   now: Date
 ): Promise<LandscapeResolution> {
-  if (!CAROUSEL_ENABLED || !display.active || display.orientation !== "LANDSCAPE") return { mode: "none" };
+  if (!CAROUSEL_ENABLED || !display.active) return { mode: "none" };
 
-  const { ring, position } = await buildLandscapeRoomRing(display.roomId, display.id, now);
+  const { ring, position } = await buildLandscapeRoomRing(
+    display.roomId,
+    display.id,
+    display.orientation,
+    now
+  );
   if (ring.length === 0 || position < 0) return { mode: "none" };
 
   // Screensaver still wins (overnight burn-in care / an explicit override),
@@ -67,35 +74,40 @@ export async function resolveLandscapeDisplay(
 }
 
 /**
- * The room's shared landscape-image pool, and this display's slot (0..N-1)
- * among the room's PARTICIPATING landscape displays (ordered by `number`).
+ * The room's shared same-orientation image pool, and this display's slot
+ * (0..N-1) among the room's PARTICIPATING displays of that same orientation
+ * (ordered by `number`). LANDSCAPE and PORTRAIT never share a pool — a
+ * vertical image can't push into a horizontal slot — so each orientation
+ * gets its own independent ring within the room.
  *
  * The pool is every IMAGE content item directly tagged into this room's
  * rotation (`ContentItem.rotationRoomId`, set via the library's "Rotation"
- * dropdown — not derived from any Assignment), sorted by id for a stable
- * shared order. A VIDEO can never be in the pool regardless of its
- * `rotationRoomId` (enforced server-side when it's set, but re-checked here
- * too) — only statics rotate.
+ * dropdown — not derived from any Assignment) matching this display's
+ * orientation, sorted by id for a stable shared order. A VIDEO can never be
+ * in the pool regardless of its `rotationRoomId` (enforced server-side when
+ * it's set, but re-checked here too) — only statics rotate.
  *
  * A display currently showing a live VIDEO *assignment* sits out the
  * rotation entirely (excluded from the participant list — no position, no
  * effect on the ring) and just plays its video normally via the caller's
  * normal-resolution fallback, so the video keeps playing uninterrupted on
- * its own screen while the room's other landscape displays keep rotating.
+ * its own screen while the room's other same-orientation (static-only)
+ * displays keep rotating among themselves.
  */
 async function buildLandscapeRoomRing(
   roomId: string,
   thisDisplayId: string,
+  orientation: Orientation,
   now: Date
 ): Promise<{ ring: PlaylistItem[]; position: number }> {
   const [displays, poolItems] = await Promise.all([
     prisma.display.findMany({
-      where: { roomId, active: true, orientation: "LANDSCAPE" },
+      where: { roomId, active: true, orientation },
       orderBy: { number: "asc" },
       include: { assignments: { include: { contentItem: true } } },
     }),
     prisma.contentItem.findMany({
-      where: { rotationRoomId: roomId, type: "IMAGE", orientation: "LANDSCAPE" },
+      where: { rotationRoomId: roomId, type: "IMAGE", orientation },
       orderBy: { id: "asc" },
     }),
   ]);

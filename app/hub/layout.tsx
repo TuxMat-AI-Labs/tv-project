@@ -13,6 +13,7 @@ import { RegisterServiceWorker } from "@/components/hub/RegisterServiceWorker";
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default async function HubLayout({
@@ -40,9 +41,12 @@ export default async function HubLayout({
     .join("");
 
   return (
-    <div className="min-h-screen text-foreground">
+    <div className="flex h-dvh flex-col overflow-hidden text-foreground">
       <RegisterServiceWorker />
-      <header className="sticky top-0 z-40 border-b brand-hairline bg-white/70 backdrop-blur-xl">
+      <header
+        className="shrink-0 border-b brand-hairline bg-white/70 backdrop-blur-xl"
+        style={{ paddingTop: "env(safe-area-inset-top)" }}
+      >
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 pt-5 pb-3">
           <Wordmark subtitle="Display Hub" />
           <ContactMenu
@@ -57,7 +61,9 @@ export default async function HubLayout({
           <HubNav rooms={rooms} />
         </div>
       </header>
-      <main className="mx-auto max-w-7xl px-6 py-8">{children}</main>
+      <main className="mx-auto w-full max-w-7xl flex-1 overflow-y-auto overscroll-contain px-6 py-8">
+        {children}
+      </main>
       {modal}
     </div>
   );

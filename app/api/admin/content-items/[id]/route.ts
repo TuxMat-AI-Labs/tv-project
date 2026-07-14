@@ -6,9 +6,9 @@ import { canManageContent } from "@/lib/auth/roles";
 /**
  * Re-tags a library item's orientation and/or its room rotation membership
  * (`rotationRoomId` — null means "not in any room's rotation"). Enforces the
- * invariant that only a LANDSCAPE, IMAGE item can be in a rotation: a VIDEO
- * is rejected outright, and dropping orientation away from LANDSCAPE while
- * still in a rotation auto-clears it rather than leaving an inconsistent row.
+ * invariant that only an IMAGE item can be in a rotation (either orientation
+ * — LANDSCAPE and PORTRAIT each rotate within their own same-orientation
+ * pool): a VIDEO is rejected outright.
  */
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -37,8 +37,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   });
   if (!current) return NextResponse.json({ error: "not found" }, { status: 404 });
 
-  const finalOrientation = hasOrientation ? (body.orientation as "PORTRAIT" | "LANDSCAPE") : current.orientation;
-
   // undefined = leave rotationRoomId untouched.
   let rotationRoomId: string | null | undefined;
   if (hasRotation) {
@@ -46,17 +44,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       if (current.type === "VIDEO") {
         return NextResponse.json({ error: "a video can never join a room's rotation" }, { status: 400 });
       }
-      if (finalOrientation !== "LANDSCAPE") {
-        return NextResponse.json({ error: "only a landscape item can join a room's rotation" }, { status: 400 });
-      }
       const room = await prisma.room.findUnique({ where: { id: body.rotationRoomId }, select: { id: true } });
       if (!room) return NextResponse.json({ error: "room not found" }, { status: 400 });
     }
     rotationRoomId = body.rotationRoomId;
-  } else if (hasOrientation && finalOrientation !== "LANDSCAPE" && current.rotationRoomId) {
-    // Leaving LANDSCAPE while still in a rotation — auto-clear to keep the
-    // "only landscape rotates" invariant instead of leaving a stale pointer.
-    rotationRoomId = null;
   }
 
   const item = await prisma.contentItem.update({

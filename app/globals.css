@@ -164,12 +164,14 @@ html.tv-output body {
    (e.g. `h-7 w-12`) and thumb (`h-6 w-6`) via Tailwind; toggle `.is-on` and
    translate the thumb to reflect state. */
 .glass-switch {
-  /* The 1px "border" is a box-shadow ring, not a real border — a real border
-     shrinks the padding box the thumb's absolute offsets are measured
-     against, throwing off the thumb's centering by that same amount and
-     making it hug (or overflow past) one edge instead of sitting flush
-     inset on both sides in both states. */
+  /* overflow: hidden is the hard guarantee that the thumb can NEVER bleed
+     past the pill, no matter its size/position — the actual bug fixed here
+     twice already was the thumb visually escaping the track. The 1px
+     "border" is a box-shadow ring rather than a real border, since a real
+     border shrinks the padding box the thumb's absolute offsets are
+     measured against and throws off its centering by that same amount. */
   position: relative;
+  overflow: hidden;
   border-radius: 9999px;
   background: rgba(255, 255, 255, 0.4);
   -webkit-backdrop-filter: blur(16px) saturate(160%);
@@ -189,24 +191,19 @@ html.tv-output body {
     0 0 0 1px rgba(255, 255, 255, 0.5),
     0 2px 8px -3px rgba(185, 151, 91, 0.5);
 }
-/* The thumb's radius is deliberately bigger than the track's own end-cap
-   radius (trackHeight / 2) and shares that cap's center, so it pokes out
-   past the pill evenly on every side — top, bottom, and whichever end it's
-   resting against — instead of being clipped inside the track like a
-   standard switch. That's the oversized "floating ball" look from the
-   reference. Off-state offset below is -(thumbSize - trackHeight) / 2 on
-   both axes; the on-state translate in the component covers the same math
-   horizontally against the opposite end. */
+/* Sits fully inside the track — top/left inset by the same 0.25rem on both
+   axes, and `.glass-switch`'s own overflow: hidden backstops this so the
+   thumb can never render outside the pill regardless of size or position. */
 .glass-switch-thumb {
   position: absolute;
-  top: -0.25rem;
-  left: -0.25rem;
+  top: 0.25rem;
+  left: 0.25rem;
   border-radius: 9999px;
   background: rgba(255, 255, 255, 0.95);
   box-shadow:
     inset 0 1px 1px rgba(255, 255, 255, 0.9),
-    0 2px 3px rgba(32, 28, 22, 0.25),
-    0 6px 12px -2px rgba(32, 28, 22, 0.4);
+    0 1px 2px rgba(32, 28, 22, 0.3),
+    0 3px 6px -1px rgba(32, 28, 22, 0.35);
   transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
 }
 

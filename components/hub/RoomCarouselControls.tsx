@@ -103,8 +103,8 @@ export function RoomCarouselControls({
         disabled={pending}
         className="flex h-11 w-11 shrink-0 items-center justify-center disabled:opacity-60"
       >
-        <span className={`glass-switch h-8 w-16 ${isOn ? "is-on" : ""}`}>
-          <span className={`glass-switch-thumb h-10 w-10 ${isOn ? "translate-x-8" : "translate-x-0"}`} />
+        <span className={`glass-switch h-8 w-14 ${isOn ? "is-on" : ""}`}>
+          <span className={`glass-switch-thumb h-6 w-6 ${isOn ? "translate-x-6" : "translate-x-0"}`} />
         </span>
       </button>
     </span>

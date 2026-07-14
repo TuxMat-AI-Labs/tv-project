@@ -189,16 +189,24 @@ html.tv-output body {
     0 0 0 1px rgba(255, 255, 255, 0.5),
     0 2px 8px -3px rgba(185, 151, 91, 0.5);
 }
+/* The thumb's radius is deliberately bigger than the track's own end-cap
+   radius (trackHeight / 2) and shares that cap's center, so it pokes out
+   past the pill evenly on every side — top, bottom, and whichever end it's
+   resting against — instead of being clipped inside the track like a
+   standard switch. That's the oversized "floating ball" look from the
+   reference. Off-state offset below is -(thumbSize - trackHeight) / 2 on
+   both axes; the on-state translate in the component covers the same math
+   horizontally against the opposite end. */
 .glass-switch-thumb {
   position: absolute;
-  top: 0.25rem;
-  left: 0.25rem;
+  top: -0.25rem;
+  left: -0.25rem;
   border-radius: 9999px;
   background: rgba(255, 255, 255, 0.95);
   box-shadow:
     inset 0 1px 1px rgba(255, 255, 255, 0.9),
-    0 1px 2px rgba(32, 28, 22, 0.3),
-    0 3px 6px -1px rgba(32, 28, 22, 0.35);
+    0 2px 3px rgba(32, 28, 22, 0.25),
+    0 6px 12px -2px rgba(32, 28, 22, 0.4);
   transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
 }
 

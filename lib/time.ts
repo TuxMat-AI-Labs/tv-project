@@ -1,9 +1,9 @@
-// Displays play content during these local hours, every day; outside this window
-// the screensaver runs for overnight pixel-care. Kept broad on purpose so a TV
-// shows its assigned content through the whole business day + evening — only the
-// small hours fall to the screensaver. Override per-venue via env.
-const CONTENT_START_HOUR = Number(process.env.CONTENT_START_HOUR ?? 6); // 6:00 AM
-const CONTENT_END_HOUR = Number(process.env.CONTENT_END_HOUR ?? 23); // 11:00 PM
+// Displays play content during these local hours on weekdays; outside this
+// window (evenings/overnight, and all day on weekends, when there's no
+// shift) the screensaver runs. Matches the office's actual shift hours —
+// override per-venue via env, "HH:mm" 24-hour format.
+const CONTENT_START_TIME = process.env.CONTENT_START_TIME || "08:00"; // 8:00 AM
+const CONTENT_END_TIME = process.env.CONTENT_END_TIME || "16:30"; // 4:30 PM
 
 // The venue's local timezone. Hours are evaluated here, NOT in the server's
 // timezone — otherwise a UTC server (e.g. Render) would flip displays to the
@@ -38,18 +38,21 @@ function venueParts(now: Date): { day: number; minutes: number } {
   return { day, minutes: hour * 60 + minute };
 }
 
-/** True while displays should play content (every day); false = overnight screensaver window. */
-export function isWithinBusinessHours(now: Date): boolean {
-  const { minutes } = venueParts(now);
-  const start = CONTENT_START_HOUR * 60;
-  const end = CONTENT_END_HOUR * 60;
-  return minutes >= start && minutes < end;
-}
-
 /** "HH:mm" -> minutes since midnight. */
 function parseDaypart(value: string): number {
   const [hour, minute] = value.split(":").map(Number);
   return hour * 60 + minute;
+}
+
+/**
+ * True while displays should play content: Mon–Fri, within the shift window;
+ * false (screensaver) evenings/overnight and all day on weekends, since
+ * there's no shift then.
+ */
+export function isWithinBusinessHours(now: Date): boolean {
+  const { day, minutes } = venueParts(now);
+  if (day === 0 || day === 6) return false; // Sun / Sat
+  return minutes >= parseDaypart(CONTENT_START_TIME) && minutes < parseDaypart(CONTENT_END_TIME);
 }
 
 export function isWithinDaypart(now: Date, daypartStart: string | null, daypartEnd: string | null): boolean {

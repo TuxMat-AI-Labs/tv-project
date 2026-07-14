@@ -13,7 +13,45 @@ full source, git repo, `node_modules`, committed assets — is at
 The Claude_Preview MCP is rooted at the stub, so its `.claude/launch.json`
 (`tuxdisplay-dev`) `cd`s into the real project before `npm run dev`.
 
-## 🟢 BUILT (this session): landscape-only room carousel + global Slide/Fade transition — NOT YET PUSHED
+## 🔴 NEXT UP: mobile UI polish + the carousel push/slide animation — ASK FIRST
+
+Everything through `d70ea36` is pushed and deployed (mobile-optimized hub +
+installable PWA, landscape-only rotation pool, dashboard live-visibility —
+see the parts below). The owner has now used it and has specific opinions on
+two things, but **has not yet described what they actually are**:
+
+1. **Mobile UI fixes.** The owner said "fix up the mobile UI" — as in, they
+   found real issues after actually using the mobile-optimized hub (cards,
+   bottom sheet, touch targets, PWA install — all shipped last session, see
+   part 4 below). This is *feedback on a real device*, which is exactly the
+   kind of ground truth no amount of code-reading or `resize_window` guessing
+   can substitute for. **Do not assume you know what's wrong and start
+   fixing** — last session's mobile audit was code-only (no real phone), so
+   anything it missed or got subtly wrong is unknown until the owner
+   describes it.
+2. **The push/slide transition "as I visioned."** This refers to
+   `CarouselPlayer.tsx`'s `SLIDE_TRANSITION` (the whip-push between rotation
+   images) — flagged back in the "Deploy status" section as a known follow-up
+   ("the SLIDE animation itself needs to be checked against exactly what the
+   owner wants — direction, easing, whether it reads as one continuous
+   wall-wide push"). The owner has an exact mental image of how this should
+   look/feel that hasn't been captured yet.
+
+**Start the next session by asking the owner, concretely:**
+- Mobile: which screen(s), what's wrong (layout, sizing, something not
+  reachable/tappable, something that looks broken vs. just not to taste), and
+  ideally a screenshot/recording from their actual phone.
+- Slide animation: what "as I visioned" means in concrete terms — direction
+  of travel, speed/easing (snappier? slower/more elegant?), whether it should
+  read as one continuous wall-wide push across every screen or something
+  else entirely, and whether the current whip-push is close or needs to be
+  rethought from scratch.
+
+Don't start editing code based on guesses about either — get the specifics
+first, per the owner's explicit ask this session ("get the new session to ask
+me my visions and issues with the mobile to address").
+
+## 🟢 BUILT (previous session): landscape-only room carousel + global Slide/Fade transition
 
 The carousel rethink is done: it no longer treats a room as one undifferentiated
 ring of "every display's first assignment" (that was the old, disabled
@@ -70,7 +108,7 @@ pool** instead of one item per display:
 
 **Passes `tsc`/`lint`/`build`.**
 
-## 🟢 BUILT (this session, part 2): dashboard visibility + video-aware pooling — NOT YET PUSHED
+## 🟢 BUILT (previous session, part 2): dashboard visibility + video-aware pooling
 
 After part 1 shipped, the owner turned Fade on for Multi-Purpose and reported
 "nothing changes" and asked the hub dashboard itself show that rotation is
@@ -104,7 +142,7 @@ running on the TVs. Also added, per the owner's reminder: video-aware pooling.
   plays its video normally on its own screen while the room's other landscape
   (static-only) displays keep rotating among themselves.
 
-**Passes `tsc`/`lint`/`build`. Not yet pushed.**
+**Passes `tsc`/`lint`/`build`. Pushed and deployed (`d70ea36`).**
 
 **Note on "nothing changes":** this batch doesn't rule out the simpler
 explanation too — Fade (or any transition) is only visible while something is
@@ -119,7 +157,7 @@ bug to chase (most likely: no landscape pool exists yet for that room).
 (simpler) way to get images into a room's rotation; step 2 originally
 described here (assigning via `/hub/customize/assignments`) has been replaced.
 
-## 🟢 BUILT (this session, part 3): direct per-room Rotation toggle on the library — NOT YET PUSHED
+## 🟢 BUILT (previous session, part 3): direct per-room Rotation toggle on the library
 
 The owner found the assignment-based path to pool membership indirect: to get
 an image rotating you had to tag it Landscape, then go to
@@ -164,7 +202,7 @@ library item itself.
   for normal `Assignment` rows — portrait displays, and a landscape display's
   dedicated video.)
 
-**Passes `tsc`/`lint`/`build`. Not yet pushed.**
+**Passes `tsc`/`lint`/`build`. Pushed and deployed (`d70ea36`).**
 
 **To actually use this on Multi-Purpose now:**
 1. In `/hub/customize/library`, tag each landscape-formatted creative as
@@ -186,7 +224,7 @@ library item itself.
    its neighbors rotate, and (d) Fade actually reads as a soft bleed rather
    than a slide on real Tizen browsers.
 
-## 🟢 BUILT (this session, part 4): mobile-optimized hub + installable PWA — NOT YET PUSHED
+## 🟢 BUILT (previous session, part 4): mobile-optimized hub + installable PWA
 
 The owner wants to set up displays / fix things from a phone, and asked for
 this to be installable ("I will download it") rather than just a bookmarked
@@ -279,16 +317,18 @@ sheet** (not just a resized floating box).
 
 **Passes `tsc`/`lint`/`build`; confirmed `/manifest.webmanifest` and
 `/apple-icon.png` both generate correctly via a local production build.**
-**Not committed or pushed yet.**
+**Pushed and deployed (`d70ea36`).**
 
-**Not verified on an actual phone yet** — the owner verifies UI on prod, and a
-PWA install prompt / "Add to Home Screen" behavior can't be exercised from a
-desktop browser dev tools alone. Once deployed, worth explicitly checking:
-Android Chrome's install banner appears and the installed icon/splash look
-right; iOS Safari's "Add to Home Screen" picks up the apple-touch-icon and
-launches standalone (no Safari chrome); the bottom sheet, stacked cards, and
-touch targets actually feel right on a real device, not just a resized
-desktop browser window.
+**Update:** the owner has now actually used this on a real phone and has
+feedback — see the "NEXT UP" section at the very top of this file. Don't
+assume the below checklist is what they'll report; ask first.
+
+Original checklist (code-only audit, never touched a real device): Android
+Chrome's install banner appears and the installed icon/splash look right; iOS
+Safari's "Add to Home Screen" picks up the apple-touch-icon and launches
+standalone (no Safari chrome); the bottom sheet, stacked cards, and touch
+targets actually feel right on a real device, not just a resized desktop
+browser window.
 
 ## 🔴 NEXT UP: emergency freeze still active — purge stray assignments before lifting
 
@@ -458,8 +498,14 @@ What was changed:
 
 ## ⏳ Deploy status
 
-Everything through **`40201d3`** is pushed to `main` and auto-deployed on Render.
-Recent commits, newest first:
+Everything through **`d70ea36`** is pushed to `main` and auto-deployed on
+Render. Recent commits, newest first:
+- `d70ea36` — mobile-optimized hub + installable PWA (part 4 above; no schema
+  change).
+- `63ed064` — library "Rotation" dropdown: direct per-room pool membership on
+  the item (part 3 above; migration `20260713140000_add_content_rotation_room`).
+- `e254a12` — hub dashboard reflects landscape rotation live; video-aware
+  pooling (part 2 above; no schema change).
 - `40201d3` — room heading: text Slide/Fade + ON/OFF switch; off returns to
   original image.
 - `30c49b2` — landscape-only room carousel + global Slide/Fade transition
@@ -473,21 +519,17 @@ Recent commits, newest first:
   `Setting` row (migration `20260709170000_add_setting`).
 - `e729a39` — pixel massager (voxel-city screensaver) + assignment cleanup script.
 
-**Uncommitted right now:** parts 2, 3, and 4 above (dashboard visibility,
-video-aware pooling, the direct per-room Rotation toggle on the library, and
-the mobile/PWA rework) — passes `tsc`/`lint`/`build` locally but has not been
-committed or pushed yet. Part 3 includes a new migration
-(`20260713140000_add_content_rotation_room`); part 4 has no schema change.
-**The carousel emergency freeze is still ON** (see the next section) — that's
-still the other open item, and it needs prod-data cleanup + owner sign-off
-before lifting.
+**Nothing uncommitted.** **The carousel emergency freeze is still ON** (see
+the next section) — that's still an open item, and it needs prod-data
+cleanup + owner sign-off before lifting.
 
-**Also flagged by the owner, not yet started:** once ON/OFF + Slide/Fade are
-confirmed working end-to-end, the SLIDE animation itself needs to be checked
-against exactly what the owner wants (direction, easing, whether it reads as
-one continuous wall-wide push) — see `CarouselPlayer.tsx`'s `SLIDE_TRANSITION`
-and the whip-push comment. This is separate from, and comes after, verifying
-the on/off + transition-selection mechanics.
+**Immediate next work (see the "NEXT UP" section at the very top of this
+file): mobile UI fixes + the carousel push/slide animation "as visioned" —
+both need the owner's specifics first, not a guess.** The slide-animation ask
+refers to `CarouselPlayer.tsx`'s `SLIDE_TRANSITION` and the whip-push comment
+— direction, easing, whether it should read as one continuous wall-wide push.
+This comes after the mobile-UI feedback is addressed, per the owner's stated
+order.
 
 ⚠️ **Local Mac process-limit gotcha (this session):** leaving multiple
 `npm run dev` / Turbopack servers running exhausted the OS fork limit

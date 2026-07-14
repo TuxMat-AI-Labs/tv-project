@@ -44,7 +44,12 @@ export default async function HubLayout({
     <div className="flex h-dvh flex-col overflow-hidden text-foreground">
       <RegisterServiceWorker />
       <header
-        className="shrink-0 border-b brand-hairline bg-white/70 backdrop-blur-xl"
+        // relative z-40 keeps the header (and the account dropdown that
+        // overflows out of it) stacked ABOVE the scrollable <main> below.
+        // Without it, <main>'s cards paint over the open dropdown — the header
+        // no longer gets this for free now that it's a plain flex row rather
+        // than the old `sticky top-0 z-40`.
+        className="relative z-40 shrink-0 border-b brand-hairline bg-white/70 backdrop-blur-xl"
         style={{ paddingTop: "env(safe-area-inset-top)" }}
       >
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 pt-5 pb-3">

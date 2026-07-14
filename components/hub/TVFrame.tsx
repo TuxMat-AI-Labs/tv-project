@@ -3,17 +3,10 @@
  * region, upright, whatever the orientation. This frame is hub-only (the live
  * TV output is frameless full-bleed), so it's purely a visual stand-in.
  *
- * PORTRAIT (default): a photographic render of the real Samsung QM55C mounted
- * portrait (public/tv-frame.png, cropped tight to the bezel from the studio
- * photo). The glass offsets are measured from the photo so a 9:16 content area
- * lands exactly on the panel. The glass region has its own dark base so the
- * photo's screen reflection (which includes a person from the studio shot)
- * never shows through — an "off" screen reads as clean dark glass + glare.
- *
- * LANDSCAPE: the same panel rotated 90° would rotate the *content* with it, so
- * instead of reusing the portrait photo we draw a clean synthetic 16:9 bezel.
- * Content stays upright; a matching dark-glass base + diagonal glare keep it
- * consistent with the portrait frame.
+ * Both orientations draw the same clean synthetic bezel — a dark metallic
+ * border + inner shadow around a dark-glass region with a diagonal glare —
+ * just at each orientation's own aspect ratio, so every tile across the hub
+ * reads as one consistent panel family regardless of how it's mounted.
  */
 
 // Soft diagonal light-streak so the glass reads as glossy (shared by both).
@@ -29,49 +22,29 @@ export function TVFrame({
   children: React.ReactNode;
   orientation?: "PORTRAIT" | "LANDSCAPE";
 }) {
-  if (orientation === "LANDSCAPE") {
-    return (
-      <div className="relative w-full" style={{ aspectRatio: "16 / 9" }}>
-        {/* Synthetic bezel: dark metallic border + inner shadow. */}
-        <div
-          className="absolute inset-0 rounded-[2.2%]"
-          style={{
-            background: "linear-gradient(155deg, #26282d 0%, #101114 46%, #04050a 100%)",
-            boxShadow:
-              "0 10px 26px -12px rgba(15,11,7,0.55), inset 0 1px 1px rgba(255,255,255,0.07), inset 0 0 0 1px rgba(0,0,0,0.6)",
-            padding: "1.5%",
-          }}
-        >
-          <div
-            className="relative h-full w-full overflow-hidden rounded-[1px]"
-            style={{ background: GLASS }}
-          >
-            {children}
-            <span className="pointer-events-none absolute inset-0 z-10" style={{ background: GLARE }} />
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // A portrait panel is the same physical panel as landscape, just rotated —
+  // so its frame is landscape's aspect ratio inverted, not an independent photo.
+  const aspectRatio = orientation === "LANDSCAPE" ? "16 / 9" : "9 / 16";
 
   return (
-    <div className="relative w-full" style={{ aspectRatio: "824 / 1412" }}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src="/tv-frame.png"
-        alt=""
-        aria-hidden
-        draggable={false}
-        className="pointer-events-none absolute inset-0 h-full w-full select-none object-cover"
-      />
-      {/* Glass region, aligned to the active panel in the render — content reaches
-         the metal bezel's inner edge so no dark inner-border line shows at the top. */}
+    <div className="relative w-full" style={{ aspectRatio }}>
+      {/* Synthetic bezel: dark metallic border + inner shadow. CSS resolves
+         percentage padding against the box's WIDTH on every side (including
+         top/bottom), so this reads as one uniform physical bezel thickness
+         regardless of aspect ratio — no separate tuning needed per orientation. */}
       <div
-        className="absolute overflow-hidden rounded-[1px]"
-        style={{ left: "4.7%", top: "0.9%", right: "3.16%", bottom: "1.56%", background: GLASS }}
+        className="absolute inset-0 rounded-[2.2%]"
+        style={{
+          background: "linear-gradient(155deg, #26282d 0%, #101114 46%, #04050a 100%)",
+          boxShadow:
+            "0 10px 26px -12px rgba(15,11,7,0.55), inset 0 1px 1px rgba(255,255,255,0.07), inset 0 0 0 1px rgba(0,0,0,0.6)",
+          padding: "1.5%",
+        }}
       >
-        {children}
-        <span className="pointer-events-none absolute inset-0 z-10" style={{ background: GLARE }} />
+        <div className="relative h-full w-full overflow-hidden rounded-[1px]" style={{ background: GLASS }}>
+          {children}
+          <span className="pointer-events-none absolute inset-0 z-10" style={{ background: GLARE }} />
+        </div>
       </div>
     </div>
   );

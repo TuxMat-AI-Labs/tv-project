@@ -83,7 +83,7 @@ export function DisplayDetailView({
           style={
             display?.orientation === "LANDSCAPE"
               ? { width: "min(94vw, 152vh)", maxHeight: "86vh", aspectRatio: "16 / 9" }
-              : { height: "86vh", maxWidth: "94vw", aspectRatio: "824 / 1412" }
+              : { height: "86vh", maxWidth: "94vw", aspectRatio: "9 / 16" }
           }
         >
           <TVFrame orientation={display?.orientation ?? "PORTRAIT"}>

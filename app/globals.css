@@ -164,25 +164,29 @@ html.tv-output body {
    (e.g. `h-7 w-12`) and thumb (`h-6 w-6`) via Tailwind; toggle `.is-on` and
    translate the thumb to reflect state. */
 .glass-switch {
+  /* The 1px "border" is a box-shadow ring, not a real border — a real border
+     shrinks the padding box the thumb's absolute offsets are measured
+     against, throwing off the thumb's centering by that same amount and
+     making it hug (or overflow past) one edge instead of sitting flush
+     inset on both sides in both states. */
   position: relative;
   border-radius: 9999px;
   background: rgba(255, 255, 255, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.6);
   -webkit-backdrop-filter: blur(16px) saturate(160%);
   backdrop-filter: blur(16px) saturate(160%);
   box-shadow:
     inset 0 1px 3px rgba(32, 28, 22, 0.14),
-    inset 0 1px 1px rgba(255, 255, 255, 0.6);
+    inset 0 1px 1px rgba(255, 255, 255, 0.6),
+    0 0 0 1px rgba(255, 255, 255, 0.6);
   transition:
     background-color 0.25s ease,
-    border-color 0.25s ease,
     box-shadow 0.25s ease;
 }
 .glass-switch.is-on {
   background: linear-gradient(180deg, rgba(223, 186, 124, 0.92), rgba(185, 151, 91, 0.85));
-  border-color: rgba(255, 255, 255, 0.5);
   box-shadow:
     inset 0 1px 1px rgba(255, 255, 255, 0.6),
+    0 0 0 1px rgba(255, 255, 255, 0.5),
     0 2px 8px -3px rgba(185, 151, 91, 0.5);
 }
 .glass-switch-thumb {

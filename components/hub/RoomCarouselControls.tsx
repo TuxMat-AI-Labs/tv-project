@@ -101,9 +101,15 @@ export function RoomCarouselControls({
         title={isOn ? "Rotation on — click to turn off" : "Rotation off — click to turn on"}
         onClick={toggleActive}
         disabled={pending}
-        className="flex h-11 w-11 shrink-0 items-center justify-center disabled:opacity-60"
+        // Tap target sizes to the switch (h-11 for height, px-1 for a little
+        // horizontal reach) instead of a fixed w-11 that's NARROWER than the
+        // w-14 switch — a fixed narrower width flex-shrinks the track, so the
+        // thumb's fixed slide distance then overruns the shrunken edge and
+        // gets clipped by the track's overflow:hidden. shrink-0 on the switch
+        // is the belt-and-suspenders guarantee it always keeps its full width.
+        className="flex h-11 shrink-0 items-center justify-center px-1 disabled:opacity-60"
       >
-        <span className={`glass-switch h-8 w-14 ${isOn ? "is-on" : ""}`}>
+        <span className={`glass-switch h-8 w-14 shrink-0 ${isOn ? "is-on" : ""}`}>
           <span className={`glass-switch-thumb h-6 w-6 ${isOn ? "translate-x-6" : "translate-x-0"}`} />
         </span>
       </button>

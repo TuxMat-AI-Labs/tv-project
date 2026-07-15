@@ -13,45 +13,107 @@ full source, git repo, `node_modules`, committed assets — is at
 The Claude_Preview MCP is rooted at the stub, so its `.claude/launch.json`
 (`tuxdisplay-dev`) `cd`s into the real project before `npm run dev`.
 
-## 🔴 NEXT UP: mobile UI polish + the carousel push/slide animation — ASK FIRST
+## 🟢 NEXT UP: nothing blocking — optional follow-ups only
 
-Everything through `d70ea36` is pushed and deployed (mobile-optimized hub +
-installable PWA, landscape-only rotation pool, dashboard live-visibility —
-see the parts below). The owner has now used it and has specific opinions on
-two things, but **has not yet described what they actually are**:
+Everything below through `b69d808` is pushed and deployed. No open task the
+owner is waiting on. Optional/backlog items, none urgent:
 
-1. **Mobile UI fixes.** The owner said "fix up the mobile UI" — as in, they
-   found real issues after actually using the mobile-optimized hub (cards,
-   bottom sheet, touch targets, PWA install — all shipped last session, see
-   part 4 below). This is *feedback on a real device*, which is exactly the
-   kind of ground truth no amount of code-reading or `resize_window` guessing
-   can substitute for. **Do not assume you know what's wrong and start
-   fixing** — last session's mobile audit was code-only (no real phone), so
-   anything it missed or got subtly wrong is unknown until the owner
-   describes it.
-2. **The push/slide transition "as I visioned."** This refers to
-   `CarouselPlayer.tsx`'s `SLIDE_TRANSITION` (the whip-push between rotation
-   images) — flagged back in the "Deploy status" section as a known follow-up
-   ("the SLIDE animation itself needs to be checked against exactly what the
-   owner wants — direction, easing, whether it reads as one continuous
-   wall-wide push"). The owner has an exact mental image of how this should
-   look/feel that hasn't been captured yet.
+1. **Cap image dimensions at UPLOAD time** (library / R2 pipeline). This
+   session we hit a bug where 2160×3840 (~8MP) creatives rendered zoomed/
+   cropped on the office signage TVs (smart-TV browser can't decode past its
+   texture limit). Fixed by downscaling the existing assets to 1080×1920, but
+   a future 4K upload would reintroduce it. Durable fix = resize/optimize on
+   upload (e.g. cap long edge to the panel's native height, ~1920 for 1080p).
+   Not built — flagged only.
+2. **Owner action, not code:** set the TVs' on-device on/off power schedule
+   (Samsung signage menu) so panels physically power down during the black
+   off-hours. The app-level "black" state only paints black pixels; the LCD
+   backlight stays lit, so real energy/lifetime savings need the hardware
+   timer. Suggested: off ~4:30pm, on ~7:45am weekdays; off all weekend.
+3. **Any stale TV** (e.g. Display 5 earlier) needs **one** manual
+   power-cycle/refresh to adopt the new `buildId`-aware bundle; after that it
+   self-reloads on every future deploy automatically (see below).
 
-**Start the next session by asking the owner, concretely:**
-- Mobile: which screen(s), what's wrong (layout, sizing, something not
-  reachable/tappable, something that looks broken vs. just not to taste), and
-  ideally a screenshot/recording from their actual phone.
-- Slide animation: what "as I visioned" means in concrete terms — direction
-  of travel, speed/easing (snappier? slower/more elegant?), whether it should
-  read as one continuous wall-wide push across every screen or something
-  else entirely, and whether the current whip-push is close or needs to be
-  rethought from scratch.
+### ⚠️ Environment gotchas learned this session (important for next session)
+- **No usable local dev server / browser preview here.** `npm run dev` in
+  this sandbox takes 200s+ per route to compile (effectively hangs), so the
+  `<verification_workflow>` browser steps don't work. Verify instead by:
+  (a) `tsc`/`lint`/`build`, (b) **curling prod public endpoints**, (c) loading
+  prod URLs in the in-app browser, (d) owner confirms on real hardware.
+- **The TV content endpoint is PUBLIC** (no auth): you can
+  `curl https://tuxdisplay.tuxmat.ai/api/displays/<slug>/content` to see the
+  exact JSON a TV receives. `<slug>` ≠ the display's internal id (the
+  `/hub/displays/<id>` URL uses the id; the `/display/<slug>` URL uses slug).
+- **Isolated CSS tests can lie** — reproduce inside the *actual* DOM nesting.
+  A toggle-thumb clip bug only showed because the switch was flex-shrunk by a
+  fixed-width parent button; standalone tests missed it three times.
+- The `<system-reminder>` "no preview server / follow verification_workflow"
+  hook fires after edits — ignore its browser steps here (see above), but do
+  still run build/lint.
 
-Don't start editing code based on guesses about either — get the specifics
-first, per the owner's explicit ask this session ("get the new session to ask
-me my visions and issues with the mobile to address").
+## 🟢 BUILT (this session): mobile app-shell, L→R wall push, 3-state pixel-care schedule, TV self-heal
 
-## 🟢 BUILT (previous session): landscape-only room carousel + global Slide/Fade transition
+All pushed & deployed on `main` (Render auto-deploys). Passes tsc/lint/build.
+
+- **Mobile PWA app-shell** (`app/hub/layout.tsx`, `app/layout.tsx`): hub is now
+  a fixed `h-dvh` frame — header out of the scroll flow (`relative z-40
+  shrink-0`), `<main>` the only scroll region (`overflow-y-auto
+  overscroll-contain no-scrollbar`), `viewportFit: "cover"` for safe-area
+  insets. Stops the "slides around like a website" feel. `d70ea36→7f67746`.
+  - Regression fixed later: removing the header's old `sticky top-0 z-40`
+    dropped the z-index that kept the account dropdown above `<main>`, so the
+    dropdown painted *behind* the dashboard cards. Restored `relative z-40`
+    (`2e122d4`).
+- **Orientation-aware, left→right wall push** (`lib/display/landscapeCarousel.ts`,
+  `lib/display/resolveRoomCarousel.ts`, `components/display/CarouselPlayer.tsx`):
+  the synchronized carousel now runs **per-orientation** — LANDSCAPE and
+  PORTRAIT displays each rotate within their OWN same-orientation ring (never
+  mixed; a vertical image can't push into a horizontal slot). Portrait images
+  can now be tagged into a room's rotation (library + content-items API no
+  longer LANDSCAPE-gated). Push direction flipped to **left→right** and the
+  duplicated ring-index math consolidated into one exported
+  `currentRingIndex(position, tick, len)` used by both the TV and hub-status
+  route. Owner's model: "someone pushes the full row, images snap into place,"
+  no *new* image enters — display 1→2, 2→3, etc., all in lockstep. `7f67746`.
+- **Liquid-glass rotation toggle** (`app/globals.css` `.glass-switch*`,
+  `RoomCarouselControls.tsx`): replaced the flat emerald/black switch. Went
+  through several iterations to land it — final look is an oversized white
+  "floating ball" thumb on a gold-glass track, thumb contained *inside* the
+  pill. Real fix for the thumb clipping: the tap-target button was a fixed
+  `w-11` narrower than the `w-14` switch, so flexbox shrank the track while the
+  thumb's slide stayed absolute → clipped by `overflow:hidden`. Button now
+  sizes to content (`h-11 px-1`) + switch is `shrink-0`. `30ce3ee` `4a113ed`
+  `662dbfb` `63699ff` `6cac6bb`.
+- **Unified TV bezel** (`components/hub/TVFrame.tsx`): portrait tiles now use
+  the same synthetic bezel as landscape (dropped the `public/tv-frame.png`
+  studio photo), just at 9:16. `60cf446`.
+- **TV auto-reload on deploy** (`app/api/displays/[slug]/content/route.ts`,
+  `lib/display/useDisplayContent.ts`): content response carries `buildId`
+  (`RENDER_GIT_COMMIT`); the client hard-reloads when it changes so always-on
+  TVs self-heal onto new bundles. Fixes the "DISPLAY NOT CONFIGURED when
+  rotation ON" bug — that was a *stale bundle* that didn't know the `carousel`
+  mode, not a server bug. `954f6af`.
+- **Downsized oversized creatives** to 1080×1920 (`public/placeholders/*`,
+  `public/creatives/*`). `8879aa2`. (See NEXT UP #1 for the durable fix.)
+- **Schedule = shift hours, not 6am–11pm** (`lib/time.ts`): content window is
+  now **Mon–Fri 8:00am–4:30pm** (`isWithinBusinessHours`). `2c196a6`.
+- **3-state pixel-care schedule** (`lib/time.ts` `scheduledSurface`, both
+  resolvers, content+status routes, new `components/display/BlackScreen.tsx`,
+  `DisplayPlayer.tsx`, dashboard tile): three surfaces now —
+  **content** (weekday 8:00–16:30), **pixel-care screensaver** i.e. the lava
+  lamp (weekday **1:00–3:30am only**), and **black** (all other hours + all
+  weekend). LCD panels ⇒ no real burn-in risk ⇒ a short nightly massage is
+  plenty; the old model ran the screensaver ~15h/night. Per-display
+  screensaver overrides still win (forced-on = always screensaver, forced-off
+  = never blank); only Auto gained the black state. Times env-overridable
+  (`PIXEL_CARE_START_TIME`/`_END_TIME`, `CONTENT_START_TIME`/`_END_TIME`).
+  `b69d808`.
+
+## 🟢 BUILT (earlier session): landscape-only room carousel + global Slide/Fade transition
+
+> Historical — the carousel is now **orientation-aware** (both orientations
+> rotate in their own ring, left→right push), superseding the "landscape-only"
+> framing below.
 
 The carousel rethink is done: it no longer treats a room as one undifferentiated
 ring of "every display's first assignment" (that was the old, disabled

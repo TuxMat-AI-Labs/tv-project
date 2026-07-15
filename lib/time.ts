@@ -1,9 +1,16 @@
-// Displays play content during these local hours on weekdays; outside this
-// window (evenings/overnight, and all day on weekends, when there's no
-// shift) the screensaver runs. Matches the office's actual shift hours —
-// override per-venue via env, "HH:mm" 24-hour format.
+// Displays play content during these local hours on weekdays. Matches the
+// office's actual shift hours — override per-venue via env, "HH:mm" 24-hour.
 const CONTENT_START_TIME = process.env.CONTENT_START_TIME || "08:00"; // 8:00 AM
 const CONTENT_END_TIME = process.env.CONTENT_END_TIME || "16:30"; // 4:30 PM
+
+// The nightly pixel-care window. These are LCD panels, so permanent burn-in
+// isn't really a risk — this short "massage" (the moving lava-lamp
+// screensaver) just clears any temporary image retention the day's static
+// ads left behind, then the panel goes black for the rest of the night.
+// Weekdays only; weekends stay black around the clock (no daytime content
+// ran, so there's nothing to clear). Override per-venue via env.
+const PIXEL_CARE_START_TIME = process.env.PIXEL_CARE_START_TIME || "01:00"; // 1:00 AM
+const PIXEL_CARE_END_TIME = process.env.PIXEL_CARE_END_TIME || "03:30"; // 3:30 AM
 
 // The venue's local timezone. Hours are evaluated here, NOT in the server's
 // timezone — otherwise a UTC server (e.g. Render) would flip displays to the
@@ -45,14 +52,29 @@ function parseDaypart(value: string): number {
 }
 
 /**
- * True while displays should play content: Mon–Fri, within the shift window;
- * false (screensaver) evenings/overnight and all day on weekends, since
- * there's no shift then.
+ * True while displays should play content: Mon–Fri, within the shift window.
+ * Outside this the panel is either in its overnight pixel-care window or
+ * black — see `scheduledSurface`.
  */
 export function isWithinBusinessHours(now: Date): boolean {
   const { day, minutes } = venueParts(now);
   if (day === 0 || day === 6) return false; // Sun / Sat
   return minutes >= parseDaypart(CONTENT_START_TIME) && minutes < parseDaypart(CONTENT_END_TIME);
+}
+
+/** True during the weekday overnight pixel-care window (weekends stay black). */
+export function isWithinPixelCareWindow(now: Date): boolean {
+  const { day, minutes } = venueParts(now);
+  if (day === 0 || day === 6) return false; // Sun / Sat — black all weekend
+  return minutes >= parseDaypart(PIXEL_CARE_START_TIME) && minutes < parseDaypart(PIXEL_CARE_END_TIME);
+}
+
+/** What the automatic schedule wants on screen, ignoring per-display overrides. */
+export type ScheduledSurface = "content" | "screensaver" | "black";
+export function scheduledSurface(now: Date): ScheduledSurface {
+  if (isWithinBusinessHours(now)) return "content";
+  if (isWithinPixelCareWindow(now)) return "screensaver";
+  return "black";
 }
 
 export function isWithinDaypart(now: Date, daypartStart: string | null, daypartEnd: string | null): boolean {

@@ -89,6 +89,8 @@ export async function GET() {
 
             if (landscape.mode === "screensaver") {
               mode = "screensaver";
+            } else if (landscape.mode === "black") {
+              mode = "black";
             } else if (landscape.mode === "carousel") {
               mode = "carousel";
               const { ring, position, tick } = landscape.carousel;

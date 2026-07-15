@@ -7,7 +7,7 @@ import type { CarouselTransition } from "@/lib/display/transition";
 import type { ScreensaverVariant } from "@/lib/screensaver";
 
 export type DisplayContentResponse = {
-  mode: "playlist" | "screensaver" | "inactive" | "carousel";
+  mode: "playlist" | "screensaver" | "inactive" | "carousel" | "black";
   playlist?: PlaylistItem[];
   carousel?: CarouselPayload;
   contentFit?: "COVER" | "CONTAIN" | "FILL";

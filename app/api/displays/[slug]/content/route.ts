@@ -77,6 +77,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ slu
     const screensaverStyle = await getScreensaverStyle();
     return NextResponse.json({ mode: "screensaver", screensaverStyle, ...base }, { headers: NO_STORE_HEADERS });
   }
+  if (landscape.mode === "black") {
+    return NextResponse.json({ mode: "black", ...base }, { headers: NO_STORE_HEADERS });
+  }
   if (landscape.mode === "carousel") {
     return NextResponse.json({ mode: "carousel", carousel: landscape.carousel, ...base }, { headers: NO_STORE_HEADERS });
   }
@@ -89,6 +92,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ slu
   if (resolved.mode === "screensaver") {
     const screensaverStyle = await getScreensaverStyle();
     return NextResponse.json({ mode: "screensaver", screensaverStyle, ...base }, { headers: NO_STORE_HEADERS });
+  }
+  if (resolved.mode === "black") {
+    return NextResponse.json({ mode: "black", ...base }, { headers: NO_STORE_HEADERS });
   }
 
   const finalResolved =

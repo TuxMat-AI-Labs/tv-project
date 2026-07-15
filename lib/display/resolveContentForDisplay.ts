@@ -1,5 +1,5 @@
 import type { Assignment, ContentItem, Display } from "@prisma/client";
-import { isWithinBusinessHours, isWithinDaypart, isWithinDateRange } from "@/lib/time";
+import { scheduledSurface, isWithinDaypart, isWithinDateRange } from "@/lib/time";
 
 type AssignmentWithContent = Assignment & { contentItem: ContentItem };
 export type DisplayWithAssignments = Display & { assignments: AssignmentWithContent[] };
@@ -15,6 +15,7 @@ export type PlaylistItem = {
 export type ResolvedContent =
   | { mode: "inactive" }
   | { mode: "screensaver" }
+  | { mode: "black" }
   | { mode: "playlist"; playlist: PlaylistItem[] };
 
 const DEFAULT_IMAGE_DURATION_SEC = 10;
@@ -34,16 +35,23 @@ export function resolveContentForDisplay(display: DisplayWithAssignments, now: D
     )
     .sort((a, b) => a.sortOrder - b.sortOrder);
 
+  // Manual overrides win over the schedule: forced-on always screensavers;
+  // forced-off never blanks (shows its content, or "inactive" if it has none).
   if (display.screensaverOverride === true) return { mode: "screensaver" };
-
   if (display.screensaverOverride === false) {
     if (activeAssignments.length === 0) return { mode: "inactive" };
     return { mode: "playlist", playlist: toPlaylist(activeAssignments) };
   }
 
-  const shouldShowScreensaver = !isWithinBusinessHours(now) || activeAssignments.length === 0;
-  if (shouldShowScreensaver) return { mode: "screensaver" };
+  // Auto: follow the day's schedule — black overnight/weekends, the pixel-care
+  // screensaver in the massage window, content during shift hours.
+  const surface = scheduledSurface(now);
+  if (surface === "black") return { mode: "black" };
+  if (surface === "screensaver") return { mode: "screensaver" };
 
+  // Content hours: play the assignments, or fall back to the screensaver if
+  // this display has nothing scheduled to show right now.
+  if (activeAssignments.length === 0) return { mode: "screensaver" };
   return { mode: "playlist", playlist: toPlaylist(activeAssignments) };
 }
 

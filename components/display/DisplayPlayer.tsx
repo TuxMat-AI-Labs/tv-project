@@ -6,6 +6,7 @@ import { PlaylistPlayer } from "@/components/display/PlaylistPlayer";
 import { CarouselPlayer } from "@/components/display/CarouselPlayer";
 import { Screensaver } from "@/components/display/Screensaver";
 import { InactiveScreen } from "@/components/display/InactiveScreen";
+import { BlackScreen } from "@/components/display/BlackScreen";
 
 /**
  * The full-screen TV player: polls a Display's content by slug and renders the
@@ -45,6 +46,10 @@ export function DisplayPlayer({ slug }: { slug: string }) {
 
   if (data.mode === "screensaver") {
     return <Screensaver variant={data.screensaverStyle} />;
+  }
+
+  if (data.mode === "black") {
+    return <BlackScreen />;
   }
 
   return <InactiveScreen />;

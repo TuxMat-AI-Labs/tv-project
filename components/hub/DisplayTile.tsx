@@ -12,6 +12,7 @@ const MODE_LABEL: Record<HubDisplayStatus["mode"], string> = {
   screensaver: "Screensaver",
   inactive: "Inactive",
   carousel: "Rotating",
+  black: "Off (scheduled)",
 };
 
 // Max degrees the tile rotates toward the cursor on hover (Task E).

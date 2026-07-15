@@ -1,6 +1,6 @@
 import type { Orientation } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { isWithinBusinessHours, isWithinDateRange, isWithinDaypart } from "@/lib/time";
+import { scheduledSurface, isWithinDateRange, isWithinDaypart } from "@/lib/time";
 import { resolveRoomCarousel, type CarouselPayload } from "@/lib/display/resolveRoomCarousel";
 import type { PlaylistItem } from "@/lib/display/resolveContentForDisplay";
 
@@ -13,6 +13,7 @@ export const CAROUSEL_ENABLED = true;
 
 export type LandscapeResolution =
   | { mode: "screensaver" }
+  | { mode: "black" }
   | { mode: "carousel"; carousel: CarouselPayload }
   | { mode: "playlist"; playlist: PlaylistItem[] }
   // Doesn't apply to this display right now — caller falls through to normal
@@ -51,13 +52,16 @@ export async function resolveLandscapeDisplay(
   );
   if (ring.length === 0 || position < 0) return { mode: "none" };
 
-  // Screensaver still wins (overnight burn-in care / an explicit override),
-  // even mid-rotation — the pool counts as "has content" so a display feeding
-  // off the pool isn't forced to the screensaver during the day.
-  const wantsScreensaver =
-    display.screensaverOverride === true ||
-    (display.screensaverOverride !== false && !isWithinBusinessHours(now));
-  if (wantsScreensaver) return { mode: "screensaver" };
+  // Schedule/override win over rotation, even mid-cycle. Forced-on → always
+  // screensaver; forced-off → never blank (falls through to the pool). Auto →
+  // follow the day's schedule: black overnight/weekends, the pixel-care
+  // screensaver in the massage window, content during shift hours.
+  if (display.screensaverOverride === true) return { mode: "screensaver" };
+  if (display.screensaverOverride !== false) {
+    const surface = scheduledSurface(now);
+    if (surface === "screensaver") return { mode: "screensaver" };
+    if (surface === "black") return { mode: "black" };
+  }
 
   // Rotation ON: rotate the whole wall through the pool in lockstep.
   if (display.room.carouselActive && display.room.carouselStartedAt) {

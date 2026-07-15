@@ -14,6 +14,7 @@ export type DisplayContentResponse = {
   carouselTransition?: CarouselTransition;
   screensaverStyle?: ScreensaverVariant;
   reloadRequestedAt?: string | null;
+  buildId?: string;
   serverTime: string;
 };
 
@@ -39,6 +40,10 @@ export function useDisplayContent(slug: string) {
   // Display shouldn't trigger a reload on mount) — only a *change* after that
   // means the hub just asked this TV to refresh.
   const reloadBaselineRef = useRef<string | null | undefined>(undefined);
+  // Same baseline-then-watch pattern for the server's deploy id: a change means
+  // a new build shipped, so this always-on TV hard-reloads onto the new bundle
+  // instead of running stale JS that may not understand newer response shapes.
+  const buildBaselineRef = useRef<string | null | undefined>(undefined);
 
   useEffect(() => {
     let cancelled = false;
@@ -57,6 +62,16 @@ export function useDisplayContent(slug: string) {
         if (reloadBaselineRef.current === undefined) {
           reloadBaselineRef.current = reloadMarker;
         } else if (reloadMarker !== reloadBaselineRef.current) {
+          window.location.reload();
+          return;
+        }
+
+        // A new deploy shipped since this TV loaded → reload onto the new
+        // bundle. Baselined on the first poll so mount never self-reloads.
+        const buildMarker = json.buildId ?? null;
+        if (buildBaselineRef.current === undefined) {
+          buildBaselineRef.current = buildMarker;
+        } else if (buildMarker !== buildBaselineRef.current) {
           window.location.reload();
           return;
         }

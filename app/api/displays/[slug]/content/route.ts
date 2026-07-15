@@ -45,6 +45,14 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ slu
     contentFit: display.contentFit,
     reloadRequestedAt: display.reloadRequestedAt?.toISOString() ?? null,
     carouselTransition: coerceCarouselTransition(display.room.carouselTransition),
+    // The running deploy's commit. An always-on TV keeps whatever JS bundle it
+    // first loaded until it reloads, so after a deploy it can be running code
+    // that doesn't understand newer response shapes (e.g. a `mode: "carousel"`
+    // added later renders as "not configured" on a bundle that predates it).
+    // The client hard-reloads when this changes, so every TV self-heals onto
+    // the new bundle within a poll cycle. Falls back to a constant off-Render
+    // (local dev), where it just never triggers a reload.
+    buildId: process.env.RENDER_GIT_COMMIT ?? "dev",
     serverTime: now.toISOString(),
   };
 

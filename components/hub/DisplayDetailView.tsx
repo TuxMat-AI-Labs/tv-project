@@ -7,7 +7,7 @@ import { PixelMassager } from "@/components/screensaver/PixelMassager";
 import { PencilIcon, SwapIcon, HealthIcon, AdjustIcon, RefreshIcon } from "@/components/hub/icons";
 import { Wordmark } from "@/components/brand/Wordmark";
 
-type ContentItemLite = { id: string; title: string; type: "IMAGE" | "VIDEO"; fileUrl: string; thumbnailUrl: string | null };
+type ContentItemLite = { id: string; title: string; type: "IMAGE" | "VIDEO" | "WEBPAGE"; fileUrl: string; thumbnailUrl: string | null };
 type RoomLite = { id: string; name: string; slug: string };
 type DisplayDetail = {
   id: string;
@@ -131,6 +131,27 @@ function LivePreview({ display }: { display: DisplayDetail }) {
 
   const fit =
     display.contentFit === "CONTAIN" ? "object-contain" : display.contentFit === "FILL" ? "object-fill" : "object-cover";
+
+  // A webpage has no thumbnail to fall back to, so the tile names it rather
+  // than pointing an <img> at an HTML URL and showing a broken-image icon.
+  // Deliberately not a live iframe: the hub renders one of these per screen in
+  // a wall of tiles, and each would be a full page load.
+  if (item.type === "WEBPAGE") {
+    let host = item.fileUrl;
+    try {
+      host = new URL(item.fileUrl).host;
+    } catch {
+      // Keep the raw string — a malformed URL is worth seeing as-is here.
+    }
+    return (
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black px-3 text-center">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/brand/tuxmat-monogram.png" alt="" className="w-1/5 opacity-30" />
+        <p className="truncate text-[0.6rem] tracking-[0.2em] text-zinc-400 uppercase">{item.title}</p>
+        <p className="truncate text-[0.55rem] text-zinc-600">{host}</p>
+      </div>
+    );
+  }
 
   if (item.type === "VIDEO") {
     return (

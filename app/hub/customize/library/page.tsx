@@ -6,7 +6,7 @@ import { CustomizeSubNav } from "@/components/hub/CustomizeSubNav";
 type ContentItem = {
   id: string;
   title: string;
-  type: "IMAGE" | "VIDEO";
+  type: "IMAGE" | "VIDEO" | "WEBPAGE";
   thumbnailUrl: string | null;
   fileUrl: string;
   orientation: "PORTRAIT" | "LANDSCAPE";
@@ -28,6 +28,13 @@ export default function LibraryPage() {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [pageUrl, setPageUrl] = useState("");
+  const [pageTitle, setPageTitle] = useState("");
+  const [pageDurationSec, setPageDurationSec] = useState(30);
+  const [pageOrientation, setPageOrientation] = useState<"PORTRAIT" | "LANDSCAPE">("PORTRAIT");
+  const [addingPage, setAddingPage] = useState(false);
+  const [pageError, setPageError] = useState<string | null>(null);
 
   const mediaType: "IMAGE" | "VIDEO" | null = file
     ? file.type.startsWith("video/")
@@ -147,6 +154,38 @@ export default function LibraryPage() {
     }
   }
 
+  async function addWebpage() {
+    if (!pageUrl.trim() || !pageTitle.trim()) return;
+    setAddingPage(true);
+    setPageError(null);
+    try {
+      const res = await fetch("/api/admin/content-items", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: pageTitle.trim(),
+          type: "WEBPAGE",
+          fileUrl: pageUrl.trim(),
+          durationSec: pageDurationSec,
+          orientation: pageOrientation,
+        }),
+      });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(body?.error ?? "Could not save the webpage.");
+      }
+      setPageUrl("");
+      setPageTitle("");
+      setPageDurationSec(30);
+      setPageOrientation("PORTRAIT");
+      await refresh();
+    } catch (err) {
+      setPageError(err instanceof Error ? err.message : "Could not save the webpage.");
+    } finally {
+      setAddingPage(false);
+    }
+  }
+
   return (
     <div className="reveal">
       <h1 className="text-2xl font-semibold text-foreground">Customize</h1>
@@ -206,6 +245,63 @@ export default function LibraryPage() {
           </button>
         </div>
         {uploadError && <p className="mt-2 text-xs text-red-600">{uploadError}</p>}
+      </div>
+
+      <div className="mt-4 brand-card p-4">
+        <h2 className="mb-1 text-sm font-semibold text-foreground">Add a webpage</h2>
+        <p className="mb-3 text-xs text-muted">
+          Shows a live page in a frame instead of an uploaded file — for internal dashboards that keep
+          themselves current, like the TuxOKR wall board. Must be https.
+        </p>
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="block min-w-[260px] flex-1">
+            <span className="text-xs text-muted">URL</span>
+            <input
+              value={pageUrl}
+              onChange={(e) => setPageUrl(e.target.value)}
+              className="mt-1 block w-full rounded border border-black/10 bg-white px-2 py-1.5 text-sm text-foreground"
+              placeholder="https://okr.tuxmat.ai/display/…"
+            />
+          </label>
+          <label className="block">
+            <span className="text-xs text-muted">Title</span>
+            <input
+              value={pageTitle}
+              onChange={(e) => setPageTitle(e.target.value)}
+              className="mt-1 block rounded border border-black/10 bg-white px-2 py-1.5 text-sm text-foreground"
+              placeholder="e.g. OKR board"
+            />
+          </label>
+          <label className="block">
+            <span className="text-xs text-muted">Duration (sec)</span>
+            <input
+              type="number"
+              min={1}
+              value={pageDurationSec}
+              onChange={(e) => setPageDurationSec(Number(e.target.value))}
+              className="mt-1 block w-24 rounded border border-black/10 bg-white px-2 py-1.5 text-sm text-foreground"
+            />
+          </label>
+          <label className="block">
+            <span className="text-xs text-muted">Orientation</span>
+            <select
+              value={pageOrientation}
+              onChange={(e) => setPageOrientation(e.target.value as "PORTRAIT" | "LANDSCAPE")}
+              className="mt-1 block rounded border border-black/10 bg-white px-2 py-1.5 text-sm text-foreground"
+            >
+              <option value="PORTRAIT">Portrait</option>
+              <option value="LANDSCAPE">Landscape</option>
+            </select>
+          </label>
+          <button
+            onClick={addWebpage}
+            disabled={addingPage || !pageUrl.trim() || !pageTitle.trim()}
+            className="glass-btn glass-btn--gold rounded px-4 py-1.5 text-sm font-medium"
+          >
+            {addingPage ? "Adding…" : "Add webpage"}
+          </button>
+        </div>
+        {pageError && <p className="mt-2 text-xs text-red-600">{pageError}</p>}
       </div>
 
       <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">

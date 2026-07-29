@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 const HEARTBEAT_THRESHOLD_MS = 45_000;
 const DEVICE_THRESHOLD_MS = 60_000; // a paired TV checks in via /api/tv/register
 
-type ContentLite = { id: string; type: "IMAGE" | "VIDEO"; thumbnailUrl: string | null; title: string };
+type ContentLite = { id: string; type: "IMAGE" | "VIDEO" | "WEBPAGE"; thumbnailUrl: string | null; title: string };
 
 export async function GET() {
   const rooms = await prisma.room.findMany({

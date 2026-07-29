@@ -20,6 +20,11 @@ enum Role {
 enum MediaType {
   IMAGE
   VIDEO
+  // A live web page shown in an iframe rather than an uploaded file. Its
+  // `fileUrl` holds the page URL. Used for internally-hosted dashboards (the
+  // TuxOKR wall board, for one) that render themselves and stay current on
+  // their own, so nothing has to be re-exported and re-uploaded.
+  WEBPAGE
 }
 
 enum ContentFit {

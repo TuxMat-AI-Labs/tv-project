@@ -94,6 +94,12 @@ model Display {
   roomId              String
   room                Room     @relation(fields: [roomId], references: [id])
   active              Boolean  @default(true)
+  // Whether this screen takes part in its room's shared rotation. Off means it
+  // keeps whatever is assigned to it directly, no matter what the room is doing —
+  // the per-display counterpart to the room-wide ON/OFF switch, for a screen
+  // that has a job of its own (a dashboard, a menu) inside a room that otherwise
+  // rotates artwork.
+  joinsRotation       Boolean  @default(true)
   screensaverOverride Boolean?
   contentFit          ContentFit @default(COVER)
   orientation         Orientation @default(PORTRAIT)

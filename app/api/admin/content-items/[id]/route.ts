@@ -66,3 +66,42 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   return NextResponse.json(item);
 }
+
+/**
+ * Removes a library item.
+ *
+ * Refuses while the item is assigned to a display, and names the displays. The
+ * alternative — cascading the delete — would silently blank a screen on the wall
+ * that nobody is looking at, which is a worse outcome than an error message.
+ * Change those displays to something else first.
+ *
+ * Leaves the underlying file in R2. Storage is cheap, an accidental delete is
+ * not, and a stored object with no row is harmless.
+ */
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const session = await auth();
+  if (!session?.user?.id || !canManageContent(session.user.role)) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+
+  const { id } = await params;
+  const item = await prisma.contentItem.findUnique({
+    where: { id },
+    select: {
+      title: true,
+      assignments: { select: { display: { select: { name: true } } } },
+    },
+  });
+  if (!item) return NextResponse.json({ error: "not found" }, { status: 404 });
+
+  if (item.assignments.length > 0) {
+    const where = [...new Set(item.assignments.map((a) => a.display.name))].join(", ");
+    return NextResponse.json(
+      { error: `Still assigned to ${where}. Change those displays first, then delete.` },
+      { status: 409 },
+    );
+  }
+
+  await prisma.contentItem.delete({ where: { id } });
+  return NextResponse.json({ ok: true });
+}

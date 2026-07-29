@@ -119,8 +119,22 @@ async function buildLandscapeRoomRing(
   const isLive = (a: { startsAt: Date | null; endsAt: Date | null; daypartStart: string | null; daypartEnd: string | null }) =>
     isWithinDateRange(now, a.startsAt, a.endsAt) && isWithinDaypart(now, a.daypartStart, a.daypartEnd);
 
+  // A display sits out the room's rotation when it has a job of its own:
+  //   - it is showing a live VIDEO (original behaviour), or
+  //   - it is showing a live WEBPAGE — an explicitly assigned dashboard is not
+  //     rotating artwork, and before this it was silently overridden by the pool
+  //     even with the room switch OFF, because the "rotation off" branch still
+  //     returns a pool image as a static playlist, or
+  //   - an admin has turned rotation off for that screen specifically.
+  //
+  // Sitting out also removes it from `position`, so resolveLandscapeDisplay
+  // returns mode "none" and the display falls through to its own assignment.
   const participating = displays.filter(
-    (d) => !d.assignments.some((a) => a.contentItem.type === "VIDEO" && isLive(a))
+    (d) =>
+      d.joinsRotation &&
+      !d.assignments.some(
+        (a) => (a.contentItem.type === "VIDEO" || a.contentItem.type === "WEBPAGE") && isLive(a)
+      )
   );
 
   const position = participating.findIndex((d) => d.id === thisDisplayId);

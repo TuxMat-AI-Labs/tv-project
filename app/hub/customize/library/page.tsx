@@ -154,6 +154,22 @@ export default function LibraryPage() {
     }
   }
 
+  async function remove(id: string, title: string) {
+    if (!window.confirm(`Delete "${title}" from the library? The file itself is kept in storage.`)) return;
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/content-items/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as { error?: string } | null;
+        // 409 means it is still on a screen, and the message names which.
+        throw new Error(body?.error ?? "Could not delete this item.");
+      }
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not delete this item.");
+    }
+  }
+
   async function addWebpage() {
     if (!pageUrl.trim() || !pageTitle.trim()) return;
     setAddingPage(true);
@@ -320,7 +336,20 @@ export default function LibraryPage() {
               )}
             </div>
             <div className="p-2">
-              <p className="truncate text-xs font-medium text-foreground">{item.title}</p>
+              <div className="flex items-start justify-between gap-1.5">
+                <p className="truncate text-xs font-medium text-foreground">{item.title}</p>
+                <button
+                  type="button"
+                  onClick={() => remove(item.id, item.title)}
+                  title="Delete from library"
+                  aria-label={`Delete ${item.title}`}
+                  className="-mr-0.5 -mt-0.5 shrink-0 rounded p-1 text-muted transition-colors hover:bg-black/5 hover:text-red-600"
+                >
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+                    <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" />
+                  </svg>
+                </button>
+              </div>
               <div className="mt-1 flex flex-wrap items-center gap-1.5">
                 <span className="inline-block rounded-full bg-surface-2 px-2 py-0.5 text-[10px] text-muted uppercase">
                   {item.type}

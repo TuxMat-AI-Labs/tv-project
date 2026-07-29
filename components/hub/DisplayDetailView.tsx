@@ -20,6 +20,7 @@ type DisplayDetail = {
   screensaverOverride: boolean | null;
   contentFit: "COVER" | "CONTAIN" | "FILL";
   orientation: "PORTRAIT" | "LANDSCAPE";
+  joinsRotation: boolean;
   assignments: { id: string; contentItem: ContentItemLite }[];
   mode: "playlist" | "screensaver" | "inactive";
   online: boolean;
@@ -287,6 +288,7 @@ function EditPanel({
   const [name, setName] = useState(display.name);
   const [number, setNumber] = useState(display.number);
   const [active, setActive] = useState(display.active);
+  const [joinsRotation, setJoinsRotation] = useState(display.joinsRotation);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [slugState, setSlugState] = useState<"idle" | "done" | "error">("idle");
@@ -297,7 +299,7 @@ function EditPanel({
     await fetch(`/api/admin/displays/${display.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, number, active }),
+      body: JSON.stringify({ name, number, active, joinsRotation }),
     });
     setSaving(false);
     onSaved();
@@ -358,6 +360,20 @@ function EditPanel({
         <label className="flex items-center gap-2">
           <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} />
           <span className="text-zinc-400">Active</span>
+        </label>
+        <label className="flex items-start gap-2">
+          <input
+            type="checkbox"
+            checked={joinsRotation}
+            onChange={(e) => setJoinsRotation(e.target.checked)}
+            className="mt-0.5"
+          />
+          <span className="text-zinc-400">
+            Joins room rotation
+            <span className="block text-[11px] text-zinc-500">
+              Off keeps whatever is assigned to this screen, whatever the room is doing.
+            </span>
+          </span>
         </label>
         <button
           onClick={save}

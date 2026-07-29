@@ -44,6 +44,7 @@ type PatchBody = {
   screensaverOverride?: boolean | null;
   contentFit?: "COVER" | "CONTAIN" | "FILL";
   orientation?: "PORTRAIT" | "LANDSCAPE";
+  joinsRotation?: boolean;
   regenerateSlug?: boolean;
 };
 
@@ -58,6 +59,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (body.active !== undefined) data.active = body.active;
   if (body.screensaverOverride !== undefined) data.screensaverOverride = body.screensaverOverride;
   if (body.contentFit !== undefined) data.contentFit = body.contentFit;
+  if (body.joinsRotation !== undefined) data.joinsRotation = body.joinsRotation;
   if (body.orientation !== undefined) data.orientation = body.orientation;
   if (body.regenerateSlug) data.slug = crypto.randomUUID();
 

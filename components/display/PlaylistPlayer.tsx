@@ -85,8 +85,10 @@ export function PlaylistPlayer({
     advancingRef.current = false;
   }, [index, playlist]);
 
+  // A VIDEO advances on its own 'ended' event; everything else is held for a
+  // fixed duration. A WEBPAGE has no natural end, so it is timed like an image.
   useEffect(() => {
-    if (!current || current.type !== "IMAGE") return;
+    if (!current || current.type === "VIDEO") return;
     const timer = setTimeout(advance, current.durationSec * 1000);
     return () => clearTimeout(timer);
   }, [current, advance]);
@@ -107,7 +109,24 @@ export function PlaylistPlayer({
           exit={variant.exit}
           transition={variant.transition}
         >
-          {current.type === "IMAGE" ? (
+          {current.type === "WEBPAGE" ? (
+            // A live page renders itself and stays current without anyone
+            // re-exporting it. Sandboxed: these are internal dashboards, and a
+            // screen on the wall has no business running top-level navigation
+            // or opening popups. `allow-same-origin` is required for the page
+            // to reach its own API and cookies, which every one of ours needs.
+            <iframe
+              src={current.fileUrl}
+              title=""
+              aria-hidden="true"
+              className="h-full w-full border-0"
+              sandbox="allow-scripts allow-same-origin"
+              referrerPolicy="same-origin"
+              // The TV browser is unattended, so nothing here should ever be
+              // interactive — a stray touch must not be able to navigate it.
+              style={{ pointerEvents: "none" }}
+            />
+          ) : current.type === "IMAGE" ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={current.fileUrl} alt="" className="h-full w-full" style={{ objectFit }} />
           ) : (

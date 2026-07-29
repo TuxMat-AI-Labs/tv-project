@@ -6,7 +6,7 @@ export type DisplayWithAssignments = Display & { assignments: AssignmentWithCont
 
 export type PlaylistItem = {
   id: string;
-  type: "IMAGE" | "VIDEO";
+  type: "IMAGE" | "VIDEO" | "WEBPAGE";
   fileUrl: string;
   thumbnailUrl: string | null;
   durationSec: number;

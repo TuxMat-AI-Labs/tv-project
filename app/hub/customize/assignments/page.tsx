@@ -6,7 +6,7 @@ import { CustomizeSubNav } from "@/components/hub/CustomizeSubNav";
 type ContentItemLite = {
   id: string;
   title: string;
-  type: "IMAGE" | "VIDEO";
+  type: "IMAGE" | "VIDEO" | "WEBPAGE";
   thumbnailUrl: string | null;
   orientation: "PORTRAIT" | "LANDSCAPE";
 };

@@ -8,7 +8,7 @@ import { canManageContent } from "@/lib/auth/roles";
  * (`rotationRoomId` — null means "not in any room's rotation"). Enforces the
  * invariant that only an IMAGE item can be in a rotation (either orientation
  * — LANDSCAPE and PORTRAIT each rotate within their own same-orientation
- * pool): a VIDEO is rejected outright.
+ * pool): a VIDEO or a WEBPAGE is rejected outright.
  */
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -41,8 +41,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   let rotationRoomId: string | null | undefined;
   if (hasRotation) {
     if (body.rotationRoomId !== null) {
-      if (current.type === "VIDEO") {
-        return NextResponse.json({ error: "a video can never join a room's rotation" }, { status: 400 });
+      // Allow-list, not a deny-list: the rotation pool query selects
+      // `type: "IMAGE"` explicitly, so any type added later would be accepted
+      // here and then silently never appear on screen.
+      if (current.type !== "IMAGE") {
+        return NextResponse.json(
+          { error: `only an image can join a room's rotation (this is a ${current.type.toLowerCase()})` },
+          { status: 400 },
+        );
       }
       const room = await prisma.room.findUnique({ where: { id: body.rotationRoomId }, select: { id: true } });
       if (!room) return NextResponse.json({ error: "room not found" }, { status: 400 });

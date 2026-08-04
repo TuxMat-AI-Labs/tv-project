@@ -13,6 +13,50 @@ full source, git repo, `node_modules`, committed assets — is at
 The Claude_Preview MCP is rooted at the stub, so its `.claude/launch.json`
 (`tuxdisplay-dev`) `cd`s into the real project before `npm run dev`.
 
+## 🟡 IN REVIEW (this session): dead-end "Server not found" after weekends
+
+**Symptom (owner, Monday):** many TVs showed Samsung's *native* "Server not
+found." error page and stayed there. A single manual browser refresh on each
+TV fixed it and content played fine.
+
+**Root cause:** that error page is the TV browser's own, which means the
+failure happened *at navigation time* — before any of our JS loaded. Once a
+TV lands there, nothing in our app is running, so none of our existing
+self-healing (poll loop, `buildId` reload, `reloadRequestedAt`) can ever fire.
+It sits dead until a human refreshes. Most likely trigger over a weekend: TV
+power-cycles (or a Render restart / DNS blip) and the browser tries to load
+its homepage before the network is actually up.
+
+**Fix (not yet verified on hardware):** register the existing service worker on
+the TV routes too, and have it serve a cached, *self-retrying* offline page
+instead of the browser's dead-end error.
+- `public/sw.js` — now also intercepts **navigations to `/tv` and
+  `/display/*` only**, network-first; a hard network failure falls back to a
+  cached offline screen. Hub navigations + all `/api/*` still always hit the
+  network untouched (unchanged, deliberately — stale dashboard data would
+  mislead). Cache bumped `v1`→`v2`.
+- `public/tv-offline.html` — new. Brand-styled black/gold "Reconnecting…"
+  screen that calls `location.reload()` on a 10–15s jittered loop (jitter so a
+  whole room doesn't hammer the server the instant it returns). This is what
+  makes it self-heal with nobody in the building.
+- `components/display/RegisterServiceWorker.tsx` — new; mounted in
+  `app/tv/page.tsx` + `app/display/[slug]/layout.tsx`.
+
+**⚠️ Verified only by `tsc` / `lint` / `node --check` — NOT on a real TV.** Two
+things must be confirmed on the actual hardware before calling this fixed:
+1. **Does the Samsung/Tizen browser support service workers at all?** If it
+   doesn't, this fix is inert and the TVs will still dead-end. Unconfirmed —
+   do not assume.
+2. **Chicken-and-egg:** the SW only helps once installed, which requires one
+   successful load of `/tv` or `/display/*` first. So every TV needs **one**
+   manual refresh (or power-cycle while the network is up) to adopt it —
+   after that it should ride out future outages on its own.
+
+**If service workers turn out to be unsupported on these panels**, the
+fallback is device-side: Samsung signage has a URL-launcher / auto-reload-on-
+error setting, plus the on-device power schedule from item 2 below (powering
+on *after* the network is reliably up avoids the race entirely).
+
 ## 🟢 NEXT UP: nothing blocking — optional follow-ups only
 
 Everything below through `b69d808` is pushed and deployed. No open task the

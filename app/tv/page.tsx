@@ -1,5 +1,6 @@
 import { TvClient } from "@/components/tv/TvClient";
 import { ViewportLock } from "@/components/display/ViewportLock";
+import { RegisterServiceWorker } from "@/components/display/RegisterServiceWorker";
 
 export const metadata = {
   title: "TuxDisplay",
@@ -12,6 +13,7 @@ export default function TvPage() {
   return (
     <div className="absolute inset-0 overflow-hidden bg-black">
       <ViewportLock />
+      <RegisterServiceWorker />
       <TvClient />
     </div>
   );

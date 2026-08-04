@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>TuxDisplay</title>
+<style>
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: #000;
+    color: #DBDCDD;
+    font-family: Poppins, Arial, sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+  .mark {
+    width: 10vmin;
+    height: 10vmin;
+    border-radius: 50%;
+    border: 2px solid #B9975B;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 3vmin;
+    animation: pulse 2.4s ease-in-out infinite;
+  }
+  .dot {
+    width: 2vmin;
+    height: 2vmin;
+    border-radius: 50%;
+    background: #B9975B;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 0.35; }
+    50% { opacity: 1; }
+  }
+  p {
+    font-size: 2.2vmin;
+    font-weight: 300;
+    letter-spacing: 0.02em;
+    color: #DBDCDD;
+    margin: 0;
+  }
+</style>
+</head>
+<body>
+  <div>
+    <div class="mark"><div class="dot"></div></div>
+    <p>Reconnecting&hellip;</p>
+  </div>
+  <script>
+    // Offline fallback served by the service worker when the network is
+    // unreachable (see public/sw.js). Retries the real page on a loop —
+    // this screen self-heals once the server is back, no on-site refresh
+    // needed. Jittered so a whole room of TVs doesn't hammer the server in
+    // lockstep the moment it comes back.
+    var delay = 10000 + Math.floor(Math.random() * 5000);
+    setTimeout(function () { location.reload(); }, delay);
+  </script>
+</body>
+</html>

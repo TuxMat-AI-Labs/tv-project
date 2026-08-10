@@ -13,7 +13,52 @@ full source, git repo, `node_modules`, committed assets — is at
 The Claude_Preview MCP is rooted at the stub, so its `.claude/launch.json`
 (`tuxdisplay-dev`) `cd`s into the real project before `npm run dev`.
 
-## 🟡 IN REVIEW (this session): dead-end "Server not found" after weekends
+## 🟢 BUILT (this session): dashboard tiles render live WEBPAGE content
+
+**Owner's ask:** "when I link a URL, I want it to show in TuxDisplay on the
+screen render within the app — otherwise I don't know what they show unless I
+click into them."
+
+- **`components/hub/WebpagePreview.tsx`** (new): live, scaled render of an
+  assigned WEBPAGE. The iframe is laid out at the panel's **native** resolution
+  (1080×1920 / 1920×1080) and CSS-scaled to the tile, so the preview is a true
+  miniature of the wall — rendering it at the tile's own ~250px width would
+  instead trip the page's mobile breakpoints and preview a layout no TV shows.
+  Scale is `max(w/nativeW, h/nativeH)` so it covers the bezel with no letterbox
+  gap (verified: painted ≥ tile on both axes, both orientations).
+  - The old code deliberately avoided an iframe here ("one full page load per
+    tile"). That concern is handled, not ignored: mounts only once the tile
+    scrolls into view (IntersectionObserver, then disconnects), and the iframe
+    is keyed on `src` only. **Do not make anything in this component depend on
+    poll state** — the hub polls every 3–15s and would remount/reload the page.
+- **`DisplayTile.tsx`**: WEBPAGE tiles now render the page instead of the word
+  "Playing" over black. Gated to live modes (`playlist`/`carousel`) only —
+  during screensaver/black/inactive the TV isn't on that page, so previewing it
+  would misreport the wall.
+- **`DisplayDetailView.tsx`**: the click-into view previewed a webpage as just a
+  monogram + hostname; now renders the live page too.
+- **`lib/hub/types.ts` + `/api/hub/status`**: `currentContent` now carries
+  `fileUrl` (a webpage has no `thumbnailUrl`, so the tile had nothing to draw).
+
+### 🐛 Also fixed: rotating displays rendered as black "Rotating" tiles
+Found while testing the above (Display 4 in Upstairs Office). `/api/hub/status`
+built its `contentById` lookup **from assignments only**, but a rotation-pool
+item is tagged via `ContentItem.rotationRoomId` and is **independent of any
+Assignment** — so a pooled item that wasn't also assigned somewhere missed the
+lookup, `currentContent` came back `null`, and the tile fell back to the mode
+label over black. Now merges in every item where `rotationRoomId != null`.
+
+**Verified:** tsc + lint + build clean; scale math verified in an isolated
+browser harness. **Not** verified against real prod data — confirm on prod that
+the linked dashboards actually render (see caveat below).
+
+⚠️ **Framing caveat:** any URL whose server sends `X-Frame-Options: DENY` or a
+CSP `frame-ancestors` that excludes us will render blank in these tiles. That is
+not a bug in this code — the same restriction already applies to the TV player,
+which iframes the same URLs. If a tile is blank but the TV shows the page fine,
+check the browser console for a frame-ancestors violation.
+
+## 🟡 IN REVIEW (last session): dead-end "Server not found" after weekends
 
 **Symptom (owner, Monday):** many TVs showed Samsung's *native* "Server not
 found." error page and stayed there. A single manual browser refresh on each

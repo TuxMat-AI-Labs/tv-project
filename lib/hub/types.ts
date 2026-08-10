@@ -6,7 +6,17 @@ export type HubDisplayStatus = {
   active: boolean;
   orientation: "PORTRAIT" | "LANDSCAPE";
   mode: "playlist" | "screensaver" | "inactive" | "carousel" | "black";
-  currentContent: { id: string; type: "IMAGE" | "VIDEO" | "WEBPAGE"; thumbnailUrl: string | null; title: string } | null;
+  // `fileUrl` is carried so a WEBPAGE tile can render the live page itself —
+  // a webpage has no thumbnail, and without this the dashboard could only show
+  // the word "Playing" over black (no way to tell the screens apart at a
+  // glance). For IMAGE/VIDEO the tile still prefers `thumbnailUrl`.
+  currentContent: {
+    id: string;
+    type: "IMAGE" | "VIDEO" | "WEBPAGE";
+    thumbnailUrl: string | null;
+    fileUrl: string;
+    title: string;
+  } | null;
   online: boolean;
   lastSeenAt: string | null;
 };

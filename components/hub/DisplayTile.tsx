@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { useState, type CSSProperties } from "react";
 import { TVFrame } from "@/components/hub/TVFrame";
 import { StatusCircle } from "@/components/hub/StatusDot";
+import { WebpagePreview } from "@/components/hub/WebpagePreview";
 import type { HubDisplayStatus } from "@/lib/hub/types";
 
 const MODE_LABEL: Record<HubDisplayStatus["mode"], string> = {
@@ -14,6 +15,12 @@ const MODE_LABEL: Record<HubDisplayStatus["mode"], string> = {
   carousel: "Rotating",
   black: "Off (scheduled)",
 };
+
+// Modes where the TV is actually showing its assigned content (as opposed to
+// the screensaver, the scheduled black surface, or being switched off).
+function isLiveMode(mode: HubDisplayStatus["mode"]) {
+  return mode === "playlist" || mode === "carousel";
+}
 
 // Max degrees the tile rotates toward the cursor on hover (Task E).
 const MAX_TILT = 5;
@@ -86,6 +93,17 @@ export function DisplayTile({
                     src={display.currentContent.thumbnailUrl}
                     alt=""
                     className="h-full w-full object-cover"
+                  />
+                ) : display.currentContent?.type === "WEBPAGE" && isLiveMode(display.mode) ? (
+                  // A webpage has no thumbnail, so render the live page itself
+                  // — otherwise every dashboard screen is an identical black
+                  // tile reading "Playing". Only while the display is actually
+                  // showing content: during screensaver/black/inactive the TV
+                  // isn't on this page, so previewing it would misreport the wall.
+                  <WebpagePreview
+                    src={display.currentContent.fileUrl}
+                    orientation={display.orientation}
+                    title={display.currentContent.title}
                   />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center text-[9px] tracking-[0.25em] text-white/70 uppercase">

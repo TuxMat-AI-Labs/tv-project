@@ -10,7 +10,13 @@ export const dynamic = "force-dynamic";
 const HEARTBEAT_THRESHOLD_MS = 45_000;
 const DEVICE_THRESHOLD_MS = 60_000; // a paired TV checks in via /api/tv/register
 
-type ContentLite = { id: string; type: "IMAGE" | "VIDEO" | "WEBPAGE"; thumbnailUrl: string | null; title: string };
+type ContentLite = {
+  id: string;
+  type: "IMAGE" | "VIDEO" | "WEBPAGE";
+  thumbnailUrl: string | null;
+  fileUrl: string;
+  title: string;
+};
 
 export async function GET() {
   const rooms = await prisma.room.findMany({
@@ -29,23 +35,33 @@ export async function GET() {
 
   const now = new Date();
 
-  // Every content item referenced by any assignment in the whole hub, so a
-  // landscape display's rotating item — which can come from a DIFFERENT
-  // display's assignment in the same room's shared pool — can still be
-  // looked up here for its title/thumbnail/type.
+  // Every content item the dashboard might need to name: anything referenced by
+  // an assignment, PLUS every item tagged into a room's rotation pool.
+  //
+  // The pool matters separately because `rotationRoomId` is set directly on the
+  // library item and is independent of any Assignment — so a rotating item need
+  // not be assigned to any display. Building this map from assignments alone
+  // meant those lookups missed, `currentContent` came back null, and a rotating
+  // display rendered as a black tile reading "Rotating" with no way to tell
+  // what was actually on the wall.
+  const poolItems = await prisma.contentItem.findMany({ where: { rotationRoomId: { not: null } } });
+
   const contentById = new Map<string, ContentLite>();
+  const remember = (ci: { id: string; type: ContentLite["type"]; thumbnailUrl: string | null; fileUrl: string; title: string }) =>
+    contentById.set(ci.id, {
+      id: ci.id,
+      type: ci.type,
+      thumbnailUrl: ci.thumbnailUrl,
+      fileUrl: ci.fileUrl,
+      title: ci.title,
+    });
+
   for (const room of rooms) {
     for (const d of room.displays) {
-      for (const a of d.assignments) {
-        contentById.set(a.contentItem.id, {
-          id: a.contentItem.id,
-          type: a.contentItem.type,
-          thumbnailUrl: a.contentItem.thumbnailUrl,
-          title: a.contentItem.title,
-        });
-      }
+      for (const a of d.assignments) remember(a.contentItem);
     }
   }
+  for (const ci of poolItems) remember(ci);
 
   const payload: HubStatusResponse = {
     rooms: await Promise.all(
@@ -127,7 +143,13 @@ export async function GET() {
               orientation: display.orientation,
               mode,
               currentContent: content
-                ? { id: content.id, type: content.type, thumbnailUrl: content.thumbnailUrl, title: content.title }
+                ? {
+                    id: content.id,
+                    type: content.type,
+                    thumbnailUrl: content.thumbnailUrl,
+                    fileUrl: content.fileUrl,
+                    title: content.title,
+                  }
                 : null,
               online,
               lastSeenAt: display.heartbeat?.reportedAt.toISOString() ?? null,

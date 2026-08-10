@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { PlaylistItem } from "@/lib/display/resolveContentForDisplay";
 import type { CarouselTransition } from "@/lib/display/transition";
+import { ScaledWebpage } from "@/components/display/ScaledWebpage";
 
 const FIT_TO_OBJECT_FIT: Record<"COVER" | "CONTAIN" | "FILL", string> = {
   COVER: "cover",
@@ -111,21 +112,12 @@ export function PlaylistPlayer({
         >
           {current.type === "WEBPAGE" ? (
             // A live page renders itself and stays current without anyone
-            // re-exporting it. Sandboxed: these are internal dashboards, and a
-            // screen on the wall has no business running top-level navigation
-            // or opening popups. `allow-same-origin` is required for the page
-            // to reach its own API and cookies, which every one of ours needs.
-            <iframe
-              src={current.fileUrl}
-              title=""
-              aria-hidden="true"
-              className="h-full w-full border-0"
-              sandbox="allow-scripts allow-same-origin"
-              referrerPolicy="same-origin"
-              // The TV browser is unattended, so nothing here should ever be
-              // interactive — a stray touch must not be able to navigate it.
-              style={{ pointerEvents: "none" }}
-            />
+            // re-exporting it. Rendered at the panel's native resolution and
+            // scaled, NOT `h-full w-full` — a percentage-sized iframe inherits
+            // the browser's "page zoom", so at 125% the dashboard laid itself
+            // out for an 864px viewport and appeared zoomed in on the wall
+            // until someone reset the zoom by hand. See ScaledWebpage.
+            <ScaledWebpage src={current.fileUrl} title="" />
           ) : current.type === "IMAGE" ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={current.fileUrl} alt="" className="h-full w-full" style={{ objectFit }} />

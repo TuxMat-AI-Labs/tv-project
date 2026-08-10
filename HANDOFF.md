@@ -13,6 +13,54 @@ full source, git repo, `node_modules`, committed assets — is at
 The Claude_Preview MCP is rooted at the stub, so its `.claude/launch.json`
 (`tuxdisplay-dev`) `cd`s into the real project before `npm run dev`.
 
+## 🟢 BUILT (this session): WEBPAGE displays no longer follow the TV's page zoom
+
+**Owner's symptom:** "Display 4 randomly zooms in after I set it in browser from
+125% to 100%, and after a few hours it zooms back in. Same with all the displays
+in the showroom."
+
+**What this actually was.** Browser "page zoom" changes the CSS viewport an
+iframe is handed. A `h-full w-full` iframe therefore inherits it: on a 1080p
+portrait panel at 125% the embedded dashboard was given **864×1536** instead of
+1080×1920, so it laid itself out for a narrower viewport and rendered ~25%
+larger on the wall. The page can't read or reset that setting (browser chrome,
+not page state), so the layout is now **pinned** instead — see
+`components/display/ScaledWebpage.tsx` (new): the iframe always gets a
+1080×1920 / 1920×1080 layout viewport and is CSS-scaled to the space it
+occupies. Zoom now only affects rasterization density, never layout.
+
+Measured on prod (portrait display), iframe layout viewport:
+
+| iframe sizing | 100% zoom | 125% zoom |
+| --- | --- | --- |
+| `width:100%` (old) | 1080×1920 | **864×1536** ← drifts |
+| pinned to native (new) | 1080×1920 | **1080×1920** ← immune |
+
+Used by both the TV player (`PlaylistPlayer`, mounts immediately) and the hub
+tiles (`WebpagePreview`, `lazy`), so a tile stays a true miniature of the wall.
+
+### ⚠️ What this does NOT explain — still open
+**Full-bleed IMAGE/VIDEO content is provably zoom-immune**, so this fix cannot
+be the whole story if an *image* display appears zoomed. Verified on prod
+against Display 4's own URL at both 1080×1920 and 864×1536 (the 125%
+equivalent): no overflow on either, and each 1080×1920 image rendered at
+exactly the viewport size with `object-fit: cover`. Identical output.
+
+So if Display 4 is still showing the image carousel when it looks zoomed, the
+cause is something else and needs eyes on the actual screen. Next step is to
+confirm **what content type each affected display was showing at the time** —
+if the showroom screens are webpages, this fix covers them; if Display 4 is
+still images, that one is unexplained. Do not assume this closed it.
+
+### Why "after a few hours" is not our reload logic
+Checked, so nobody re-treads it: paired TVs have no periodic self-reload. The
+`/tv` watchdog (`TvClient.tsx`) fires **once** at 3 min and only while
+*unpaired*; the `buildId` auto-reload only fires on a new deploy, and deploys
+were days apart, not hours. The multi-hour cadence is the TV browser losing its
+zoom setting on its own — most likely the browser process restarting with the
+panels' power cycle. That is device-side, which is exactly why the fix above
+makes the app not care about the setting at all.
+
 ## 🟢 BUILT (this session): dashboard tiles render live WEBPAGE content
 
 **Owner's ask:** "when I link a URL, I want it to show in TuxDisplay on the

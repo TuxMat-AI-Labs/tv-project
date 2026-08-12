@@ -219,22 +219,26 @@ export default function LibraryPage() {
       <div className="mt-6 brand-card p-4">
         <h2 className="mb-3 text-sm font-semibold text-foreground">Upload content</h2>
         <div className="flex flex-wrap items-end gap-3">
-          <label className="block">
+          {/* Full-width on phones, natural width from sm up. A native file
+              input is sized by its button + the selected filename and resists
+              shrinking, so constrain it explicitly — <main> now clips
+              horizontal overflow, and nothing should ever need that space. */}
+          <label className="block w-full min-w-0 sm:w-auto">
             <span className="text-xs text-muted">File</span>
             <input
               ref={fileInputRef}
               type="file"
               accept="image/*,video/*"
               onChange={onFileChange}
-              className="mt-1 block text-sm text-foreground file:mr-3 file:rounded file:border-0 file:bg-surface-2 file:px-3 file:py-1.5 file:text-sm file:text-foreground hover:file:bg-black/5"
+              className="mt-1 block w-full max-w-full min-w-0 text-sm text-foreground file:mr-3 file:rounded file:border-0 file:bg-surface-2 file:px-3 file:py-1.5 file:text-sm file:text-foreground hover:file:bg-black/5"
             />
           </label>
-          <label className="block">
+          <label className="block w-full min-w-0 sm:w-auto">
             <span className="text-xs text-muted">Title</span>
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="mt-1 block rounded border border-black/10 bg-white px-2 py-1.5 text-sm text-foreground"
+              className="mt-1 block w-full max-w-full rounded border border-black/10 bg-white px-2 py-1.5 text-sm text-foreground sm:w-auto"
               placeholder="e.g. Summer promo"
             />
           </label>
@@ -279,7 +283,9 @@ export default function LibraryPage() {
           themselves current, like the TuxOKR wall board. Must be https.
         </p>
         <div className="flex flex-wrap items-end gap-3">
-          <label className="block min-w-[260px] flex-1">
+          {/* min-w-0 on phones: a 260px floor plus the card padding can exceed a
+              narrow viewport and push the page sideways. Restored at sm+. */}
+          <label className="block min-w-0 flex-1 sm:min-w-[260px]">
             <span className="text-xs text-muted">URL</span>
             <input
               value={pageUrl}
@@ -288,12 +294,12 @@ export default function LibraryPage() {
               placeholder="https://okr.tuxmat.ai/display/…"
             />
           </label>
-          <label className="block">
+          <label className="block w-full min-w-0 sm:w-auto">
             <span className="text-xs text-muted">Title</span>
             <input
               value={pageTitle}
               onChange={(e) => setPageTitle(e.target.value)}
-              className="mt-1 block rounded border border-black/10 bg-white px-2 py-1.5 text-sm text-foreground"
+              className="mt-1 block w-full max-w-full rounded border border-black/10 bg-white px-2 py-1.5 text-sm text-foreground sm:w-auto"
               placeholder="e.g. OKR board"
             />
           </label>
@@ -379,12 +385,17 @@ export default function LibraryPage() {
                 </button>
               </div>
               {item.type === "IMAGE" && (
-                <label className="mt-1.5 block">
+                <label className="mt-1.5 block min-w-0">
                   <span className="text-[10px] text-muted uppercase">Rotation</span>
+                  {/* min-w-0 matters: a <select> will not shrink below the
+                      intrinsic width of its longest option ("Multi-Purpose
+                      Room"), so in a 2-column grid on a phone it forced the
+                      track wider than the viewport and made the whole page
+                      pan sideways. */}
                   <select
                     value={item.rotationRoomId ?? ""}
                     onChange={(e) => setItemRotation(item.id, e.target.value || null)}
-                    className={`mt-0.5 block w-full rounded border px-1.5 py-2 text-[11px] ${
+                    className={`mt-0.5 block w-full min-w-0 rounded border px-1.5 py-2 text-[11px] ${
                       item.rotationRoomId
                         ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700"
                         : "border-black/10 bg-white text-foreground"

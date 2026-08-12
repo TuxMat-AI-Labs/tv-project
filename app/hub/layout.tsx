@@ -66,7 +66,15 @@ export default async function HubLayout({
           <HubNav rooms={rooms} />
         </div>
       </header>
-      <main className="no-scrollbar mx-auto w-full max-w-7xl flex-1 overflow-y-auto overscroll-contain px-6 py-8">
+      {/* overflow-x-hidden is load-bearing, not belt-and-braces: `overflow-y:
+          auto` alone computes overflow-x to `auto` too, so ANY child wider than
+          the viewport (a select that won't shrink, a long unbroken string) makes
+          the entire page pan sideways — which reads as the app "sliding around"
+          rather than being a locked app surface. Vertical scrolling is the only
+          gesture this shell should have. Anything legitimately wide keeps its
+          own `overflow-x-auto` scroller (the wide Customize tables, the
+          dashboard's display carousel), which still works inside this. */}
+      <main className="no-scrollbar mx-auto w-full max-w-7xl flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-6 py-8">
         {children}
       </main>
       {modal}

@@ -16,7 +16,10 @@
 //    and /tv navigations only, fall back to a cached, self-retrying offline
 //    screen (tv-offline.html) instead of the browser's dead-end error page —
 //    it keeps reloading on a loop until the real page comes back.
-const CACHE_NAME = "tuxdisplay-shell-v2";
+// Bump this on any change to what is cached. `activate` deletes every cache
+// whose name doesn't match, so bumping is what actually evicts the old shell
+// from an already-installed PWA.
+const CACHE_NAME = "tuxdisplay-shell-v3";
 const OFFLINE_URL = "/tv-offline.html";
 const SHELL_ASSETS = [
   "/icons/icon-192.png",

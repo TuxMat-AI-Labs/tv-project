@@ -12,9 +12,16 @@ import { useEffect } from "react";
  */
 export function RegisterServiceWorker() {
   useEffect(() => {
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js").catch(() => {});
-    }
+    if (!("serviceWorker" in navigator)) return;
+    // `updateViaCache: "none"` so the check for a new sw.js can't be satisfied
+    // from the browser's own HTTP cache — on a screen that is never manually
+    // refreshed, a stale worker would otherwise persist indefinitely.
+    // No reload-on-update here, unlike the hub: the TV already hard-reloads on
+    // a `buildId` change, and a second reload path on the wall isn't worth it.
+    navigator.serviceWorker
+      .register("/sw.js", { updateViaCache: "none" })
+      .then((reg) => reg.update())
+      .catch(() => {});
   }, []);
 
   return null;

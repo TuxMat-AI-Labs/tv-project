@@ -158,6 +158,10 @@ export async function GET() {
         ),
       }))
     ),
+    // Same marker the TV content route serves, so the hub (notably the
+    // installed PWA, which can stay open for days) can notice a new deploy and
+    // reload itself instead of running a stale bundle.
+    buildId: process.env.RENDER_GIT_COMMIT ?? "dev",
   };
 
   return NextResponse.json(payload);

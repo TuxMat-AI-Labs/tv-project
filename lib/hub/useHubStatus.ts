@@ -12,6 +12,11 @@ const ROTATING_POLL_INTERVAL_MS = 3_000;
 export function useHubStatus() {
   const [data, setData] = useState<HubStatusResponse | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Baselined on the first poll (so mounting never self-reloads); a change
+  // after that means a new build shipped. This is what keeps the installed PWA
+  // from sitting on a stale bundle for days — a normal deploy changes the JS
+  // chunks without touching sw.js, so the service worker never sees it.
+  const buildBaselineRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
     let cancelled = false;
@@ -21,7 +26,16 @@ export function useHubStatus() {
       try {
         const res = await fetch("/api/hub/status", { cache: "no-store" });
         const json = (await res.json()) as HubStatusResponse;
-        if (!cancelled) setData(json);
+        if (cancelled) return;
+
+        if (buildBaselineRef.current === undefined) {
+          buildBaselineRef.current = json.buildId;
+        } else if (json.buildId !== buildBaselineRef.current) {
+          window.location.reload();
+          return;
+        }
+
+        setData(json);
         rotating = json.rooms.some((r) => r.carouselActive);
       } catch {
         // keep showing last-known state; retry next cycle

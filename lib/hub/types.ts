@@ -32,4 +32,11 @@ export type HubRoomStatus = {
 
 export type HubStatusResponse = {
   rooms: HubRoomStatus[];
+  /**
+   * The server's deploy id. The hub watches this for a change and reloads, the
+   * same way a TV does — an installed PWA is a long-lived app that may sit open
+   * for days, and a normal deploy changes the JS chunks without changing sw.js,
+   * so the service worker alone would never notice it.
+   */
+  buildId: string;
 };

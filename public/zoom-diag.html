@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<!-- Deliberately NO maximum-scale / user-scalable here: this page exists to
+     observe the browser's own zoom behaviour, so it must not constrain it. -->
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TuxDisplay — zoom diagnostic</title>
+<style>
+  :root { --gold: #B9975B; --grey: #DBDCDD; }
+  html, body { margin: 0; height: 100%; background: #000; color: var(--grey);
+               font-family: Poppins, Arial, sans-serif; }
+  .wrap { padding: 3vmin 4vmin; }
+  h1 { font-size: 3.2vmin; font-weight: 500; letter-spacing: .12em;
+       text-transform: uppercase; color: var(--gold); margin: 0 0 1vmin; }
+  p.sub { font-size: 2vmin; font-weight: 300; margin: 0 0 3vmin; color: #8a8a8a; }
+  table { width: 100%; border-collapse: collapse; }
+  td { padding: 1.4vmin 0; border-bottom: 1px solid #ffffff14; vertical-align: baseline; }
+  td.k { font-size: 2.4vmin; font-weight: 300; color: #9a9a9a; width: 52%; }
+  td.v { font-size: 3.4vmin; font-weight: 500; color: #fff; font-variant-numeric: tabular-nums; }
+  .verdict { margin-top: 3vmin; padding: 2.4vmin; border: 1px solid var(--gold);
+             border-radius: 1vmin; }
+  .verdict b { color: var(--gold); font-size: 2.8vmin; display: block; margin-bottom: .8vmin;
+               letter-spacing: .06em; text-transform: uppercase; }
+  .verdict span { font-size: 2.6vmin; font-weight: 300; line-height: 1.5; }
+  /* A 100 CSS-px ruler. Photograph it at each zoom level: if the ruler's
+     on-screen length changes but the numbers above do not, the browser is
+     magnifying output rather than changing the CSS viewport. */
+  .ruler { margin-top: 3vmin; }
+  .ruler .bar { width: 100px; height: 2vmin; background: var(--gold); }
+  .ruler .lbl { font-size: 1.8vmin; color: #8a8a8a; font-weight: 300; margin-top: .8vmin; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Zoom diagnostic</h1>
+  <p class="sub">Read these numbers at the TV's normal (auto) zoom, then set zoom to 100% and read them again.</p>
+  <table id="t"></table>
+  <div class="verdict"><b id="vh">…</b><span id="vb"></span></div>
+  <div class="ruler">
+    <div class="bar"></div>
+    <div class="lbl">↑ this bar is exactly 100 CSS pixels wide</div>
+  </div>
+</div>
+<script>
+  // Two candidate behaviours for the TV's "page zoom", which need different
+  // fixes (and one of which cannot be fixed from the page at all):
+  //
+  //  A. It resizes the CSS viewport. innerWidth shrinks (1080 -> 864 at 125%)
+  //     and visualViewport.scale stays 1. Layout-affecting; a page CAN adapt.
+  //  B. It magnifies rendered output. innerWidth stays 1080 while
+  //     visualViewport.width shrinks and .scale reads ~1.25. The page could
+  //     detect this via visualViewport and pre-compensate.
+  //  C. Neither moves at all -> the zoom is applied below the web layer
+  //     entirely (panel/OS scaling) and no page-side fix exists.
+  var rows = [
+    ['window.innerWidth',        function(){ return innerWidth }],
+    ['window.innerHeight',       function(){ return innerHeight }],
+    ['visualViewport.width',     function(){ return window.visualViewport ? Math.round(visualViewport.width) : 'n/a' }],
+    ['visualViewport.height',    function(){ return window.visualViewport ? Math.round(visualViewport.height) : 'n/a' }],
+    ['visualViewport.scale',     function(){ return window.visualViewport ? visualViewport.scale : 'n/a' }],
+    ['devicePixelRatio',         function(){ return devicePixelRatio }],
+    ['screen.width x height',    function(){ return screen.width + ' x ' + screen.height }],
+    ['documentElement.clientW',  function(){ return document.documentElement.clientWidth }],
+    ['outerWidth x outerHeight', function(){ return outerWidth + ' x ' + outerHeight }]
+  ];
+
+  function render() {
+    var t = document.getElementById('t');
+    t.innerHTML = '';
+    rows.forEach(function (r) {
+      var v; try { v = r[1](); } catch (e) { v = 'err'; }
+      var tr = document.createElement('tr');
+      var k = document.createElement('td'); k.className = 'k'; k.textContent = r[0];
+      var d = document.createElement('td'); d.className = 'v'; d.textContent = String(v);
+      tr.appendChild(k); tr.appendChild(d); t.appendChild(tr);
+    });
+
+    var vv = window.visualViewport;
+    var scale = vv ? vv.scale : 1;
+    var h = document.getElementById('vh');
+    var b = document.getElementById('vb');
+    if (vv && Math.abs(scale - 1) > 0.02) {
+      h.textContent = 'Case B — output magnification';
+      b.textContent = 'visualViewport.scale is ' + scale + ', so the browser is magnifying what it '
+        + 'renders. The page can detect this and pre-compensate.';
+    } else if (innerWidth && screen.width && innerWidth < screen.width - 4) {
+      h.textContent = 'Case A — CSS viewport resize';
+      b.textContent = 'innerWidth (' + innerWidth + ') is smaller than screen.width (' + screen.width
+        + '), so zoom is changing the CSS viewport. A page can adapt to this.';
+    } else {
+      h.textContent = 'Case A/C — nothing observable yet';
+      b.textContent = 'At this zoom level nothing here has moved. Compare against the other zoom '
+        + 'setting: if these numbers are identical at both but the screen clearly looks different, '
+        + 'the scaling happens below the web layer and no page-side fix is possible.';
+    }
+  }
+
+  render();
+  if (window.visualViewport) {
+    visualViewport.addEventListener('resize', render);
+    visualViewport.addEventListener('scroll', render);
+  }
+  addEventListener('resize', render);
+</script>
+</body>
+</html>

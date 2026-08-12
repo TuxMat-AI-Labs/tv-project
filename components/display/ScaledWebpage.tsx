@@ -9,29 +9,29 @@ const NATIVE_PORTRAIT = { w: 1080, h: 1920 };
 const NATIVE_LANDSCAPE = { w: 1920, h: 1080 };
 
 /**
- * A webpage rendered at the panel's NATIVE resolution and CSS-scaled to fit its
- * container, used both on the TV itself and in the hub's preview tiles.
+ * A webpage rendered at a panel's NATIVE resolution and CSS-scaled to fit its
+ * container. Used by the hub's dashboard/detail previews (see
+ * components/hub/WebpagePreview) — NOT by the TV player.
  *
- * Why not just `width: 100%; height: 100%`?
+ * Why pin the size instead of `width: 100%; height: 100%`?
  *
- * Browser "page zoom" changes the CSS viewport an iframe is given. On a 1080p
- * portrait panel at 125% zoom the frame is handed 864x1536 instead of
- * 1080x1920, so the embedded dashboard lays itself out for a narrower viewport
- * and everything renders ~25% larger on the wall — the screens "zoom in" on
- * their own, and someone has to walk over and set the zoom back to 100%. The
- * page cannot read or reset that setting (it is browser chrome, not page
- * state), so instead the layout is pinned: the iframe is always given a
- * 1080x1920 (or 1920x1080) layout viewport and scaled down to whatever CSS
- * space it actually occupies. Zoom then only affects rasterization density,
- * never layout.
+ * For the hub's purposes the reason is presentational: a tile is ~250px wide, and
+ * a percentage-sized iframe would hand the embedded dashboard a 250px viewport,
+ * tripping its mobile breakpoints and previewing a layout no TV ever shows.
+ * Pinning to 1080x1920 and scaling makes the tile a true miniature of the wall.
  *
- * Measured on prod, portrait display, iframe layout viewport:
- *   width:100%  ->  1080x1920 at 100% zoom, 864x1536 at 125%   (drifts)
- *   pinned      ->  1080x1920 at both                          (immune)
+ * Measured, iframe layout viewport, outer viewport 1080x1920 vs 864x1536:
+ *   width:100%  ->  1080x1920, then 864x1536   (tracks the container)
+ *   pinned      ->  1080x1920 in both          (constant)
  *
- * Full-bleed IMAGE/VIDEO content is already zoom-immune (a viewport-relative
- * box plus `object-fit` renders identically at any zoom), so this only matters
- * for WEBPAGE content.
+ * ⚠️ This was ALSO briefly used by the TV player to stop the embedded page
+ * inheriting the TV browser's zoom setting, and that was reverted — do not
+ * reintroduce it there without reading the note in PlaylistPlayer.tsx first.
+ * Short version: the premise appears wrong (a correctly-sized image still
+ * "zooms" on the wall, and images are provably immune to a CSS-viewport zoom,
+ * implying the TV magnifies rendered output instead), and a 1080x1920 iframe
+ * under a transform allocates a large composited layer that is a genuine risk on
+ * a memory-constrained TV which is never restarted.
  */
 export function ScaledWebpage({
   src,

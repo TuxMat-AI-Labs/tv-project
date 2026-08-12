@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { PlaylistItem } from "@/lib/display/resolveContentForDisplay";
 import type { CarouselTransition } from "@/lib/display/transition";
-import { ScaledWebpage } from "@/components/display/ScaledWebpage";
 
 const FIT_TO_OBJECT_FIT: Record<"COVER" | "CONTAIN" | "FILL", string> = {
   COVER: "cover",
@@ -112,12 +111,37 @@ export function PlaylistPlayer({
         >
           {current.type === "WEBPAGE" ? (
             // A live page renders itself and stays current without anyone
-            // re-exporting it. Rendered at the panel's native resolution and
-            // scaled, NOT `h-full w-full` — a percentage-sized iframe inherits
-            // the browser's "page zoom", so at 125% the dashboard laid itself
-            // out for an 864px viewport and appeared zoomed in on the wall
-            // until someone reset the zoom by hand. See ScaledWebpage.
-            <ScaledWebpage src={current.fileUrl} title="" />
+            // re-exporting it. Sandboxed: these are internal dashboards, and a
+            // screen on the wall has no business running top-level navigation
+            // or opening popups. `allow-same-origin` is required for the page
+            // to reach its own API and cookies, which every one of ours needs.
+            //
+            // Kept as a plain percentage-sized iframe deliberately. This briefly
+            // used ScaledWebpage (pinned to 1080x1920 + CSS transform) to stop
+            // the page inheriting the TV browser's zoom, and that was reverted:
+            //   - The premise looks wrong. Display 4 shows a correctly-sized
+            //     1082x1920 image and still "zooms," and full-bleed images are
+            //     provably immune to a CSS-viewport zoom (measured: identical
+            //     render at 1080x1920 and 864x1536). So the TV's zoom control
+            //     magnifies the rendered output rather than resizing the CSS
+            //     viewport — which no page-side change can defeat.
+            //   - It added real risk here: a 1080x1920 iframe under a transform
+            //     forces a large composited layer that this plain version does
+            //     not, on a memory-constrained TV that is never restarted.
+            //     Display 1 crashed shortly after it shipped.
+            // Do not reintroduce it on the TV without first confirming on the
+            // hardware which of the two zoom behaviours the browser implements.
+            <iframe
+              src={current.fileUrl}
+              title=""
+              aria-hidden="true"
+              className="h-full w-full border-0"
+              sandbox="allow-scripts allow-same-origin"
+              referrerPolicy="same-origin"
+              // The TV browser is unattended, so nothing here should ever be
+              // interactive — a stray touch must not be able to navigate it.
+              style={{ pointerEvents: "none" }}
+            />
           ) : current.type === "IMAGE" ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={current.fileUrl} alt="" className="h-full w-full" style={{ objectFit }} />

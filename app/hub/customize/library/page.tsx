@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { CustomizeSubNav } from "@/components/hub/CustomizeSubNav";
+import { downscaleImageForDisplay } from "@/lib/hub/downscaleImage";
 
 type ContentItem = {
   id: string;
@@ -108,18 +109,26 @@ export default function LibraryPage() {
     setUploading(true);
     setUploadError(null);
     try {
+      // Cap image dimensions BEFORE the upload. The TVs' browser renders an
+      // over-large image zoomed and mispositioned rather than failing visibly
+      // (it has bitten twice — see lib/hub/downscaleImage.ts), and because the
+      // PUT goes straight to R2 the server never sees the bytes to fix it.
+      // A file already within the cap is passed through untouched.
+      const upload = mediaType === "IMAGE" ? await downscaleImageForDisplay(file) : null;
+      const toUpload = upload?.file ?? file;
+
       const urlRes = await fetch("/api/admin/content-items/upload-url", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ filename: file.name, contentType: file.type }),
+        body: JSON.stringify({ filename: toUpload.name, contentType: toUpload.type }),
       });
       if (!urlRes.ok) throw new Error("Could not get an upload URL.");
       const { uploadUrl, publicUrl } = (await urlRes.json()) as { uploadUrl: string; publicUrl: string };
 
       const putRes = await fetch(uploadUrl, {
         method: "PUT",
-        body: file,
-        headers: { "Content-Type": file.type },
+        body: toUpload,
+        headers: { "Content-Type": toUpload.type },
       });
       if (!putRes.ok) throw new Error("Upload to storage failed.");
 

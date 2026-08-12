@@ -81,9 +81,17 @@ export function ScaledWebpage({
   useEffect(() => {
     const el = hostRef.current;
     if (!el) return;
+    // clientWidth/Height, NOT getBoundingClientRect(): the rect includes any
+    // ancestor transform, and this renders inside framer-motion layers that
+    // animate transforms (the hub's shared-layout morph from tile to detail
+    // view, the player's slide transition, the tile's hover tilt). Measuring
+    // the transformed rect mid-animation locked in a tile-sized scale and left
+    // the page shrunk into the top-left corner — and ResizeObserver never
+    // corrected it, because the layout box never changed, only the transform.
     const measure = () => {
-      const { width, height } = el.getBoundingClientRect();
-      if (width > 0 && height > 0) setBox({ w: width, h: height });
+      const w = el.clientWidth;
+      const h = el.clientHeight;
+      if (w > 0 && h > 0) setBox((prev) => (prev && prev.w === w && prev.h === h ? prev : { w, h }));
     };
     measure();
     if (typeof ResizeObserver === "undefined") return;

@@ -56,7 +56,12 @@ export function DisplayDetailView({
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className={isModal ? "fixed inset-0 z-50 overflow-hidden" : "fixed inset-0"}
+      // Always clip and kill overscroll, not just as a modal: this view is a
+      // fixed, app-like surface, and on iOS/Android a stray drag would
+      // otherwise rubber-band the whole page inside the installed PWA.
+      // Deliberately NOT `touch-action: none` — that would also swallow
+      // scrolling inside the action panels, which have their own content.
+      className={`fixed inset-0 overflow-hidden overscroll-none ${isModal ? "z-50" : ""}`}
       style={{ backgroundColor: "#0a0a0b" }}
     >
       {/* Soft ambient glow so the mounted TV reads as sitting in a dark room. */}
@@ -65,27 +70,41 @@ export function DisplayDetailView({
         style={{ background: "radial-gradient(60% 55% at 50% 44%, rgba(46,51,57,0.4) 0%, rgba(0,0,0,0) 70%)" }}
       />
 
-      <button onClick={onClose} className="fixed top-6 left-6 z-30 opacity-90 transition hover:opacity-100" title="Back to hub">
-        <Wordmark size="sm" tone="light" />
-      </button>
-
-      {display && (
-        <div className="fixed top-7 left-1/2 z-30 max-w-[55vw] -translate-x-1/2 text-center">
-          <p className="truncate text-sm font-semibold tracking-wide text-white/90 uppercase">
+      {/* One flex row rather than two independently-positioned `fixed` layers:
+          the wordmark and the centred title used to collide on a phone-width
+          screen (the title overlapped the logo). Here the wordmark keeps its
+          intrinsic width, the title takes the rest and truncates, so they can
+          never overlap at any width. */}
+      <div className="fixed top-0 right-0 left-0 z-30 flex items-center gap-3 px-5 pt-6 pb-2">
+        <button onClick={onClose} className="shrink-0 opacity-90 transition hover:opacity-100" title="Back to hub">
+          <Wordmark size="sm" tone="light" />
+        </button>
+        {display && (
+          <p className="min-w-0 flex-1 truncate text-right text-sm font-semibold tracking-wide text-white/90 uppercase sm:text-center">
             {display.room.name} <span className="text-gold-light">{display.number}</span>
           </p>
+        )}
+        {/* Balances the wordmark so the title sits optically centred at ≥sm,
+            where there is room for it. */}
+        <div aria-hidden className="hidden shrink-0 sm:block sm:invisible">
+          <Wordmark size="sm" tone="light" />
         </div>
-      )}
+      </div>
 
-      {/* The clicked tile morphs into this centered TV via the shared layoutId. */}
-      <div className="absolute inset-0 flex items-center justify-center px-4">
+      {/* The clicked tile morphs into this centered TV via the shared layoutId.
+          The frame is bounded by this padded box (which reserves room for the
+          header and the action cluster) rather than by a `vh` figure: `vh` on a
+          phone measures the LARGEST viewport, ignoring browser UI, so the frame
+          overflowed and the page scrolled/rubber-banded instead of feeling like
+          an app. Sizing off the container plus `max-*-full` can't overflow. */}
+      <div className="absolute inset-0 flex items-center justify-center px-4 pt-14 pb-6 sm:px-6 sm:pt-16">
         <motion.div
           layoutId={`display-frame-${displayId}`}
-          className="relative"
+          className="relative max-h-full max-w-full"
           style={
             display?.orientation === "LANDSCAPE"
-              ? { width: "min(94vw, 152vh)", maxHeight: "86vh", aspectRatio: "16 / 9" }
-              : { height: "86vh", maxWidth: "94vw", aspectRatio: "9 / 16" }
+              ? { width: "100%", aspectRatio: "16 / 9" }
+              : { height: "100%", aspectRatio: "9 / 16" }
           }
         >
           <TVFrame orientation={display?.orientation ?? "PORTRAIT"}>

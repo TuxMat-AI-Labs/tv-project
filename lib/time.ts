@@ -1,7 +1,7 @@
 // Displays play content during these local hours on weekdays. Matches the
 // office's actual shift hours — override per-venue via env, "HH:mm" 24-hour.
 const CONTENT_START_TIME = process.env.CONTENT_START_TIME || "08:00"; // 8:00 AM
-const CONTENT_END_TIME = process.env.CONTENT_END_TIME || "16:30"; // 4:30 PM
+const CONTENT_END_TIME = process.env.CONTENT_END_TIME || "18:30"; // 6:30 PM
 
 // The nightly pixel-care window. These are LCD panels, so permanent burn-in
 // isn't really a risk — this short "massage" (the moving lava-lamp

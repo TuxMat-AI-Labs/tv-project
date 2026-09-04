@@ -13,7 +13,29 @@ full source, git repo, `node_modules`, committed assets — is at
 The Claude_Preview MCP is rooted at the stub, so its `.claude/launch.json`
 (`tuxdisplay-dev`) `cd`s into the real project before `npm run dev`.
 
-## 🟢 BUILT (this session): WEBPAGE displays no longer follow the TV's page zoom
+## 🟢 BUILT (this session): content window now runs to 6:30pm
+
+`lib/time.ts` — `CONTENT_END_TIME` default `16:30` → `18:30`. The content window
+is now **Mon–Fri 8:00am–6:30pm** venue time; outside it the schedule still
+returns `black`, with the unchanged 1:00–3:30am weekday pixel-care window.
+
+Timezone needed no work: hours are already evaluated in `America/Toronto` via
+`Intl.DateTimeFormat`, so EST/EDT and the DST switch are handled automatically.
+Verified by exercising `scheduledSurface` at 12 wall-clock instants — 16:30
+(previously the cutoff) now returns `content`, 18:29 `content`, 18:30 `black`,
+and **EST and EDT behave identically**, plus weekends black and the pixel-care
+window intact.
+
+⚠️ Two things that can defeat this:
+- A `CONTENT_END_TIME` env var set in the Render dashboard **overrides this
+  default silently**. Not declared in `render.yaml` and not in local `.env`, but
+  the dashboard can't be inspected from a dev box — if the cutoff is still 4:30,
+  check there first.
+- The app's "black" only paints black pixels. If the panels' **on-device** power
+  timer still switches them off at ~4:30pm, they will keep going dark then
+  regardless — see NEXT UP item 2.
+
+## 🟢 BUILT (earlier this session): WEBPAGE displays no longer follow the TV's page zoom
 
 **Owner's symptom:** "Display 4 randomly zooms in after I set it in browser from
 125% to 100%, and after a few hours it zooms back in. Same with all the displays
@@ -166,7 +188,11 @@ owner is waiting on. Optional/backlog items, none urgent:
    (Samsung signage menu) so panels physically power down during the black
    off-hours. The app-level "black" state only paints black pixels; the LCD
    backlight stays lit, so real energy/lifetime savings need the hardware
-   timer. Suggested: off ~4:30pm, on ~7:45am weekdays; off all weekend.
+   timer. Suggested: off ~6:45pm, on ~7:45am weekdays; off all weekend —
+   i.e. just AFTER the app's 18:30 content cutoff, so the hardware never cuts
+   the wall off while content is still meant to be playing. **If a hardware
+   timer is already set to the old ~4:30pm, it must be changed too, or the
+   panels will keep going dark at 4:30 no matter what the app says.**
 3. **Any stale TV** (e.g. Display 5 earlier) needs **one** manual
    power-cycle/refresh to adopt the new `buildId`-aware bundle; after that it
    self-reloads on every future deploy automatically (see below).

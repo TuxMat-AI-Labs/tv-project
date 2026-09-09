@@ -26,6 +26,14 @@ type DisplayDetail = {
   mode: "playlist" | "screensaver" | "inactive";
   online: boolean;
   lastSeenAt: string | null;
+  viewport: {
+    viewportWidth: number | null;
+    viewportHeight: number | null;
+    screenWidth: number | null;
+    screenHeight: number | null;
+    pixelRatio: number | null;
+  } | null;
+  viewportFaults: { kind: string; detail: string }[];
 };
 
 type PanelKey = "edit" | "change" | "health" | "adjust" | null;
@@ -503,6 +511,37 @@ function HealthPanel({
           <span>Currently</span>
           <span className="text-zinc-500 capitalize">{display.mode}</span>
         </div>
+
+        {/* How the screen says it is RENDERING, which "Online" does not cover: a
+            zoomed screen, or one that has fallen out of kiosk into a windowed
+            browser, is online and on the right content and still wrong on the
+            wall. Both are fixed at the TV, so the panel says what to do rather
+            than only that something is off. */}
+        <div className="flex items-center justify-between text-zinc-300">
+          <span>Rendering</span>
+          {!display.viewport ? (
+            <span className="text-zinc-500">not reporting</span>
+          ) : display.viewportFaults.length === 0 ? (
+            <span className="text-emerald-400">correct</span>
+          ) : (
+            <span className="text-red-400">needs attention</span>
+          )}
+        </div>
+        {display.viewport && (
+          <div className="flex items-center justify-between text-zinc-300">
+            <span>Viewport</span>
+            <span className="text-zinc-500 tabular-nums">
+              {display.viewport.viewportWidth ?? "?"}x{display.viewport.viewportHeight ?? "?"}
+              {" on "}
+              {display.viewport.screenWidth ?? "?"}x{display.viewport.screenHeight ?? "?"}
+            </span>
+          </div>
+        )}
+        {display.viewportFaults.map((f) => (
+          <p key={f.kind} className="rounded border border-red-900/60 bg-red-950/40 p-2 text-xs leading-snug text-red-200">
+            {f.detail}
+          </p>
+        ))}
         <div className="border-t border-zinc-800 pt-3">
           <p className="mb-2 text-zinc-400">Screensaver override</p>
           {[

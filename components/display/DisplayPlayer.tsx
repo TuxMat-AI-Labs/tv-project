@@ -7,6 +7,7 @@ import { CarouselPlayer } from "@/components/display/CarouselPlayer";
 import { Screensaver } from "@/components/display/Screensaver";
 import { InactiveScreen } from "@/components/display/InactiveScreen";
 import { BlackScreen } from "@/components/display/BlackScreen";
+import { ViewportFaultBanner } from "@/components/display/ViewportFaultBanner";
 
 /**
  * The full-screen TV player: polls a Display's content by slug and renders the
@@ -14,7 +15,7 @@ import { BlackScreen } from "@/components/display/BlackScreen";
  * (`/display/[slug]`) and the paired `/tv` entry so both behave identically.
  */
 export function DisplayPlayer({ slug }: { slug: string }) {
-  const { data, reportHeartbeat } = useDisplayContent(slug);
+  const { data, reportHeartbeat, viewportFaults } = useDisplayContent(slug);
 
   useEffect(() => {
     if (data && data.mode !== "playlist" && data.mode !== "carousel") reportHeartbeat(null);
@@ -22,35 +23,36 @@ export function DisplayPlayer({ slug }: { slug: string }) {
 
   if (!data) return null;
 
-  if (data.mode === "carousel" && data.carousel?.ring.length) {
-    return (
+  const content =
+    data.mode === "carousel" && data.carousel?.ring.length ? (
       <CarouselPlayer
         carousel={data.carousel}
         contentFit={data.contentFit ?? "COVER"}
         transition={data.carouselTransition}
         onCurrentItemChange={reportHeartbeat}
       />
-    );
-  }
-
-  if (data.mode === "playlist" && data.playlist?.length) {
-    return (
+    ) : data.mode === "playlist" && data.playlist?.length ? (
       <PlaylistPlayer
         playlist={data.playlist}
         contentFit={data.contentFit ?? "COVER"}
         transition={data.carouselTransition}
         onCurrentItemChange={reportHeartbeat}
       />
+    ) : data.mode === "screensaver" ? (
+      <Screensaver variant={data.screensaverStyle} />
+    ) : data.mode === "black" ? (
+      <BlackScreen />
+    ) : (
+      <InactiveScreen />
     );
-  }
 
-  if (data.mode === "screensaver") {
-    return <Screensaver variant={data.screensaverStyle} />;
-  }
-
-  if (data.mode === "black") {
-    return <BlackScreen />;
-  }
-
-  return <InactiveScreen />;
+  return (
+    <>
+      {content}
+      {/* Over every mode, not only the playlist. A screen that has fallen out of
+          kiosk mode is just as wrong while it is showing the screensaver — and
+          that is precisely when nobody would otherwise notice. */}
+      <ViewportFaultBanner faults={viewportFaults} />
+    </>
+  );
 }

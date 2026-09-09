@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveContentForDisplay } from "@/lib/display/resolveContentForDisplay";
+import { faultsFor } from "@/lib/display/viewportHealth";
 
 const HEARTBEAT_THRESHOLD_MS = 45_000;
 const DEVICE_THRESHOLD_MS = 60_000;
@@ -28,11 +29,26 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     : false;
   const online = heartbeatFresh || deviceFresh;
 
+  // Only while the heartbeat is fresh: a stale reading describes how this wall
+  // looked whenever the TV last checked in, and presenting that as current would
+  // be worse than presenting nothing.
+  const viewport = heartbeatFresh && display.heartbeat
+    ? {
+        viewportWidth: display.heartbeat.viewportWidth,
+        viewportHeight: display.heartbeat.viewportHeight,
+        screenWidth: display.heartbeat.screenWidth,
+        screenHeight: display.heartbeat.screenHeight,
+        pixelRatio: display.heartbeat.pixelRatio,
+      }
+    : null;
+
   return NextResponse.json({
     ...display,
     mode: resolved.mode,
     online,
     lastSeenAt: display.heartbeat?.reportedAt.toISOString() ?? null,
+    viewport,
+    viewportFaults: faultsFor(viewport).map((f) => ({ kind: f.kind, detail: f.detail })),
   });
 }
 

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { faultsFor } from "@/lib/display/viewportHealth";
 import { resolveContentForDisplay } from "@/lib/display/resolveContentForDisplay";
 import { resolveLandscapeDisplay } from "@/lib/display/landscapeCarousel";
 import { currentRingIndex } from "@/lib/display/resolveRoomCarousel";
@@ -85,6 +86,29 @@ export async function GET() {
               : false;
             const online = heartbeatFresh || deviceFresh;
 
+            // How the screen says it is rendering. Only trusted while the
+            // heartbeat is fresh: a stale reading describes how the wall looked
+            // whenever this TV last checked in, which could be days ago, and
+            // showing that as a live fault would be worse than showing nothing.
+            const viewport = heartbeatFresh && display.heartbeat
+              ? {
+                  width: display.heartbeat.viewportWidth,
+                  height: display.heartbeat.viewportHeight,
+                  screenWidth: display.heartbeat.screenWidth,
+                  screenHeight: display.heartbeat.screenHeight,
+                  pixelRatio: display.heartbeat.pixelRatio,
+                }
+              : null;
+            const viewportFaults = faultsFor(
+              viewport && {
+                viewportWidth: viewport.width,
+                viewportHeight: viewport.height,
+                screenWidth: viewport.screenWidth,
+                screenHeight: viewport.screenHeight,
+                pixelRatio: viewport.pixelRatio,
+              },
+            ).map((f) => ({ kind: f.kind, detail: f.detail }));
+
             // Mirror the exact same landscape-pool resolution the TV content
             // route uses, so this tile's preview always matches what's really
             // on screen instead of guessing from raw assignments.
@@ -153,6 +177,8 @@ export async function GET() {
                 : null,
               online,
               lastSeenAt: display.heartbeat?.reportedAt.toISOString() ?? null,
+              viewport,
+              viewportFaults,
             };
           })
         ),

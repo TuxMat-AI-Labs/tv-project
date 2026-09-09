@@ -134,6 +134,17 @@ export function DisplayTile({
           </p>
           <StatusCircle online={display.online} />
         </div>
+        {/* A screen can be online, on the right content, and still be showing it
+            wrong — zoomed, or out of kiosk mode. The status dot stays green
+            through both, which is exactly why this sits beside it rather than
+            being folded into it. Summary only; the detail view carries the
+            numbers and what to do. */}
+        {display.viewportFaults.length > 0 && (
+          <p className="mt-1 truncate text-xs font-medium text-red-400" title={display.viewportFaults.map((f) => f.detail).join(" ")}>
+            {display.viewportFaults.some((f) => f.kind === "ZOOMED") ? "Zoomed" : "Not full screen"}
+            {display.viewportFaults.length > 1 ? " · +1 more" : ""}
+          </p>
+        )}
       </motion.div>
     </Link>
   );

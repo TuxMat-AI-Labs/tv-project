@@ -7,7 +7,13 @@ const ADMIN_ONLY = [
   /^\/hub\/customize\/displays/,
   /^\/hub\/pair/,
   /^\/api\/admin\/rooms/,
-  /^\/api\/admin\/displays/,
+  // Everything under /api/admin/displays is admin-only EXCEPT setting what a
+  // display is playing. Without that exception the marketing view's one action
+  // — POST /api/admin/displays/<id>/assignments — is bounced by this rule
+  // before it reaches the endpoint, so the portal would be broken for exactly
+  // the three people it exists for. The endpoint does its own per-room
+  // authorization (lib/auth/guard), so the narrower gate here loses nothing.
+  /^\/api\/admin\/displays(?!\/[^/]+\/assignments(?:$|\/))/,
   /^\/api\/admin\/pair/,
   /^\/api\/admin\/devices/,
 ];
@@ -17,6 +23,7 @@ const MARKETING_OR_ADMIN = [
   /^\/hub\/customize\/assignments/,
   /^\/api\/admin\/content-items/,
   /^\/api\/admin\/assignments/,
+  /^\/api\/admin\/displays\/[^/]+\/assignments(?:$|\/)/,
 ];
 
 export const proxy = auth((req) => {

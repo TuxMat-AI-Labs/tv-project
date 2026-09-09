@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { faultsFor } from "@/lib/display/viewportHealth";
 import { resolveContentForDisplay } from "@/lib/display/resolveContentForDisplay";
@@ -20,6 +21,20 @@ type ContentLite = {
 };
 
 export async function GET() {
+  // Authenticated HERE, not by the middleware: its matcher covers /hub/* and
+  // /api/admin/*, so /api/hub/* was never gated and this returned the entire
+  // hub — every room, every display, and every display's SLUG — to anyone who
+  // asked. Those slugs are the only thing protecting the TV URLs
+  // ("permanent, unguessable"), so leaking them undoes that model, and the
+  // payload also carries each panel's viewport telemetry.
+  //
+  // Kept in the route rather than widening the matcher so it cannot be lost
+  // again by an unrelated change to the middleware's paths.
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+
   const rooms = await prisma.room.findMany({
     orderBy: { sortOrder: "asc" },
     include: {

@@ -86,8 +86,10 @@ about itself. The player that owns the window is the only place that can.
 ### The two rules
 
 ```
-zoom    = screen.width / window.innerWidth          // 1.0 when correct
-missing = screen.height - (innerHeight x zoom)      // browser chrome, in device px
+across  = viewport is landscape ? max(screen.w, screen.h) : min(screen.w, screen.h)
+down    = the other one
+zoom    = across / window.innerWidth                // 1.0 when correct
+missing = down - (innerHeight x zoom)               // browser chrome, in device px
 ```
 
 Flag `zoom` outside ~2% of 1.0, and `missing` above ~32px.
@@ -98,6 +100,14 @@ panels a visible toolbar is ~232px of 1920 — 12% of the screen.
 
 `screen.width` is the reference because it does **not** move with zoom here. That
 is the whole basis of the ratio.
+
+**Match the screen's axes to the viewport's orientation first.** A
+landscape-mounted panel can report `screen` in its native portrait (1080x1920)
+while handing the page a 1920x1080 viewport. Comparing `screen.width` to
+`innerWidth` then gives 1080/1920 = 0.56, and a perfectly healthy screen is
+flagged "zoom 56%" with 1313px of phantom toolbar. Note this is **not** simply
+long-edge-to-long-edge: for a portrait panel the long edge *is* the height, which
+would fold the toolbar straight back into the zoom number.
 
 ### Reporting it
 

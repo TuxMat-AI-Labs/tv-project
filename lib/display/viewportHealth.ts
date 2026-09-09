@@ -108,7 +108,27 @@ export function faultsFor(r: ViewportReport | null | undefined): ViewportFault[]
 
   const faults: ViewportFault[] = [];
 
-  const zoom = r.screenWidth / r.viewportWidth;
+  // Match the screen's axes to the VIEWPORT's orientation before comparing.
+  //
+  // A landscape-mounted panel may report `screen` in its native portrait
+  // (1080x1920) while handing the page a 1920x1080 viewport. Comparing
+  // screen.width to innerWidth then gives 1080/1920 = 0.56 and the rule
+  // reports "zoom 56%" plus 1313px of phantom toolbar on a perfectly healthy
+  // screen. Flagging a good wall is worse than missing a bad one, so the
+  // comparison is made orientation-independent.
+  //
+  // Still width-for-zoom and height-for-chrome, just resolved per orientation:
+  // the browser toolbar eats the viewport's HEIGHT in either orientation, so
+  // the width axis stays the clean zoom reference. (Which is why this cannot
+  // simply compare long edge to long edge — for a portrait panel the long edge
+  // IS the height, which would fold the toolbar back into the zoom number.)
+  const viewportIsLandscape = !!r.viewportHeight && r.viewportWidth > r.viewportHeight;
+  const screenLong = Math.max(r.screenWidth, r.screenHeight ?? r.screenWidth);
+  const screenShort = Math.min(r.screenWidth, r.screenHeight ?? r.screenWidth);
+  const screenAcross = viewportIsLandscape ? screenLong : screenShort;
+  const screenDown = viewportIsLandscape ? screenShort : screenLong;
+
+  const zoom = screenAcross / r.viewportWidth;
   if (Number.isFinite(zoom) && Math.abs(zoom - 1) > ZOOM_TOLERANCE) {
     const zoomPercent = Math.round(zoom * 100);
     faults.push({
@@ -117,7 +137,7 @@ export function faultsFor(r: ViewportReport | null | undefined): ViewportFault[]
       short: `Zoom ${zoomPercent}% — set the TV browser back to 100%`,
       detail:
         `Browser zoom is ${zoomPercent}%. The page is being laid out for ` +
-        `${r.viewportWidth}px and stretched onto a ${r.screenWidth}px panel. ` +
+        `${r.viewportWidth}px and stretched onto a ${screenAcross}px panel. ` +
         `Set the TV browser's zoom back to 100%.`,
     });
   }
@@ -126,7 +146,7 @@ export function faultsFor(r: ViewportReport | null | undefined): ViewportFault[]
   // compared in the same units as the panel's.
   if (r.viewportHeight && r.screenHeight && Number.isFinite(zoom)) {
     const usedPx = r.viewportHeight * zoom;
-    const missingPx = Math.round(r.screenHeight - usedPx);
+    const missingPx = Math.round(screenDown - usedPx);
     if (missingPx > CHROME_TOLERANCE_PX) {
       faults.push({
         kind: "NOT_FULLSCREEN",

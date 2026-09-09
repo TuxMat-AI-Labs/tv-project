@@ -125,7 +125,7 @@ export function PlaylistPlayer({
             //     and direct measurement on the panel disproved it — the zoom
             //     RESIZES THE CSS VIEWPORT (at 125%: innerWidth 864 against a
             //     screen of 1080, devicePixelRatio 1.25, visualViewport.scale 1).
-            //     See docs/display-health.md. So a page-side fix is possible in
+            //     See display-health.md. So a page-side fix is possible in
             //     principle; the reason below is why it is still not this one.
             //   - It added real risk here: a 1080x1920 iframe under a transform
             //     forces a large composited layer that this plain version does
@@ -135,7 +135,7 @@ export function PlaylistPlayer({
             // attempts have already been shipped on an unmeasured premise and
             // reverted, one of which crashed Display 1. A viewport-relative
             // layout is immune to this zoom without any transform at all, which
-            // is the cheaper answer; see docs/display-health.md.
+            // is the cheaper answer; see display-health.md.
             <iframe
               src={current.fileUrl}
               title=""

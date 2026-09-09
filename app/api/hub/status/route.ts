@@ -107,7 +107,7 @@ export async function GET() {
                 screenHeight: viewport.screenHeight,
                 pixelRatio: viewport.pixelRatio,
               },
-            ).map((f) => ({ kind: f.kind, detail: f.detail }));
+            ).map((f) => ({ kind: f.kind, short: f.short, detail: f.detail }));
 
             // Mirror the exact same landscape-pool resolution the TV content
             // route uses, so this tile's preview always matches what's really

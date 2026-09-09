@@ -38,7 +38,12 @@ export type HubDisplayStatus = {
     screenHeight: number | null;
     pixelRatio: number | null;
   } | null;
-  viewportFaults: { kind: string; detail: string }[];
+  /**
+   * `detail` is the full sentence for someone deciding whether to walk over.
+   * `short` is the terse form, used where the hub overlays the fault on a small
+   * display preview and a sentence would not fit — same line the panel shows.
+   */
+  viewportFaults: { kind: string; short: string; detail: string }[];
 };
 
 export type HubRoomStatus = {

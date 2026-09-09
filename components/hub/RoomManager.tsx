@@ -161,7 +161,7 @@ export function RoomManager({ roomSlug }: { roomSlug: string }) {
         </p>
       )}
 
-      <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {room.displays.map((display) => (
           <DisplayCard
             key={display.id}
@@ -223,6 +223,27 @@ function DisplayCard({
                 Nothing assigned
               </div>
             )}
+
+            {/* On the screen, not under it. In the card body this pushed one
+                card taller than its neighbours and left the rest of the row
+                padding out dead space to match. Here it costs no layout at all,
+                every card stays the same height, and it sits where the fault
+                actually is — the same bottom-left corner the physical panel
+                puts its own warning in. Full sentence on hover. */}
+            {display.viewportFaults?.length > 0 && (
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 p-1.5">
+                {display.viewportFaults.map((f) => (
+                  <p
+                    key={f.kind}
+                    title={f.detail}
+                    className="pointer-events-auto mt-1 rounded px-1.5 py-1 text-[10px] leading-tight font-medium text-white"
+                    style={{ background: "rgba(140,22,22,0.94)" }}
+                  >
+                    {f.short}
+                  </p>
+                ))}
+              </div>
+            )}
           </div>
         </TVFrame>
         {busy && (
@@ -240,15 +261,6 @@ function DisplayCard({
         <p className="mt-0.5 truncate text-xs text-muted">
           {display.currentContent?.title ?? "Nothing assigned"}
         </p>
-
-        {/* Surfaced here as well as on the panel: someone standing in this view
-            is the person most likely to act on it, and a screen rendering wrong
-            still reads as perfectly online. */}
-        {display.viewportFaults?.length > 0 && (
-          <p className="mt-2 rounded bg-red-500/10 px-2 py-1 text-[11px] text-red-700">
-            {display.viewportFaults[0].detail}
-          </p>
-        )}
 
         <button
           type="button"

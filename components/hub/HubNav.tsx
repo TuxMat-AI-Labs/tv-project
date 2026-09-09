@@ -5,14 +5,27 @@ import { usePathname } from "next/navigation";
 
 type NavItem = { label: string; href: string };
 
-export function HubNav({ rooms }: { rooms: { name: string; slug: string }[] }) {
+export function HubNav({
+  rooms,
+  scopedRoomSlug = null,
+}: {
+  rooms: { name: string; slug: string }[];
+  /** Set for a user confined to one room — see lib/auth/roles. */
+  scopedRoomSlug?: string | null;
+}) {
   const pathname = usePathname();
 
-  const items: NavItem[] = [
-    { label: "Dashboard", href: "/hub" },
-    ...rooms.map((r) => ({ label: r.name, href: `/hub/${r.slug}` })),
-    { label: "Customize", href: "/hub/customize" },
-  ];
+  // A scoped user can only reach their own manage view, so showing the rest
+  // would be a row of links that each bounce straight back. One link is not
+  // much of a nav, but it keeps the header honest about where they can go.
+  const scopedRoom = scopedRoomSlug ? rooms.find((r) => r.slug === scopedRoomSlug) : null;
+  const items: NavItem[] = scopedRoomSlug
+    ? [{ label: scopedRoom?.name ?? "My screens", href: `/hub/manage/${scopedRoomSlug}` }]
+    : [
+        { label: "Dashboard", href: "/hub" },
+        ...rooms.map((r) => ({ label: r.name, href: `/hub/${r.slug}` })),
+        { label: "Customize", href: "/hub/customize" },
+      ];
 
   return (
     <nav className="no-scrollbar flex items-center gap-1 overflow-x-auto">

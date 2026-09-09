@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
+import { requireActor, authorizeDisplay } from "@/lib/auth/guard";
 
 export async function GET() {
   const assignments = await prisma.assignment.findMany({
@@ -24,10 +24,15 @@ type PostBody = {
 };
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const gate = await requireActor();
+  if ("error" in gate) return gate.error;
 
   const body = (await req.json()) as PostBody;
+
+  // Same reason as the per-display fast path: the display id comes from the
+  // request, so a room-scoped user's confinement has to be checked here.
+  const allowed = await authorizeDisplay(gate.actor, body.displayId);
+  if ("error" in allowed) return allowed.error;
 
   const assignment = await prisma.assignment.create({
     data: {
@@ -38,7 +43,7 @@ export async function POST(req: NextRequest) {
       endsAt: body.endsAt ? new Date(body.endsAt) : null,
       daypartStart: body.daypartStart ?? null,
       daypartEnd: body.daypartEnd ?? null,
-      createdById: session.user.id,
+      createdById: gate.actor.id,
     },
   });
 

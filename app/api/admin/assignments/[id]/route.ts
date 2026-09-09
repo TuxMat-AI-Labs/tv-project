@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
+import { requireActor, authorizeAssignment, authorizeDisplay } from "@/lib/auth/guard";
 
 type PatchBody = {
   contentItemId?: string;
@@ -13,11 +13,22 @@ type PatchBody = {
 };
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const gate = await requireActor();
+  if ("error" in gate) return gate.error;
 
   const { id } = await params;
+  const allowed = await authorizeAssignment(gate.actor, id);
+  if ("error" in allowed) return allowed.error;
+
   const body = (await req.json()) as PatchBody;
+
+  // Moving an assignment to another display needs the DESTINATION authorized
+  // too — guarding only where it currently lives would let a room-scoped user
+  // push their row onto a display in a room they cannot touch.
+  if (body.displayId !== undefined) {
+    const dest = await authorizeDisplay(gate.actor, body.displayId);
+    if ("error" in dest) return dest.error;
+  }
 
   const data: Record<string, unknown> = {};
   if (body.contentItemId !== undefined) data.contentItemId = body.contentItemId;
@@ -33,10 +44,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const gate = await requireActor();
+  if ("error" in gate) return gate.error;
 
   const { id } = await params;
+  const allowed = await authorizeAssignment(gate.actor, id);
+  if ("error" in allowed) return allowed.error;
   await prisma.assignment.delete({ where: { id } });
   return NextResponse.json({ ok: true });
 }

@@ -63,7 +63,7 @@ export default async function HubLayout({
           />
         </div>
         <div className="mx-auto max-w-7xl px-6">
-          <HubNav rooms={rooms} />
+          <HubNav rooms={rooms} scopedRoomSlug={session?.user?.scopedRoomSlug ?? null} />
         </div>
       </header>
       {/* overflow-x-hidden is load-bearing, not belt-and-braces: `overflow-y:

@@ -6,6 +6,28 @@ display.
 
 ---
 
+> ## ⚠️ Correction — zoom is not a fault on this fleet
+>
+> Shipping the check revealed what no amount of measuring one panel could: **these
+> displays load at 125% natively. That is not drift — it is how every one of them
+> has always run.** The rule below flagged zoom, so on arrival it put a red
+> warning on every healthy screen on the wall at once. That is the exact
+> cry-wolf failure this doc calls urgent, caused by this doc's own rule.
+>
+> The corollary further down already explained why it does not matter: a layout
+> sized in `vh`/`%` renders identically at any zoom. Nobody had ever noticed the
+> 125% because on this content there is nothing to notice. And "set it back to
+> 100%" was advice that does not stick — the panels revert it.
+>
+> **Zoom is now measured but never reported.** It survives only as the scale
+> factor the browser-chrome check needs. The one genuine fault left is a screen
+> that has dropped out of kiosk, which is real, actionable, and independent of
+> zoom.
+>
+> The one place zoom does change output is a WEBPAGE display, whose embedded
+> dashboard is handed 864 CSS px instead of 1080. That is a content-fit problem
+> for the player, not an errand for whoever walks past.
+
 ## The short version
 
 Some Samsung panels show the wall content **zoomed**. It drifts back on its own
@@ -92,7 +114,10 @@ zoom    = across / window.innerWidth                // 1.0 when correct
 missing = down - (innerHeight x zoom)               // browser chrome, in device px
 ```
 
-Flag `zoom` outside ~2% of 1.0, and `missing` above ~32px.
+Flag `missing` above ~32px. **Do not flag `zoom`** — see the correction at the
+top: 125% is this fleet's native state, so flagging it warns on every healthy
+screen. `zoom` exists here only to convert the toolbar's height into the panel's
+units.
 
 Width for the zoom and height for the chrome, deliberately: a toolbar eats
 **height**, so mixing them conflates two faults that need different fixes. On these
@@ -172,9 +197,9 @@ before trusting a green result.
 
 ## Fixing it at the TV
 
-**Zoomed** — set the browser zoom back to 100%. **Expect it to come back**: one
-display returned to 125% on its own hours later. Treat a fix as unconfirmed until
-the fault has stayed away for a day.
+**Zoomed** — leave it alone. 125% is the fleet's native state and the wall's
+content renders identically either way. Resetting it is harmless but pointless,
+and it reverts anyway.
 
 **Not full screen** — the browser has left kiosk. Hide the toolbar or relaunch.
 

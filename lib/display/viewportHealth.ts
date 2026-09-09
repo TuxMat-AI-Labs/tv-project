@@ -62,15 +62,7 @@ export type ViewportFault =
    * and say only what to do. In the hub it is read by someone deciding whether
    * to walk over, so it can afford the numbers and the reasoning.
    */
-  | { kind: "ZOOMED"; zoomPercent: number; short: string; detail: string }
-  | { kind: "NOT_FULLSCREEN"; missingPx: number; short: string; detail: string };
-
-/**
- * A zoom this far from 1.0 counts. The smallest step these browsers offer is
- * 125%, so anything real lands far outside this; the margin only absorbs a panel
- * that reports a screen width a pixel or two off its viewport.
- */
-const ZOOM_TOLERANCE = 0.02;
+  { kind: "NOT_FULLSCREEN"; missingPx: number; short: string; detail: string };
 
 /**
  * Browser chrome under this is not worth reporting. A toolbar is ~230px on a
@@ -128,19 +120,24 @@ export function faultsFor(r: ViewportReport | null | undefined): ViewportFault[]
   const screenAcross = viewportIsLandscape ? screenLong : screenShort;
   const screenDown = viewportIsLandscape ? screenShort : screenLong;
 
+  // Zoom is measured but is NOT reported as a fault. It is the scale factor the
+  // chrome check below needs, and nothing more.
+  //
+  // These panels load at 125% natively — that is not drift, it is how the whole
+  // fleet has always run. And a layout sized in vh/% renders identically at any
+  // zoom (at 125% the viewport is 864x1536, every vh is 0.8x, and it rasterises
+  // at devicePixelRatio 1.25 for the same device pixels), which is why nobody
+  // ever noticed. Flagging it put a red warning on every healthy screen on the
+  // wall, and the doc's own standard is that crying wolf is worse than no check.
+  //
+  // "Set it back to 100%" was also advice that does not stick: the panels revert
+  // (suspected hospitality mode), and it did not need to stick.
+  //
+  // The one place zoom genuinely changes output is a WEBPAGE display, where the
+  // embedded dashboard is handed 864 CSS px instead of 1080 and lays itself out
+  // for the narrower viewport. That is a content-fit problem to solve in the
+  // player, not a "go and fix this panel" errand — see PlaylistPlayer.
   const zoom = screenAcross / r.viewportWidth;
-  if (Number.isFinite(zoom) && Math.abs(zoom - 1) > ZOOM_TOLERANCE) {
-    const zoomPercent = Math.round(zoom * 100);
-    faults.push({
-      kind: "ZOOMED",
-      zoomPercent,
-      short: `Zoom ${zoomPercent}% — set the TV browser back to 100%`,
-      detail:
-        `Browser zoom is ${zoomPercent}%. The page is being laid out for ` +
-        `${r.viewportWidth}px and stretched onto a ${screenAcross}px panel. ` +
-        `Set the TV browser's zoom back to 100%.`,
-    });
-  }
 
   // Only meaningful once the zoom is known, since the toolbar's height has to be
   // compared in the same units as the panel's.
@@ -167,7 +164,5 @@ export function faultsFor(r: ViewportReport | null | undefined): ViewportFault[]
 export function faultSummary(r: ViewportReport | null | undefined): string | null {
   const faults = faultsFor(r);
   if (!faults.length) return null;
-  return faults
-    .map((f) => (f.kind === "ZOOMED" ? `zoom ${f.zoomPercent}%` : `${f.missingPx}px chrome`))
-    .join(" · ");
+  return faults.map((f) => `${f.missingPx}px chrome`).join(" · ");
 }

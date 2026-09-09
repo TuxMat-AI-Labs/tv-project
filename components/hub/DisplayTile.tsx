@@ -141,8 +141,7 @@ export function DisplayTile({
             numbers and what to do. */}
         {display.viewportFaults.length > 0 && (
           <p className="mt-1 truncate text-xs font-medium text-red-400" title={display.viewportFaults.map((f) => f.detail).join(" ")}>
-            {display.viewportFaults.some((f) => f.kind === "ZOOMED") ? "Zoomed" : "Not full screen"}
-            {display.viewportFaults.length > 1 ? " · +1 more" : ""}
+            Not full screen
           </p>
         )}
       </motion.div>

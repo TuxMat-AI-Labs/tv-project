@@ -119,18 +119,23 @@ export function PlaylistPlayer({
             // Kept as a plain percentage-sized iframe deliberately. This briefly
             // used ScaledWebpage (pinned to 1080x1920 + CSS transform) to stop
             // the page inheriting the TV browser's zoom, and that was reverted:
-            //   - The premise looks wrong. Display 4 shows a correctly-sized
-            //     1082x1920 image and still "zooms," and full-bleed images are
-            //     provably immune to a CSS-viewport zoom (measured: identical
-            //     render at 1080x1920 and 864x1536). So the TV's zoom control
-            //     magnifies the rendered output rather than resizing the CSS
-            //     viewport — which no page-side change can defeat.
+            //   - CORRECTED 2026-09: the premise stated here was that the TV
+            //     magnifies rendered output and that "no page-side change can
+            //     defeat" it. That was inferred from an image appearing to zoom,
+            //     and direct measurement on the panel disproved it — the zoom
+            //     RESIZES THE CSS VIEWPORT (at 125%: innerWidth 864 against a
+            //     screen of 1080, devicePixelRatio 1.25, visualViewport.scale 1).
+            //     See docs/display-health.md. So a page-side fix is possible in
+            //     principle; the reason below is why it is still not this one.
             //   - It added real risk here: a 1080x1920 iframe under a transform
             //     forces a large composited layer that this plain version does
             //     not, on a memory-constrained TV that is never restarted.
             //     Display 1 crashed shortly after it shipped.
-            // Do not reintroduce it on the TV without first confirming on the
-            // hardware which of the two zoom behaviours the browser implements.
+            // The behaviour is now known, so that question is settled — but two
+            // attempts have already been shipped on an unmeasured premise and
+            // reverted, one of which crashed Display 1. A viewport-relative
+            // layout is immune to this zoom without any transform at all, which
+            // is the cheaper answer; see docs/display-health.md.
             <iframe
               src={current.fileUrl}
               title=""

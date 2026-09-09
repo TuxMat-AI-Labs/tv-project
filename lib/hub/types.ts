@@ -19,6 +19,26 @@ export type HubDisplayStatus = {
   } | null;
   online: boolean;
   lastSeenAt: string | null;
+  /**
+   * What the TV last reported about how it is rendering itself, and the faults
+   * that follow from it — see lib/display/viewportHealth.
+   *
+   * Separate from `online` on purpose: a zoomed screen or one that has dropped
+   * out of kiosk mode is still online, still on the right content, and still
+   * wrong on the wall. Online was the only health the hub had, and it is exactly
+   * the health that stays green while this goes bad.
+   *
+   * Null when the TV has not reported yet — an old bundle, or a screen that has
+   * not beaten since it was deployed.
+   */
+  viewport: {
+    width: number | null;
+    height: number | null;
+    screenWidth: number | null;
+    screenHeight: number | null;
+    pixelRatio: number | null;
+  } | null;
+  viewportFaults: { kind: string; detail: string }[];
 };
 
 export type HubRoomStatus = {

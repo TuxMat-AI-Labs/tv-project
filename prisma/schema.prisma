@@ -171,6 +171,24 @@ model Heartbeat {
   display          Display  @relation(fields: [displayId], references: [id])
   currentContentId String?
   reportedAt       DateTime @default(now())
+
+  // What the TV browser reports about its own viewport, every heartbeat.
+  //
+  // A screen can be online, on the right content, and still be showing it
+  // wrong — the browser zoomed, or dropped out of kiosk mode into a windowed
+  // browser with a toolbar. Neither moves anything the hub was watching, so a
+  // display in that state read as perfectly healthy while the wall was visibly
+  // wrong. Measured on Samsung hardware: at 125% zoom the CSS viewport is
+  // 864x1350 with devicePixelRatio 1.25 against a screen of 1080x1920.
+  //
+  // Raw numbers rather than a verdict alone, so a person can adjudicate a case
+  // the rule did not anticipate. Every field is nullable: a TV running an older
+  // bundle keeps posting heartbeats without them.
+  viewportWidth    Int?
+  viewportHeight   Int?
+  screenWidth      Int?
+  screenHeight     Int?
+  pixelRatio       Float?
 }
 
 // A physical TV browser, identified by a long-lived httpOnly cookie (`token`).

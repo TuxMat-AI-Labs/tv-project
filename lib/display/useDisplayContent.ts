@@ -14,6 +14,7 @@ export type DisplayContentResponse = {
   contentFit?: "COVER" | "CONTAIN" | "FILL";
   carouselTransition?: CarouselTransition;
   screensaverStyle?: ScreensaverVariant;
+  calibration?: boolean;
   reloadRequestedAt?: string | null;
   buildId?: string;
   serverTime: string;

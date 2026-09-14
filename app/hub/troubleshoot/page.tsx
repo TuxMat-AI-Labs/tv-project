@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { MDC_REPORT_KEY } from "@/lib/mdc/protocol";
+import { CALIBRATION_SETTING_KEY } from "@/lib/display/calibration";
 import { TroubleshootView, type MdcReport } from "@/components/hub/TroubleshootView";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +13,10 @@ export const dynamic = "force-dynamic";
  * page the middleware already gates.
  */
 export default async function TroubleshootPage() {
-  const row = await prisma.setting.findUnique({ where: { key: MDC_REPORT_KEY } });
+  const [row, calRow] = await Promise.all([
+    prisma.setting.findUnique({ where: { key: MDC_REPORT_KEY } }),
+    prisma.setting.findUnique({ where: { key: CALIBRATION_SETTING_KEY } }),
+  ]);
 
   let mdcReport: MdcReport = null;
   if (row) {
@@ -25,5 +29,5 @@ export default async function TroubleshootPage() {
     }
   }
 
-  return <TroubleshootView mdcReport={mdcReport} />;
+  return <TroubleshootView mdcReport={mdcReport} calibrationOn={calRow?.value === "1"} />;
 }

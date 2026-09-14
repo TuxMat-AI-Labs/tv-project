@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { CALIBRATION_SETTING_KEY } from "@/lib/display/calibration";
 import { resolveContentForDisplay } from "@/lib/display/resolveContentForDisplay";
 import { resolveLandscapeDisplay } from "@/lib/display/landscapeCarousel";
 import { coerceCarouselTransition } from "@/lib/display/transition";
@@ -41,7 +42,12 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ slu
   }
 
   const now = new Date();
+  // Cheap enough to read per poll (one indexed row, ~12 screens on a 6-15s
+  // cycle) and it must be live: the whole point is flipping it on and walking
+  // out to look at the wall without touching a TV.
+  const calibrationRow = await prisma.setting.findUnique({ where: { key: CALIBRATION_SETTING_KEY } });
   const base = {
+    calibration: calibrationRow?.value === "1",
     contentFit: display.contentFit,
     reloadRequestedAt: display.reloadRequestedAt?.toISOString() ?? null,
     carouselTransition: coerceCarouselTransition(display.room.carouselTransition),

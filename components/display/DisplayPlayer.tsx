@@ -8,6 +8,7 @@ import { Screensaver } from "@/components/display/Screensaver";
 import { InactiveScreen } from "@/components/display/InactiveScreen";
 import { BlackScreen } from "@/components/display/BlackScreen";
 import { ViewportFaultBanner } from "@/components/display/ViewportFaultBanner";
+import { CalibrationOverlay } from "@/components/display/CalibrationOverlay";
 
 /**
  * The full-screen TV player: polls a Display's content by slug and renders the
@@ -52,6 +53,7 @@ export function DisplayPlayer({ slug }: { slug: string }) {
       {/* Over every mode, not only the playlist. A screen that has fallen out of
           kiosk mode is just as wrong while it is showing the screensaver — and
           that is precisely when nobody would otherwise notice. */}
+      {data?.calibration && <CalibrationOverlay />}
       <ViewportFaultBanner faults={viewportFaults} />
     </>
   );

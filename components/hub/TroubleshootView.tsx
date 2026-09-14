@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useHubStatus } from "@/lib/hub/useHubStatus";
 import type { HubDisplayStatus } from "@/lib/hub/types";
 
@@ -24,8 +25,30 @@ export type MdcReport = { takenAt: string; panels: MdcPanel[] } | null;
  * It shows numbers, not verdicts. Every interpretation offered here has been
  * wrong at least once; the measurements have not.
  */
-export function TroubleshootView({ mdcReport }: { mdcReport: MdcReport }) {
+export function TroubleshootView({
+  mdcReport,
+  calibrationOn,
+}: {
+  mdcReport: MdcReport;
+  calibrationOn: boolean;
+}) {
   const status = useHubStatus();
+  const [cal, setCal] = useState(calibrationOn);
+  const [calBusy, setCalBusy] = useState(false);
+
+  async function toggleCalibration() {
+    setCalBusy(true);
+    try {
+      const res = await fetch("/api/admin/calibration", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled: !cal }),
+      });
+      if (res.ok) setCal(!cal);
+    } finally {
+      setCalBusy(false);
+    }
+  }
 
   return (
     <div className="reveal">
@@ -35,6 +58,33 @@ export function TroubleshootView({ mdcReport }: { mdcReport: MdcReport }) {
         render wrong — so compare a screen that looks wrong against one that looks right, and trust the difference
         rather than any single reading.
       </p>
+
+      <div className="mt-6 brand-card p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-foreground">Calibration markers</p>
+            <p className="mt-0.5 max-w-2xl text-xs text-muted">
+              Puts a marked border, four labelled corners and edge ticks on <strong>every</strong> screen. If a panel is
+              cropping what it is given — the one fault neither the browser nor MDC can see — the missing markers show
+              it, and roughly by how much. Turn it on, walk the wall, compare a good screen against a bad one, turn it
+              off. Screens pick it up within about 15 seconds; nothing needs touching at the TV.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={toggleCalibration}
+            disabled={calBusy}
+            className={`glass-btn shrink-0 rounded px-4 py-2 text-sm font-medium disabled:opacity-50 ${cal ? "" : "glass-btn--gold"}`}
+          >
+            {calBusy ? "Saving…" : cal ? "Turn markers off" : "Turn markers on"}
+          </button>
+        </div>
+        {cal && (
+          <p className="mt-2 text-xs font-medium text-red-600">
+            Markers are live on the wall right now — remember to turn them off.
+          </p>
+        )}
+      </div>
 
       <h2 className="mt-8 text-sm font-semibold tracking-wide text-foreground uppercase">Browser-reported viewport</h2>
       <p className="mt-1 text-xs text-muted">

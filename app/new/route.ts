@@ -38,7 +38,12 @@ export async function GET(req: NextRequest) {
       .catch(() => {});
   }
 
-  const res = NextResponse.redirect(new URL("/screen", req.nextUrl.origin));
+  // AUTH_URL first, exactly as /api/tv/register does. Behind Render's proxy
+  // `req.nextUrl.origin` is the INTERNAL origin (https://localhost:10000), so
+  // redirecting to it sends the panel to localhost and the screen dies on a
+  // connection error. Caught by testing the real endpoint rather than the code.
+  const origin = process.env.AUTH_URL ?? req.nextUrl.origin;
+  const res = NextResponse.redirect(new URL("/screen", origin));
   // Expire the cookie on the panel itself, so the next request arrives with no
   // identity at all and /api/tv/register mints a fresh device.
   res.cookies.set(DEVICE_COOKIE, "", { path: "/", maxAge: 0 });

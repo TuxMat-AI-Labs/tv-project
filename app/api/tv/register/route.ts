@@ -76,12 +76,18 @@ export async function POST(req: NextRequest) {
     include: { display: true },
   });
 
+  // The running deploy, echoed so the TV can print it on its own pairing
+  // screen. Being able to read a screen's build from across the room is what
+  // distinguishes "this panel is broken" from "this panel is running old code",
+  // a question that previously took days to answer.
+  const buildId = process.env.RENDER_GIT_COMMIT ?? "dev";
+
   let payload:
-    | { status: "paired"; slug: string }
-    | { status: "unpaired"; code: string; pairUrl: string; qrDataUrl: string };
+    | { status: "paired"; slug: string; buildId: string }
+    | { status: "unpaired"; code: string; pairUrl: string; qrDataUrl: string; buildId: string };
 
   if (device.displayId && device.display) {
-    payload = { status: "paired", slug: device.display.slug };
+    payload = { status: "paired", slug: device.display.slug, buildId };
   } else {
     const code = await ensureCode(device.id, device.pairingCode, device.codeExpiresAt);
     const pairUrl = `${baseUrl(req)}/hub/pair?code=${encodeURIComponent(code)}`;
@@ -90,7 +96,7 @@ export async function POST(req: NextRequest) {
       width: 512,
       color: { dark: "#141414", light: "#ffffff" },
     });
-    payload = { status: "unpaired", code, pairUrl, qrDataUrl };
+    payload = { status: "unpaired", code, pairUrl, qrDataUrl, buildId };
   }
 
   const res = NextResponse.json(payload);

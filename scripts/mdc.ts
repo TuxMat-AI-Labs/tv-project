@@ -38,7 +38,13 @@ const DEFAULT_PROBES: Probe[] = [
   { name: "status", command: CMD.STATUS },
   { name: "power", command: CMD.POWER },
   { name: "inputSource", command: CMD.INPUT_SOURCE },
-  { name: "screenSize", command: CMD.SCREEN_SIZE },
+  { name: "serial", command: CMD.SERIAL },
+  { name: "firmware", command: CMD.FIRMWARE },
+  { name: "model", command: CMD.MODEL },
+  // The two registers observed to differ between a healthy panel and a zoomed
+  // one. Included by default so every dump captures them.
+  { name: "unknownA_0x26", command: CMD.UNKNOWN_DIFF_A },
+  { name: "unknownB_0xb6", command: CMD.UNKNOWN_DIFF_B },
 ];
 
 type PanelReport = {
@@ -118,16 +124,65 @@ async function probePanel(host: string, displayId: number, probes: Probe[]): Pro
   return report;
 }
 
+/**
+ * Poll registers and print only when one changes.
+ *
+ * This is how an unknown register gets identified without writing anything:
+ * stand at the panel, change ONE setting in its menu, and see which register
+ * moves. That turns "0x26 differs between two panels" into "0x26 is Picture
+ * Size", which is the difference between a guess and a fix.
+ */
+async function watch(hosts: string[], displayId: number, commands: number[], intervalMs: number) {
+  console.log(
+    `Watching ${commands.map((c) => "0x" + c.toString(16)).join(", ")} on ${hosts.join(", ")} every ${intervalMs}ms.\n` +
+      `Change ONE setting on the panel; whichever register moves is that setting. Ctrl-C to stop.\n`
+  );
+  const last = new Map<string, string>();
+  for (;;) {
+    for (const host of hosts) {
+      for (const cmd of commands) {
+        const key = `${host}:${cmd}`;
+        let value: string;
+        try {
+          const r = await ask(host, displayId, cmd);
+          value = r.data.map((b) => b.toString(16).padStart(2, "0")).join(" ");
+        } catch (e) {
+          value = `error: ${e instanceof Error ? e.message : String(e)}`;
+        }
+        const prev = last.get(key);
+        if (prev === undefined) {
+          console.log(`${new Date().toLocaleTimeString()}  ${host} 0x${cmd.toString(16)} = [${value}]  (baseline)`);
+        } else if (prev !== value) {
+          console.log(
+            `${new Date().toLocaleTimeString()}  ${host} 0x${cmd.toString(16)} CHANGED  [${prev}] -> [${value}]`
+          );
+        }
+        last.set(key, value);
+      }
+    }
+    await new Promise((r) => setTimeout(r, intervalMs));
+  }
+}
+
 async function main() {
   const hosts = (arg("hosts") ?? "").split(",").map((h) => h.trim()).filter(Boolean);
   if (!hosts.length) {
-    console.error("Usage: npx tsx scripts/mdc.ts --hosts <ip>[,<ip>…] [--id N] [--cmd 0xNN] [--out f.json] [--post URL --token T]");
+    console.error("Usage: npx tsx scripts/mdc.ts --hosts <ip>[,<ip>…] [--id N] [--cmd 0xNN] [--watch 0xNN,0xNN [--interval S]] [--out f.json] [--post URL --token T]");
     console.error("\nPanel IPs: on each display, Menu → Network → Network Status.");
     console.error("MDC must be enabled: Menu → System → (Remote/Network) Control.");
     process.exit(1);
   }
 
   const displayId = arg("id") ? Number(arg("id")) : BROADCAST_ID;
+
+  const watchArg = arg("watch");
+  if (watchArg) {
+    const commands = watchArg.split(",").map((c) => Number(c.trim())).filter((n) => Number.isFinite(n));
+    const interval = arg("interval") ? Number(arg("interval")) * 1000 : 2000;
+    await watch(hosts, displayId, commands, interval);
+    return;
+  }
+
   const rawCmd = arg("cmd");
   const probes: Probe[] = rawCmd
     ? [{ name: `cmd_${rawCmd}`, command: Number(rawCmd) }]

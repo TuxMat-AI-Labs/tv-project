@@ -47,15 +47,42 @@ export const NAK = 0x4e; // 'N'
  */
 export const BROADCAST_ID = 0xfe;
 
-/** Commands stable across the published MDC specs. */
+/**
+ * Commands stable across the published MDC specs, plus what the office QM55C
+ * panels were actually observed to return (2026-09-14).
+ */
 export const CMD = {
   /** Power/volume/input/etc. in one reply. Layout differs by family — see note. */
   STATUS: 0x00,
-  /** Panel diagonal in inches. Useful purely as a "is this really MDC?" probe. */
-  SCREEN_SIZE: 0x0b,
+  /**
+   * Documented elsewhere as "screen size", but on these QM55C panels it returns
+   * the SERIAL NUMBER as ASCII — .235 answered "0FU6HCEL300712A", matching the
+   * label photographed on the back. Named for what it does here.
+   */
+  SERIAL: 0x0b,
+  /** Firmware version, ASCII. Both office panels: "S-PTMLWWC-1130.4". */
+  FIRMWARE: 0x0e,
+  /** Model name, ASCII. Both office panels: "QM55C". */
+  MODEL: 0x8a,
   /** 0x00 off, 0x01 on. */
   POWER: 0x11,
-  /** Current input source. */
+  /**
+   * UNIDENTIFIED, and the two registers that actually differ between a healthy
+   * panel and the one that renders zoomed. Stable across repeated samples on
+   * both, so this is configuration rather than a fluctuating reading (0x0d
+   * looked like a difference once and turned out to be temperature).
+   *
+   *   0x26   healthy .235 = 34        zoomed .244 = 32
+   *   0xb6   healthy .235 = 02 02 00 06 02 00 02 00 06 02 00 00 00
+   *          zoomed  .244 = 00 0b 00 00 00 00 0b 00 00 00 00 00 00
+   *
+   * Identify them with `--watch` before writing anything: change one setting on
+   * the panel and see which of these moves. Guessing at a register's meaning is
+   * how this project lost three weeks already.
+   */
+  UNKNOWN_DIFF_A: 0x26,
+  UNKNOWN_DIFF_B: 0xb6,
+  /** Current input source. Both office panels report 0x65. */
   INPUT_SOURCE: 0x14,
 } as const;
 

@@ -60,6 +60,7 @@ type PatchBody = {
   screensaverOverride?: boolean | null;
   contentFit?: "COVER" | "CONTAIN" | "FILL";
   orientation?: "PORTRAIT" | "LANDSCAPE";
+  contentScale?: number;
   joinsRotation?: boolean;
   regenerateSlug?: boolean;
 };
@@ -77,6 +78,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (body.contentFit !== undefined) data.contentFit = body.contentFit;
   if (body.joinsRotation !== undefined) data.joinsRotation = body.joinsRotation;
   if (body.orientation !== undefined) data.orientation = body.orientation;
+  if (body.contentScale !== undefined) {
+    // Clamped: below ~50 the content is a postage stamp and above 100 it would
+    // crop deliberately, neither of which is ever the intent here.
+    const n = Math.round(Number(body.contentScale));
+    if (Number.isFinite(n)) data.contentScale = Math.min(100, Math.max(50, n));
+  }
   if (body.regenerateSlug) data.slug = crypto.randomUUID();
 
   const display = await prisma.display.update({ where: { id }, data });

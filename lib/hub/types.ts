@@ -5,6 +5,8 @@ export type HubDisplayStatus = {
   number: number;
   active: boolean;
   orientation: "PORTRAIT" | "LANDSCAPE";
+  /** Underscan compensation, % of viewport. 100 = fill it (the default). */
+  contentScale: number;
   mode: "playlist" | "screensaver" | "inactive" | "carousel" | "black";
   // `fileUrl` is carried so a WEBPAGE tile can render the live page itself —
   // a webpage has no thumbnail, and without this the dashboard could only show

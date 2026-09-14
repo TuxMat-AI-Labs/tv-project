@@ -49,6 +49,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ slu
   const base = {
     calibration: calibrationRow?.value === "1",
     contentFit: display.contentFit,
+    // Underscan compensation for panels that magnify what they are handed.
+    // 100 = fill the viewport, which is every display unless dialled down.
+    contentScale: display.contentScale,
     reloadRequestedAt: display.reloadRequestedAt?.toISOString() ?? null,
     carouselTransition: coerceCarouselTransition(display.room.carouselTransition),
     // The running deploy's commit. An always-on TV keeps whatever JS bundle it

@@ -103,6 +103,18 @@ model Display {
   screensaverOverride Boolean?
   contentFit          ContentFit @default(COVER)
   orientation         Orientation @default(PORTRAIT)
+  // Underscan compensation, as a percentage of the viewport (100 = fill it).
+  //
+  // Some panels magnify what the browser hands them, cropping the edges. That
+  // happens after the page has finished drawing, so neither the browser nor MDC
+  // can see it and nothing in the page can prevent it. Rendering into a smaller
+  // centred box cancels it out: a panel that magnifies by 1.25x needs 80 here.
+  //
+  // Per-display because it is a property of the individual panel, not of the
+  // content or the room — the screen next to it may need nothing. Dial it in
+  // with the calibration markers on /hub/troubleshoot: raise it until the
+  // corner blocks are just fully visible.
+  contentScale        Int @default(100)
   reloadRequestedAt   DateTime? // bumped by the hub's "Refresh" action; the TV reloads on its next content poll when this changes
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt

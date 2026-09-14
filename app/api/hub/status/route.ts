@@ -180,6 +180,7 @@ export async function GET() {
               number: display.number,
               active: display.active,
               orientation: display.orientation,
+              contentScale: display.contentScale,
               mode,
               currentContent: content
                 ? {

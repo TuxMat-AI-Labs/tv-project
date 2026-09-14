@@ -91,12 +91,18 @@ export function TroubleshootView({
         Measured in the TV&apos;s own browser and sent with each heartbeat. <strong>Zoom is shown, not judged</strong> —
         these panels run at 125% natively and content sized in viewport units renders identically either way.
       </p>
+      <p className="mt-1 max-w-3xl text-xs text-muted">
+        <strong>Fit %</strong> is underscan compensation for a panel that magnifies what it is handed and crops its own
+        edges — something that happens after the browser has finished drawing, so nothing here can detect it. 100 means
+        fill the screen and is correct for every healthy panel. Turn the markers on above and nudge a cropping screen
+        down until all four corner blocks are just fully visible.
+      </p>
 
       {!status ? (
         <p className="mt-4 text-sm text-muted">Loading…</p>
       ) : (
         <div className="mt-3 overflow-x-auto brand-card">
-          <table className="w-full min-w-[820px] text-left text-sm">
+          <table className="w-full min-w-[960px] text-left text-sm">
             <thead className="text-xs tracking-wide text-muted uppercase">
               <tr>
                 <th className="px-4 py-3">Display</th>
@@ -107,6 +113,7 @@ export function TroubleshootView({
                 <th className="px-4 py-3">DPR</th>
                 <th className="px-4 py-3">Zoom</th>
                 <th className="px-4 py-3">Chrome</th>
+                <th className="px-4 py-3">Fit %</th>
               </tr>
             </thead>
             <tbody>
@@ -166,6 +173,58 @@ export function TroubleshootView({
   );
 }
 
+/**
+ * Underscan compensation for one panel.
+ *
+ * Steps of 1% rather than a free-text box: this is dialled in by eye against
+ * the calibration markers — nudge down until all four corner blocks are fully
+ * on the glass — and a number typed from a calculation has never once been the
+ * right answer here.
+ */
+function ScaleControl({ displayId, initial }: { displayId: string; initial: number }) {
+  const [value, setValue] = useState(initial);
+  const [saving, setSaving] = useState(false);
+
+  async function save(next: number) {
+    const clamped = Math.min(100, Math.max(50, next));
+    setValue(clamped);
+    setSaving(true);
+    try {
+      await fetch(`/api/admin/displays/${displayId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contentScale: clamped }),
+      });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <span className="inline-flex items-center gap-1">
+      <button
+        type="button"
+        onClick={() => save(value - 1)}
+        disabled={saving || value <= 50}
+        className="rounded border border-black/10 px-1.5 py-0.5 text-xs disabled:opacity-40"
+      >
+        −
+      </button>
+      <span className={`w-10 text-center font-mono text-xs ${value < 100 ? "font-semibold text-gold" : ""}`}>
+        {value}%
+      </span>
+      <button
+        type="button"
+        onClick={() => save(value + 1)}
+        disabled={saving || value >= 100}
+        className="rounded border border-black/10 px-1.5 py-0.5 text-xs disabled:opacity-40"
+      >
+        +
+      </button>
+    </span>
+  );
+}
+
 function Row({ room, d }: { room: string; d: HubDisplayStatus }) {
   const vp = d.viewport;
   // Recomputed here rather than reusing the fault rule: this page is for
@@ -200,6 +259,9 @@ function Row({ room, d }: { room: string; d: HubDisplayStatus }) {
       <td className="px-4 py-2.5 font-mono text-xs">{zoom ? `${Math.round(zoom * 100)}%` : "—"}</td>
       <td className={`px-4 py-2.5 font-mono text-xs ${chrome && chrome > 32 ? "text-red-600" : ""}`}>
         {chrome === null ? "—" : `${chrome}px`}
+      </td>
+      <td className="px-4 py-2.5">
+        <ScaleControl displayId={d.id} initial={d.contentScale ?? 100} />
       </td>
     </tr>
   );

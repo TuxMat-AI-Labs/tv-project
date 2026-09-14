@@ -12,6 +12,7 @@ export type DisplayContentResponse = {
   playlist?: PlaylistItem[];
   carousel?: CarouselPayload;
   contentFit?: "COVER" | "CONTAIN" | "FILL";
+  contentScale?: number;
   carouselTransition?: CarouselTransition;
   screensaverStyle?: ScreensaverVariant;
   calibration?: boolean;

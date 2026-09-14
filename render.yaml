@@ -44,6 +44,13 @@ services:
         sync: false
       - key: AZURE_TENANT_ID
         sync: false
+      # Shared secret for scripts/mdc.ts to POST a panel dump to
+      # /api/mdc-report, which /hub/troubleshoot then shows. That script runs on
+      # the office LAN (the app has no route to the panels), so it has no
+      # browser session and needs a token rather than a role. Unset = the
+      # endpoint refuses everything, which is the intended default.
+      - key: MDC_REPORT_TOKEN
+        sync: false
       # Cloudflare R2 media bucket.
       - key: CLOUDFLARE_R2_ACCOUNT_ID
         sync: false

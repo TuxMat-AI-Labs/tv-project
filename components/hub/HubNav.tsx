@@ -25,6 +25,7 @@ export function HubNav({
         { label: "Dashboard", href: "/hub" },
         ...rooms.map((r) => ({ label: r.name, href: `/hub/${r.slug}` })),
         { label: "Customize", href: "/hub/customize" },
+        { label: "Troubleshoot", href: "/hub/troubleshoot" },
       ];
 
   return (

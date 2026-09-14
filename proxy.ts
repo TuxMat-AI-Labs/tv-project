@@ -6,6 +6,7 @@ const ADMIN_ONLY = [
   /^\/hub\/customize\/rooms/,
   /^\/hub\/customize\/displays/,
   /^\/hub\/pair/,
+  /^\/hub\/troubleshoot/,
   /^\/api\/admin\/rooms/,
   // Everything under /api/admin/displays is admin-only EXCEPT setting what a
   // display is playing. Without that exception the marketing view's one action

@@ -12,8 +12,29 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
+  // Required for the absolute URLs Open Graph needs — a relative /og.png is
+  // ignored by Slack and every other unfurler. AUTH_URL is already the app's
+  // canonical public origin in production; the localhost fallback only affects
+  // dev, where nothing unfurls anything.
+  metadataBase: new URL(process.env.AUTH_URL ?? "http://localhost:3000"),
   title: "TuxDisplay",
   description: "TuxMat's digital signage hub",
+  // Link previews. Without these a shared hub link unfurled in Slack with an
+  // empty grey placeholder where the image should be, which is how it has been
+  // going out to the team.
+  openGraph: {
+    type: "website",
+    siteName: "TuxDisplay",
+    title: "TuxDisplay",
+    description: "Every screen in the office, in one place.",
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "TuxDisplay — TuxMat's digital signage hub" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "TuxDisplay",
+    description: "Every screen in the office, in one place.",
+    images: ["/og.png"],
+  },
   // Installed-app metadata (manifest.ts handles Android/Chrome; these two
   // cover iOS Safari's own "Add to Home Screen," which ignores the manifest).
   appleWebApp: {

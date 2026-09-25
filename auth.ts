@@ -3,7 +3,7 @@ import MicrosoftEntraID from "next-auth/providers/microsoft-entra-id";
 import Credentials from "next-auth/providers/credentials";
 import type { Role } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { resolveRole, scopedRoomSlugFor } from "@/lib/auth/roles";
+import { resolveRole, scopedRoomSlugsFor } from "@/lib/auth/roles";
 
 declare module "next-auth" {
   interface Session {
@@ -11,11 +11,11 @@ declare module "next-auth" {
       id: string;
       role: Role;
       /**
-       * The only room this person may manage, or null for no restriction.
-       * Null is the normal case (admins, and marketing via an AD group) — see
-       * lib/auth/roles.
+       * The rooms this person may manage, or null for no restriction. Null is
+       * the normal case (admins, and marketing via an AD group) — see
+       * lib/auth/roles. An empty array would mean "scoped to nothing".
        */
-      scopedRoomSlug: string | null;
+      scopedRoomSlugs: string[] | null;
     } & DefaultSession["user"];
   }
 }
@@ -79,7 +79,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         });
         token.userId = dbUser.id;
         token.role = dbUser.role;
-        token.scopedRoomSlug = null;
+        token.scopedRoomSlugs = null;
         return token;
       }
 
@@ -110,7 +110,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         // Derived from the email map rather than stored on the User row, so
         // editing the map takes effect on next sign-in with no migration and no
         // stale copy in the database to reconcile.
-        token.scopedRoomSlug = scopedRoomSlugFor(dbUser.email, dbUser.role);
+        token.scopedRoomSlugs = scopedRoomSlugsFor(dbUser.email, dbUser.role);
       }
 
       return token;
@@ -118,7 +118,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async session({ session, token }) {
       session.user.id = token.userId as string;
       session.user.role = token.role as Role;
-      session.user.scopedRoomSlug = (token.scopedRoomSlug as string | null) ?? null;
+      session.user.scopedRoomSlugs = (token.scopedRoomSlugs as string[] | null) ?? null;
       return session;
     },
   },

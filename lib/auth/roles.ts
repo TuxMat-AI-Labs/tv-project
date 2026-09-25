@@ -16,10 +16,12 @@ const MARKETING_GROUP_ID = process.env.ENTRA_MARKETING_GROUP_ID;
  * ENTRA_MARKETING_GROUP_ID and delete the corresponding entries here — a real
  * group membership already wins over this map (see resolveRole).
  */
-const ROOM_SCOPED_MARKETING: Record<string, string> = {
-  "ken.schick@tuxmat.ca": "showroom",
-  "marco.adamo@tuxmat.ca": "showroom",
-  "evelyn.kam@tuxmat.ca": "showroom",
+const MARKETING_ROOMS = ["showroom", "multi-purpose-room"] as const;
+
+const ROOM_SCOPED_MARKETING: Record<string, readonly string[]> = {
+  "ken.schick@tuxmat.ca": MARKETING_ROOMS,
+  "marco.adamo@tuxmat.ca": MARKETING_ROOMS,
+  "evelyn.kam@tuxmat.ca": MARKETING_ROOMS,
 };
 
 /**
@@ -29,8 +31,16 @@ const ROOM_SCOPED_MARKETING: Record<string, string> = {
  * having to read this file or guess. It is the same object the sign-in check
  * uses, so what the hub shows can never drift from what actually grants access.
  */
-export function roomScopedMarketingRoster(): { email: string; roomSlug: string }[] {
-  return Object.entries(ROOM_SCOPED_MARKETING).map(([email, roomSlug]) => ({ email, roomSlug }));
+export function roomScopedMarketingRoster(): { email: string; roomSlugs: string[] }[] {
+  return Object.entries(ROOM_SCOPED_MARKETING).map(([email, roomSlugs]) => ({
+    email,
+    roomSlugs: [...roomSlugs],
+  }));
+}
+
+/** Every room any scoped user can manage, for the admin's Marketing tab. */
+export function allMarketingRoomSlugs(): string[] {
+  return [...new Set(Object.values(ROOM_SCOPED_MARKETING).flat())];
 }
 
 function normalizeEmail(email: string | null | undefined): string {
@@ -38,15 +48,17 @@ function normalizeEmail(email: string | null | undefined): string {
 }
 
 /**
- * The single room this person may manage, or null for no restriction.
+ * The rooms this person may manage, or null for no restriction.
  *
- * Null means "not room-scoped", which is the answer for an ADMIN and for anyone
- * who reached MARKETING through an AD group — NOT "no access". Only a scoped
- * user is confined to one room.
+ * Null means "not room-scoped" — the answer for an ADMIN and for anyone who
+ * reached MARKETING through an AD group — and is emphatically NOT the same as
+ * an empty list, which would mean "scoped to nothing". Only a scoped user is
+ * confined, and they may hold several rooms.
  */
-export function scopedRoomSlugFor(email: string | null | undefined, role: Role): string | null {
+export function scopedRoomSlugsFor(email: string | null | undefined, role: Role): string[] | null {
   if (role === "ADMIN") return null;
-  return ROOM_SCOPED_MARKETING[normalizeEmail(email)] ?? null;
+  const rooms = ROOM_SCOPED_MARKETING[normalizeEmail(email)];
+  return rooms ? [...rooms] : null;
 }
 
 export function resolveRole(entraGroupIds: string[], email?: string | null): Role {
@@ -78,16 +90,19 @@ export function canManageContent(role: Role): boolean {
 /**
  * May this session change what plays in `roomSlug`?
  *
- * `scopedRoomSlug` null = unrestricted (admin, or marketing via an AD group).
+ * `scopedRoomSlugs` null = unrestricted (admin, or marketing via an AD group).
+ * An EMPTY array is not the same thing and denies everything — a scoped user
+ * whose room list is somehow empty must not fall through to full access.
+ *
  * Enforced server-side on every mutation, not just hidden in the UI — a scoped
  * user can otherwise POST another room's display id directly.
  */
 export function canManageRoom(
   role: Role,
-  scopedRoomSlug: string | null | undefined,
+  scopedRoomSlugs: string[] | null | undefined,
   roomSlug: string | null | undefined
 ): boolean {
   if (!canManageContent(role)) return false;
-  if (!scopedRoomSlug) return true;
-  return !!roomSlug && roomSlug === scopedRoomSlug;
+  if (scopedRoomSlugs == null) return true;
+  return !!roomSlug && scopedRoomSlugs.includes(roomSlug);
 }

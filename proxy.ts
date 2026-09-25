@@ -30,7 +30,7 @@ const MARKETING_OR_ADMIN = [
 export const proxy = auth((req) => {
   const { pathname } = req.nextUrl;
   const role = req.auth?.user?.role;
-  const scopedRoomSlug = req.auth?.user?.scopedRoomSlug ?? null;
+  const scopedRoomSlugs = req.auth?.user?.scopedRoomSlugs ?? null;
 
   if (!role) {
     return NextResponse.redirect(new URL(`/signin?callbackUrl=${encodeURIComponent(pathname)}`, req.nextUrl.origin));
@@ -44,21 +44,23 @@ export const proxy = auth((req) => {
     return NextResponse.redirect(new URL("/hub", req.nextUrl.origin));
   }
 
-  // A room-scoped user (the marketing team, confined to the Showroom) gets the
-  // simplified manage view as their whole world. Everything else in the hub is
-  // either another room's business or an admin surface, so send them home
-  // rather than showing a page whose every control would be rejected.
+  // A room-scoped user (the marketing team) gets the simplified manage view as
+  // their whole world. Everything else in the hub is either a room they do not
+  // hold or an admin surface, so send them home rather than showing a page
+  // whose every control would be rejected.
   //
   // This is convenience, NOT the security boundary — /api/admin/* mutations are
   // authorized per-display in lib/auth/guard, because a redirect only steers a
   // browser and says nothing about a direct POST.
-  if (scopedRoomSlug) {
-    const home = `/hub/manage/${scopedRoomSlug}`;
+  if (scopedRoomSlugs) {
+    const home = "/hub/manage";
+    // Their own rooms' single-room pages are fine; anyone else's are not, so
+    // this cannot just allow /hub/manage/* wholesale.
+    const ownRoomPage = scopedRoomSlugs.some(
+      (slug) => pathname === `${home}/${slug}` || pathname.startsWith(`${home}/${slug}/`)
+    );
     const allowed =
-      pathname === home ||
-      pathname.startsWith(`${home}/`) ||
-      pathname.startsWith("/api/") ||
-      pathname === "/hub/settings";
+      pathname === home || ownRoomPage || pathname.startsWith("/api/") || pathname === "/hub/settings";
     if (!allowed) {
       return NextResponse.redirect(new URL(home, req.nextUrl.origin));
     }

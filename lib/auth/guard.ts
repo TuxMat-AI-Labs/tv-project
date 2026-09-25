@@ -3,7 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { canManageContent, canManageRoom } from "@/lib/auth/roles";
 
-export type Actor = { id: string; role: "ADMIN" | "MARKETING" | "VIEWER"; scopedRoomSlug: string | null };
+export type Actor = { id: string; role: "ADMIN" | "MARKETING" | "VIEWER"; scopedRoomSlugs: string[] | null };
 
 /**
  * Server-side authorization for "may this person change what plays here?".
@@ -25,7 +25,7 @@ export async function requireActor(): Promise<{ actor: Actor } | { error: NextRe
     actor: {
       id: session.user.id,
       role: session.user.role,
-      scopedRoomSlug: session.user.scopedRoomSlug ?? null,
+      scopedRoomSlugs: session.user.scopedRoomSlugs ?? null,
     },
   };
 }
@@ -49,10 +49,10 @@ export async function authorizeDisplay(
   if (!display) {
     return { error: NextResponse.json({ error: "display not found" }, { status: 404 }) };
   }
-  if (!canManageRoom(actor.role, actor.scopedRoomSlug, display.room.slug)) {
+  if (!canManageRoom(actor.role, actor.scopedRoomSlugs, display.room.slug)) {
     return {
       error: NextResponse.json(
-        { error: `forbidden: you can only manage the ${actor.scopedRoomSlug} room` },
+        { error: `forbidden: you can only manage ${actor.scopedRoomSlugs?.join(", ")}` },
         { status: 403 }
       ),
     };
@@ -80,10 +80,10 @@ export async function authorizeAssignment(
     return { error: NextResponse.json({ error: "assignment not found" }, { status: 404 }) };
   }
   const roomSlug = assignment.display.room.slug;
-  if (!canManageRoom(actor.role, actor.scopedRoomSlug, roomSlug)) {
+  if (!canManageRoom(actor.role, actor.scopedRoomSlugs, roomSlug)) {
     return {
       error: NextResponse.json(
-        { error: `forbidden: you can only manage the ${actor.scopedRoomSlug} room` },
+        { error: `forbidden: you can only manage ${actor.scopedRoomSlugs?.join(", ")}` },
         { status: 403 }
       ),
     };

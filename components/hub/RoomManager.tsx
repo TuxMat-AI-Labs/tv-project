@@ -34,14 +34,15 @@ const DEFAULT_IMAGE_SECONDS = 10;
  * path, not a replacement for it.
  */
 export function RoomManager({
-  roomSlug,
+  roomSlugs,
   isAdmin = false,
   marketingRoster = [],
 }: {
-  roomSlug: string;
+  /** One or more rooms, rendered as stacked sections like the dashboard. */
+  roomSlugs: string[];
   /** Viewer is an admin previewing this view rather than living in it. */
   isAdmin?: boolean;
-  marketingRoster?: { email: string; roomSlug: string }[];
+  marketingRoster?: { email: string; roomSlugs: string[] }[];
 }) {
   const status = useHubStatus();
   const [library, setLibrary] = useState<LibraryItem[]>([]);
@@ -59,7 +60,10 @@ export function RoomManager({
 
   useEffect(loadLibrary, [loadLibrary]);
 
-  const room = status?.rooms.find((r) => r.slug === roomSlug);
+  // Preserve the order given, so the nav and the page agree.
+  const shownRooms = roomSlugs
+    .map((slug) => status?.rooms.find((r) => r.slug === slug))
+    .filter((r): r is NonNullable<typeof r> => Boolean(r));
 
   async function assign(displayId: string, contentItemId: string) {
     const res = await fetch(`/api/admin/displays/${displayId}/assignments`, {
@@ -152,11 +156,13 @@ export function RoomManager({
   }
 
   if (!status) return <p className="text-sm text-muted">Loading screens…</p>;
-  if (!room) return <p className="text-sm text-muted">Room not found.</p>;
+  if (!shownRooms.length) return <p className="text-sm text-muted">Room not found.</p>;
+
+  const heading = shownRooms.length === 1 ? shownRooms[0].name : "Your screens";
 
   return (
     <div className="reveal">
-      <h1 className="text-2xl font-semibold text-foreground">{room.name}</h1>
+      <h1 className="text-2xl font-semibold text-foreground">{heading}</h1>
       <p className="mt-1 text-sm text-muted">
         Pick a screen, then drop in a picture or choose one you have used before. It goes up straight away.
       </p>
@@ -176,7 +182,8 @@ export function RoomManager({
               <p className="mt-1 max-w-2xl text-xs text-muted">
                 You are seeing it as an admin, so your header still has every other tab. The people
                 below see <strong>only this page</strong> — every other hub URL sends them back here, and
-                the API refuses any room but {room.name} even if they go at it directly.
+                the API refuses any room outside {shownRooms.map((r) => r.name).join(" and ")} even if
+                they go at it directly.
               </p>
             </div>
           </div>
@@ -187,7 +194,7 @@ export function RoomManager({
             </p>
             {marketingRoster.length === 0 ? (
               <p className="mt-1 text-xs text-muted">
-                Nobody is scoped to this room yet.
+                Nobody is scoped to these rooms yet.
               </p>
             ) : (
               <ul className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1">
@@ -227,20 +234,33 @@ export function RoomManager({
         </p>
       )}
 
-      <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {room.displays.map((display) => (
-          <DisplayCard
-            key={display.id}
-            display={display}
-            library={library}
-            busy={busyDisplayId === display.id}
-            open={openDisplayId === display.id}
-            onToggle={() => setOpenDisplayId((cur) => (cur === display.id ? null : display.id))}
-            onFile={(f) => uploadAndAssign(display, f)}
-            onPick={(item) => pickExisting(display, item)}
-          />
-        ))}
-      </div>
+      {/* A section per room, stacked the way the dashboard stacks them, so a
+          person who looks after more than one room sees them all at once
+          instead of hunting through tabs. The room heading is dropped when
+          there is only one, since the page title already says it. */}
+      {shownRooms.map((r) => (
+        <section key={r.id} className="mt-8">
+          {shownRooms.length > 1 && (
+            <h2 className="text-sm font-semibold tracking-wide text-foreground uppercase">
+              {r.name} <span className="ml-1 font-normal text-muted">{r.displays.length} screens</span>
+            </h2>
+          )}
+          <div className="mt-3 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {r.displays.map((display) => (
+              <DisplayCard
+                key={display.id}
+                display={display}
+                library={library}
+                busy={busyDisplayId === display.id}
+                open={openDisplayId === display.id}
+                onToggle={() => setOpenDisplayId((cur) => (cur === display.id ? null : display.id))}
+                onFile={(f) => uploadAndAssign(display, f)}
+                onPick={(item) => pickExisting(display, item)}
+              />
+            ))}
+          </div>
+        </section>
+      ))}
     </div>
   );
 }

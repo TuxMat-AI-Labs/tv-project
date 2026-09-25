@@ -5,7 +5,7 @@ import { Wordmark } from "@/components/brand/Wordmark";
 import { HubNav } from "@/components/hub/HubNav";
 import { ContactMenu } from "@/components/hub/ContactMenu";
 import { RegisterServiceWorker } from "@/components/hub/RegisterServiceWorker";
-import { roomScopedMarketingRoster } from "@/lib/auth/roles";
+import { allMarketingRoomSlugs } from "@/lib/auth/roles";
 
 // Overrides the root layout's zoom-locked viewport (that lock exists for the
 // TV-facing routes' pixel-perfect full-bleed rendering — see app/layout.tsx).
@@ -66,8 +66,8 @@ export default async function HubLayout({
         <div className="mx-auto max-w-7xl px-6">
           <HubNav
             rooms={rooms}
-            scopedRoomSlug={session?.user?.scopedRoomSlug ?? null}
-            marketingRoomSlug={roomScopedMarketingRoster()[0]?.roomSlug ?? null}
+            scopedRoomSlugs={session?.user?.scopedRoomSlugs ?? null}
+            hasMarketingRooms={allMarketingRoomSlugs().length > 0}
           />
         </div>
       </header>

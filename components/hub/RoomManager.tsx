@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { TVFrame } from "@/components/hub/TVFrame";
+import { DisplayCarousel } from "@/components/hub/DisplayCarousel";
 import { StatusCircle } from "@/components/hub/StatusDot";
 import { WebpagePreview } from "@/components/hub/WebpagePreview";
 import { useHubStatus } from "@/lib/hub/useHubStatus";
@@ -234,64 +235,74 @@ export function RoomManager({
         </p>
       )}
 
-      {/* A section per room, stacked the way the dashboard stacks them, so a
-          person who looks after more than one room sees them all at once
-          instead of hunting through tabs. The room heading is dropped when
-          there is only one, since the page title already says it. */}
-      {shownRooms.map((r) => (
-        <section key={r.id} className="mt-8">
-          {shownRooms.length > 1 && (
-            <h2 className="text-sm font-semibold tracking-wide text-foreground uppercase">
-              {r.name} <span className="ml-1 font-normal text-muted">{r.displays.length} screens</span>
-            </h2>
-          )}
-          <div className="mt-3 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {r.displays.map((display) => (
-              <DisplayCard
-                key={display.id}
-                display={display}
+      {/* One carousel per room, exactly as the dashboard presents a room.
+          Mixed portrait/landscape panels only line up because that component
+          gives every tile a shared height — a plain grid left the landscape
+          cards with a column of dead space beside the tall portrait one. */}
+      {shownRooms.map((r) => {
+        const openHere = r.displays.find((d) => d.id === openDisplayId) ?? null;
+        return (
+          <section key={r.id} className="mt-2">
+            <DisplayCarousel
+              title={r.name}
+              displays={r.displays}
+              tileSize="large"
+              titleAction={
+                <span className="text-sm font-normal tracking-normal text-muted normal-case">
+                  {r.displays.length} screens
+                </span>
+              }
+              renderTile={(display) => (
+                <DisplayCard
+                  display={display}
+                  busy={busyDisplayId === display.id}
+                  selected={openDisplayId === display.id}
+                  onToggle={() => setOpenDisplayId((cur) => (cur === display.id ? null : display.id))}
+                />
+              )}
+            />
+
+            {/* The editor lives UNDER the row, not inside a cell. In a cell it
+                would either be crushed into a tile's width or stretch the row,
+                and the whole point of this layout is that the row stays even. */}
+            {openHere && (
+              <Editor
+                display={openHere}
                 library={library}
-                busy={busyDisplayId === display.id}
-                open={openDisplayId === display.id}
-                onToggle={() => setOpenDisplayId((cur) => (cur === display.id ? null : display.id))}
-                onFile={(f) => uploadAndAssign(display, f)}
-                onPick={(item) => pickExisting(display, item)}
+                busy={busyDisplayId === openHere.id}
+                onClose={() => setOpenDisplayId(null)}
+                onFile={(f) => uploadAndAssign(openHere, f)}
+                onPick={(item) => pickExisting(openHere, item)}
               />
-            ))}
-          </div>
-        </section>
-      ))}
+            )}
+          </section>
+        );
+      })}
     </div>
   );
 }
 
+/**
+ * One screen in the row: the panel as it looks now, its name, and the way in.
+ *
+ * Kept to the same silhouette as the dashboard's tile — framed panel, name,
+ * status dot — so the two views read as the same wall. The only addition is the
+ * button, and it selects rather than expands: what it opens is rendered beneath
+ * the whole row.
+ */
 function DisplayCard({
   display,
-  library,
   busy,
-  open,
+  selected,
   onToggle,
-  onFile,
-  onPick,
 }: {
   display: HubDisplayStatus;
-  library: LibraryItem[];
   busy: boolean;
-  open: boolean;
+  selected: boolean;
   onToggle: () => void;
-  onFile: (file: File) => void;
-  onPick: (item: LibraryItem) => void;
 }) {
-  const inputRef = useRef<HTMLInputElement | null>(null);
-  const [dragging, setDragging] = useState(false);
-
-  // Only offer library items shaped for this panel. Handing a portrait picture
-  // to a landscape screen is the single easiest mistake to make here, and it is
-  // avoidable by simply not showing it.
-  const usable = library.filter((i) => i.type !== "WEBPAGE" && i.orientation === display.orientation);
-
   return (
-    <div className="brand-card overflow-hidden">
+    <div>
       <div className="relative">
         <TVFrame orientation={display.orientation}>
           <div className="absolute inset-0 bg-black">
@@ -310,12 +321,8 @@ function DisplayCard({
               </div>
             )}
 
-            {/* On the screen, not under it. In the card body this pushed one
-                card taller than its neighbours and left the rest of the row
-                padding out dead space to match. Here it costs no layout at all,
-                every card stays the same height, and it sits where the fault
-                actually is — the same bottom-left corner the physical panel
-                puts its own warning in. Full sentence on hover. */}
+            {/* On the screen rather than under it, so a fault costs no layout
+                and every tile in the row stays the same height. */}
             {display.viewportFaults?.length > 0 && (
               <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 p-1.5">
                 {display.viewportFaults.map((f) => (
@@ -339,7 +346,7 @@ function DisplayCard({
         )}
       </div>
 
-      <div className="p-3">
+      <div className="mt-3">
         <div className="flex items-center justify-between gap-2">
           <p className="truncate text-sm font-medium text-foreground">{display.name}</p>
           <StatusCircle online={display.online} />
@@ -347,80 +354,127 @@ function DisplayCard({
         <p className="mt-0.5 truncate text-xs text-muted">
           {display.currentContent?.title ?? "Nothing assigned"}
         </p>
-
         <button
           type="button"
           onClick={onToggle}
           disabled={busy}
-          className="glass-btn glass-btn--gold mt-3 w-full rounded px-3 py-2 text-sm font-medium disabled:opacity-50"
+          className={`glass-btn mt-2.5 w-full rounded px-3 py-2 text-sm font-medium disabled:opacity-50 ${
+            selected ? "" : "glass-btn--gold"
+          }`}
         >
-          {open ? "Close" : "Change what's on this screen"}
+          {selected ? "Close" : "Change"}
         </button>
-
-        {open && (
-          <div className="mt-3">
-            <div
-              onDragOver={(e) => {
-                e.preventDefault();
-                setDragging(true);
-              }}
-              onDragLeave={() => setDragging(false)}
-              onDrop={(e) => {
-                e.preventDefault();
-                setDragging(false);
-                const f = e.dataTransfer.files?.[0];
-                if (f) onFile(f);
-              }}
-              onClick={() => inputRef.current?.click()}
-              className={`cursor-pointer rounded border border-dashed px-3 py-6 text-center text-xs transition-colors ${
-                dragging ? "border-gold bg-gold/10 text-foreground" : "border-black/15 text-muted hover:bg-black/[0.03]"
-              }`}
-            >
-              <p className="font-medium text-foreground">Drop a picture or video here</p>
-              <p className="mt-0.5">or tap to choose one — it goes up right away</p>
-              <input
-                ref={inputRef}
-                type="file"
-                accept="image/*,video/*"
-                className="hidden"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) onFile(f);
-                  e.target.value = "";
-                }}
-              />
-            </div>
-
-            {usable.length > 0 && (
-              <>
-                <p className="mt-3 text-[11px] tracking-wide text-muted uppercase">Or reuse</p>
-                <div className="no-scrollbar mt-1.5 flex gap-2 overflow-x-auto pb-1">
-                  {usable.slice(0, 24).map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      title={item.title}
-                      onClick={() => onPick(item)}
-                      className="group shrink-0 overflow-hidden rounded border border-black/10 transition hover:border-gold"
-                    >
-                      <span className="block h-16 w-12 bg-surface-2">
-                        {item.thumbnailUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={item.thumbnailUrl} alt="" className="h-full w-full object-cover" />
-                        ) : (
-                          <span className="flex h-full w-full items-center justify-center text-[8px] text-muted uppercase">
-                            {item.type}
-                          </span>
-                        )}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-        )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * The change panel for whichever screen is selected, shown below the row.
+ *
+ * Full width because it can be: a drop target the size of a tile is a poor
+ * target, and the reuse strip needs room to show more than two thumbnails.
+ */
+function Editor({
+  display,
+  library,
+  busy,
+  onClose,
+  onFile,
+  onPick,
+}: {
+  display: HubDisplayStatus;
+  library: LibraryItem[];
+  busy: boolean;
+  onClose: () => void;
+  onFile: (file: File) => void;
+  onPick: (item: LibraryItem) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const [dragging, setDragging] = useState(false);
+
+  // Only what fits this panel. Handing a portrait picture to a landscape screen
+  // is the easiest mistake available here, and not offering it is simpler than
+  // explaining it afterwards.
+  const usable = library.filter((i) => i.type !== "WEBPAGE" && i.orientation === display.orientation);
+
+  return (
+    <div className="brand-card -mt-4 mb-2 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm font-semibold text-foreground">
+          Change what&apos;s on <span className="text-gold">{display.name}</span>
+        </p>
+        <button type="button" onClick={onClose} className="text-xs text-muted hover:text-foreground">
+          Cancel
+        </button>
+      </div>
+
+      <div
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragging(true);
+        }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragging(false);
+          const f = e.dataTransfer.files?.[0];
+          if (f) onFile(f);
+        }}
+        onClick={() => !busy && inputRef.current?.click()}
+        className={`mt-3 cursor-pointer rounded border border-dashed px-4 py-8 text-center text-xs transition-colors ${
+          dragging ? "border-gold bg-gold/10 text-foreground" : "border-black/15 text-muted hover:bg-black/[0.03]"
+        } ${busy ? "pointer-events-none opacity-50" : ""}`}
+      >
+        <p className="text-sm font-medium text-foreground">Drop a picture or video here</p>
+        <p className="mt-0.5">or click to choose one — it goes up right away</p>
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*,video/*"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) onFile(f);
+            e.target.value = "";
+          }}
+        />
+      </div>
+
+      {usable.length > 0 && (
+        <>
+          <p className="mt-4 text-[11px] tracking-wide text-muted uppercase">
+            Or reuse something ({display.orientation === "LANDSCAPE" ? "landscape" : "portrait"})
+          </p>
+          <div className="no-scrollbar mt-2 flex gap-2 overflow-x-auto pb-1">
+            {usable.slice(0, 40).map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                title={item.title}
+                disabled={busy}
+                onClick={() => onPick(item)}
+                className="group shrink-0 overflow-hidden rounded border border-black/10 transition hover:border-gold disabled:opacity-50"
+              >
+                <span
+                  className={`block bg-surface-2 ${
+                    display.orientation === "LANDSCAPE" ? "h-14 w-24" : "h-20 w-12"
+                  }`}
+                >
+                  {item.thumbnailUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={item.thumbnailUrl} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <span className="flex h-full w-full items-center justify-center text-[8px] text-muted uppercase">
+                      {item.type}
+                    </span>
+                  )}
+                </span>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }

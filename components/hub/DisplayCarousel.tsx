@@ -18,6 +18,7 @@ export function DisplayCarousel({
   tileSize = "default",
   emptyText = "No displays.",
   titleAction,
+  renderTile,
 }: {
   title?: string;
   online?: boolean;
@@ -25,6 +26,16 @@ export function DisplayCarousel({
   tileSize?: "default" | "large";
   emptyText?: string;
   titleAction?: React.ReactNode;
+  /**
+   * What to draw in each cell. Defaults to the dashboard's DisplayTile.
+   *
+   * Exists so the marketing view can reuse this row rather than reimplement it:
+   * the alignment below (one shared height across mixed orientations) is the
+   * whole reason a wall of portrait and landscape panels reads as a wall, and a
+   * plain CSS grid instead left short landscape cards with dead space under
+   * them next to a tall portrait one.
+   */
+  renderTile?: (display: HubDisplayStatus, index: number) => React.ReactNode;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
@@ -115,11 +126,14 @@ export function DisplayCarousel({
       ) : (
         <div
           ref={scrollRef}
-          className="no-scrollbar flex gap-6 overflow-x-auto scroll-smooth px-2 py-10 overscroll-x-contain"
+          // items-start so a cell that grows (a tile with more beneath it)
+          // cannot stretch its neighbours into columns of whitespace — the
+          // thing that made the grid version look ragged.
+          className="no-scrollbar flex items-start gap-6 overflow-x-auto scroll-smooth px-2 py-10 overscroll-x-contain"
         >
           {displays.map((display, i) => (
             <div key={display.id} className={`shrink-0 ${tileWidths[display.orientation] ?? tileWidths.PORTRAIT}`}>
-              <DisplayTile display={display} index={i} />
+              {renderTile ? renderTile(display, i) : <DisplayTile display={display} index={i} />}
             </div>
           ))}
         </div>

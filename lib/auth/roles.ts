@@ -22,6 +22,17 @@ const ROOM_SCOPED_MARKETING: Record<string, string> = {
   "evelyn.kam@tuxmat.ca": "showroom",
 };
 
+/**
+ * Who currently has room-scoped marketing access, for display in the hub.
+ *
+ * Exported so an admin can see the live roster on the Marketing tab rather than
+ * having to read this file or guess. It is the same object the sign-in check
+ * uses, so what the hub shows can never drift from what actually grants access.
+ */
+export function roomScopedMarketingRoster(): { email: string; roomSlug: string }[] {
+  return Object.entries(ROOM_SCOPED_MARKETING).map(([email, roomSlug]) => ({ email, roomSlug }));
+}
+
 function normalizeEmail(email: string | null | undefined): string {
   return (email ?? "").trim().toLowerCase();
 }

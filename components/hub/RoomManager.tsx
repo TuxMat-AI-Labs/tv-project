@@ -33,7 +33,16 @@ const DEFAULT_IMAGE_SECONDS = 10;
  * All three stay editable afterwards in the full Library view; this is the fast
  * path, not a replacement for it.
  */
-export function RoomManager({ roomSlug }: { roomSlug: string }) {
+export function RoomManager({
+  roomSlug,
+  isAdmin = false,
+  marketingRoster = [],
+}: {
+  roomSlug: string;
+  /** Viewer is an admin previewing this view rather than living in it. */
+  isAdmin?: boolean;
+  marketingRoster?: { email: string; roomSlug: string }[];
+}) {
   const status = useHubStatus();
   const [library, setLibrary] = useState<LibraryItem[]>([]);
   const [openDisplayId, setOpenDisplayId] = useState<string | null>(null);
@@ -151,6 +160,63 @@ export function RoomManager({ roomSlug }: { roomSlug: string }) {
       <p className="mt-1 text-sm text-muted">
         Pick a screen, then drop in a picture or choose one you have used before. It goes up straight away.
       </p>
+
+      {/* Admins only. The marketing team sees this page as their entire hub, so
+          showing them a panel about their own permissions would be noise — and
+          listing colleagues' access to people who cannot change it is worse
+          than useless. For an admin it answers the two questions that actually
+          come up: who can get in, and what link do I send them. */}
+      {isAdmin && (
+        <div className="mt-5 brand-card p-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-foreground">
+                This is the Marketing view
+              </p>
+              <p className="mt-1 max-w-2xl text-xs text-muted">
+                You are seeing it as an admin, so your header still has every other tab. The people
+                below see <strong>only this page</strong> — every other hub URL sends them back here, and
+                the API refuses any room but {room.name} even if they go at it directly.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-3 border-t border-black/5 pt-3">
+            <p className="text-[11px] font-medium tracking-wide text-muted uppercase">
+              Who has access ({marketingRoster.length})
+            </p>
+            {marketingRoster.length === 0 ? (
+              <p className="mt-1 text-xs text-muted">
+                Nobody is scoped to this room yet.
+              </p>
+            ) : (
+              <ul className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1">
+                {marketingRoster.map((m) => (
+                  <li key={m.email} className="font-mono text-xs text-foreground">
+                    {m.email}
+                  </li>
+                ))}
+              </ul>
+            )}
+            <p className="mt-3 text-xs text-muted">
+              To add or remove someone, the list lives in{" "}
+              <code className="rounded bg-surface-2 px-1">lib/auth/roles.ts</code> and needs a deploy —
+              it is deliberately in the repo rather than editable here, so access changes are reviewed.
+            </p>
+          </div>
+
+          <div className="mt-3 border-t border-black/5 pt-3">
+            <p className="text-[11px] font-medium tracking-wide text-muted uppercase">Link to share</p>
+            <p className="mt-1 font-mono text-xs break-all text-foreground">
+              https://tuxdisplay.tuxmat.ai/hub
+            </p>
+            <p className="mt-1 text-xs text-muted">
+              Send the plain hub link, not this page&apos;s URL. They sign in with their TuxMat account and
+              land here automatically — no code to remember, and it still works if the room is ever renamed.
+            </p>
+          </div>
+        </div>
+      )}
 
       {error && (
         <p className="mt-4 rounded border border-red-500/30 bg-red-500/5 px-3 py-2 text-sm text-red-700">{error}</p>

@@ -8,10 +8,13 @@ type NavItem = { label: string; href: string };
 export function HubNav({
   rooms,
   scopedRoomSlug = null,
+  marketingRoomSlug = null,
 }: {
   rooms: { name: string; slug: string }[];
   /** Set for a user confined to one room — see lib/auth/roles. */
   scopedRoomSlug?: string | null;
+  /** The room the marketing team is scoped to, so an admin can preview it. */
+  marketingRoomSlug?: string | null;
 }) {
   const pathname = usePathname();
 
@@ -25,6 +28,11 @@ export function HubNav({
         { label: "Dashboard", href: "/hub" },
         ...rooms.map((r) => ({ label: r.name, href: `/hub/${r.slug}` })),
         { label: "Customize", href: "/hub/customize" },
+        // Opens the same page the marketing team lands on, so "what do they
+        // actually see?" is one click rather than a guess or a test account.
+        ...(marketingRoomSlug
+          ? [{ label: "Marketing", href: `/hub/manage/${marketingRoomSlug}` }]
+          : []),
         { label: "Troubleshoot", href: "/hub/troubleshoot" },
       ];
 

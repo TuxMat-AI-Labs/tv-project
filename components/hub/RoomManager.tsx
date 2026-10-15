@@ -393,10 +393,17 @@ function Editor({
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [dragging, setDragging] = useState(false);
 
-  // Only what fits this panel. Handing a portrait picture to a landscape screen
-  // is the easiest mistake available here, and not offering it is simpler than
-  // explaining it afterwards.
-  const usable = library.filter((i) => i.type !== "WEBPAGE" && i.orientation === display.orientation);
+  // Everything playable is shown, with the right shape first.
+  //
+  // This used to HIDE anything whose orientation did not match the screen, to
+  // prevent putting a portrait picture on a landscape panel. In practice that
+  // meant a room whose library was tagged the other way round showed an empty
+  // strip, which reads as "there is nothing here" rather than "nothing here
+  // fits". Showing everything and marking the mismatches is honest; hiding
+  // them was not, and left people thinking their assets were missing.
+  const playable = library.filter((i) => i.type !== "WEBPAGE");
+  const fits = playable.filter((i) => i.orientation === display.orientation);
+  const otherShape = playable.filter((i) => i.orientation !== display.orientation);
 
   return (
     <div className="brand-card -mt-4 mb-2 p-4">
@@ -441,40 +448,95 @@ function Editor({
         />
       </div>
 
-      {usable.length > 0 && (
+      {playable.length === 0 ? (
+        <p className="mt-4 text-xs text-muted">
+          Nothing in the library yet. Drop a file above and it becomes reusable here.
+        </p>
+      ) : (
         <>
-          <p className="mt-4 text-[11px] tracking-wide text-muted uppercase">
-            Or reuse something ({display.orientation === "LANDSCAPE" ? "landscape" : "portrait"})
-          </p>
-          <div className="no-scrollbar mt-2 flex gap-2 overflow-x-auto pb-1">
-            {usable.slice(0, 40).map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                title={item.title}
-                disabled={busy}
-                onClick={() => onPick(item)}
-                className="group shrink-0 overflow-hidden rounded border border-black/10 transition hover:border-gold disabled:opacity-50"
-              >
-                <span
-                  className={`block bg-surface-2 ${
-                    display.orientation === "LANDSCAPE" ? "h-14 w-24" : "h-20 w-12"
-                  }`}
-                >
-                  {item.thumbnailUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={item.thumbnailUrl} alt="" className="h-full w-full object-cover" />
-                  ) : (
-                    <span className="flex h-full w-full items-center justify-center text-[8px] text-muted uppercase">
-                      {item.type}
-                    </span>
-                  )}
-                </span>
-              </button>
-            ))}
-          </div>
+          <Strip
+            label={`Reuse something (${display.orientation === "LANDSCAPE" ? "landscape" : "portrait"}, fits this screen)`}
+            items={fits}
+            landscape={display.orientation === "LANDSCAPE"}
+            busy={busy}
+            onPick={onPick}
+            emptyNote="Nothing in the library is tagged for this shape yet."
+          />
+          {otherShape.length > 0 && (
+            <Strip
+              label="Other shape (will be cropped to fit)"
+              items={otherShape}
+              landscape={display.orientation === "LANDSCAPE"}
+              busy={busy}
+              onPick={onPick}
+              dim
+            />
+          )}
         </>
       )}
     </div>
+  );
+}
+
+/**
+ * A scrollable row of reusable library items.
+ *
+ * `dim` marks the ones whose shape does not match the screen. They stay
+ * clickable on purpose: the orientation tag is set by hand and is often simply
+ * wrong, so refusing the click would block a correct choice on the strength of
+ * a label nobody checked.
+ */
+function Strip({
+  label,
+  items,
+  landscape,
+  busy,
+  onPick,
+  emptyNote,
+  dim = false,
+}: {
+  label: string;
+  items: LibraryItem[];
+  landscape: boolean;
+  busy: boolean;
+  onPick: (item: LibraryItem) => void;
+  emptyNote?: string;
+  dim?: boolean;
+}) {
+  return (
+    <>
+      <p className="mt-4 text-[11px] tracking-wide text-muted uppercase">
+        {label} <span className="font-normal normal-case">({items.length})</span>
+      </p>
+      {items.length === 0 ? (
+        <p className="mt-1 text-xs text-muted">{emptyNote}</p>
+      ) : (
+        <div className="no-scrollbar mt-2 flex gap-2 overflow-x-auto pb-1">
+          {items.slice(0, 60).map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              title={dim ? `${item.title} (tagged ${item.orientation.toLowerCase()}, may be cropped)` : item.title}
+              disabled={busy}
+              onClick={() => onPick(item)}
+              className={`shrink-0 overflow-hidden rounded border border-black/10 transition hover:border-gold disabled:opacity-50 ${
+                dim ? "opacity-55 hover:opacity-100" : ""
+              }`}
+            >
+              <span className={`block bg-surface-2 ${landscape ? "h-14 w-24" : "h-20 w-12"}`}>
+                {item.thumbnailUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={item.thumbnailUrl} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <span className="flex h-full w-full items-center justify-center text-[8px] text-muted uppercase">
+                    {item.type}
+                  </span>
+                )}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+    </>
   );
 }

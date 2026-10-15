@@ -44,16 +44,34 @@ export default function LibraryPage() {
     : null;
 
   function refresh() {
+    // Each response is checked before parsing, and the two are reported
+    // separately. Previously both were piped straight into .json() inside one
+    // Promise.all, so ANY failure — an expired session, a permissions refusal,
+    // one endpoint being down — collapsed into the same "Failed to load
+    // library" with no way to tell which or why.
+    const read = async (url: string, label: string) => {
+      const res = await fetch(url, { cache: "no-store" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}) as { error?: string });
+        if (res.status === 401) throw new Error("Your session has expired. Reload the page and sign in again.");
+        if (res.status === 403) {
+          throw new Error(`You do not have access to ${label} (${body.error ?? "forbidden"}).`);
+        }
+        throw new Error(`Could not load ${label} (server said ${res.status}).`);
+      }
+      return res.json();
+    };
+
     return Promise.all([
-      fetch("/api/admin/content-items").then((r) => r.json()),
-      fetch("/api/admin/rooms").then((r) => r.json()),
+      read("/api/admin/content-items", "the content library"),
+      read("/api/admin/rooms", "the room list"),
     ])
       .then(([itemsData, roomsData]) => {
         setItems(itemsData.items ?? []);
         setRooms(roomsData.rooms ?? []);
         setError(null);
       })
-      .catch(() => setError("Failed to load library."))
+      .catch((e) => setError(e instanceof Error ? e.message : "Failed to load the library."))
       .finally(() => setLoading(false));
   }
 

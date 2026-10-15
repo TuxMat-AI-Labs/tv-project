@@ -32,16 +32,32 @@ export const proxy = auth((req) => {
   const role = req.auth?.user?.role;
   const scopedRoomSlugs = req.auth?.user?.scopedRoomSlugs ?? null;
 
-  if (!role) {
-    return NextResponse.redirect(new URL(`/signin?callbackUrl=${encodeURIComponent(pathname)}`, req.nextUrl.origin));
-  }
+  // An API request must be refused with JSON, never steered to a page.
+  //
+  // Redirecting /api/* sent the browser's fetch to the HTML sign-in page; the
+  // caller then ran .json() on HTML, threw, and showed its generic failure
+  // message. That is how an expired session surfaced as "Failed to load
+  // library" with nothing pointing at the real cause. A 401 or 403 with a
+  // reason lets the caller say something true instead.
+  const isApi = pathname.startsWith("/api/");
+  const deny = (status: number, error: string) =>
+    isApi
+      ? NextResponse.json({ error }, { status })
+      : NextResponse.redirect(
+          new URL(
+            status === 401 ? `/signin?callbackUrl=${encodeURIComponent(pathname)}` : "/hub",
+            req.nextUrl.origin
+          )
+        );
+
+  if (!role) return deny(401, "not signed in");
 
   if (ADMIN_ONLY.some((pattern) => pattern.test(pathname)) && role !== "ADMIN") {
-    return NextResponse.redirect(new URL("/hub", req.nextUrl.origin));
+    return deny(403, "admin only");
   }
 
   if (MARKETING_OR_ADMIN.some((pattern) => pattern.test(pathname)) && role === "VIEWER") {
-    return NextResponse.redirect(new URL("/hub", req.nextUrl.origin));
+    return deny(403, "read-only account");
   }
 
   // A room-scoped user (the marketing team) gets the simplified manage view as

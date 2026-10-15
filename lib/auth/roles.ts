@@ -22,7 +22,12 @@ const MARKETING_ROOMS = ["showroom", "multi-purpose-room"] as const;
  *
  * Still superseded by a real AD group whenever one is configured.
  */
-const DEFAULT_ADMIN_EMAILS = ["colin.diaz@tuxmat.ca", "ken.schick@tuxmat.ca"];
+const DEFAULT_ADMIN_EMAILS = [
+  "colin.diaz@tuxmat.ca",
+  "ken.schick@tuxmat.ca",
+  "marco.adamo@tuxmat.ca",
+  "evelyn.kam@tuxmat.ca",
+];
 
 /**
  * The admin list, overridable by the ADMIN_EMAILS environment variable as a

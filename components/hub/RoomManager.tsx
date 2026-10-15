@@ -37,13 +37,14 @@ const DEFAULT_IMAGE_SECONDS = 10;
 export function RoomManager({
   roomSlugs,
   isAdmin = false,
-  marketingRoster = [],
+  admins = [],
 }: {
   /** One or more rooms, rendered as stacked sections like the dashboard. */
   roomSlugs: string[];
   /** Viewer is an admin previewing this view rather than living in it. */
   isAdmin?: boolean;
-  marketingRoster?: { email: string; roomSlugs: string[] }[];
+  /** The named admins. Everyone else gets this view. */
+  admins?: string[];
 }) {
   const status = useHubStatus();
   const [library, setLibrary] = useState<LibraryItem[]>([]);
@@ -190,26 +191,31 @@ export function RoomManager({
           </div>
 
           <div className="mt-3 border-t border-black/5 pt-3">
-            <p className="text-[11px] font-medium tracking-wide text-muted uppercase">
-              Who has access ({marketingRoster.length})
+            <p className="text-[11px] font-medium tracking-wide text-muted uppercase">Who gets this view</p>
+            <p className="mt-1 text-xs text-muted">
+              <strong>Everyone who signs in</strong>, except the admins below. Nobody needs adding: a new
+              colleague gets this view the first time they sign in, and nothing else.
             </p>
-            {marketingRoster.length === 0 ? (
-              <p className="mt-1 text-xs text-muted">
-                Nobody is scoped to these rooms yet.
+            <p className="mt-2.5 text-[11px] font-medium tracking-wide text-muted uppercase">
+              Admins ({admins.length})
+            </p>
+            {admins.length === 0 ? (
+              <p className="mt-1 text-xs text-red-600">
+                No admins are configured. Check ADMIN_EMAILS.
               </p>
             ) : (
               <ul className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1">
-                {marketingRoster.map((m) => (
-                  <li key={m.email} className="font-mono text-xs text-foreground">
-                    {m.email}
+                {admins.map((e) => (
+                  <li key={e} className="font-mono text-xs text-foreground">
+                    {e}
                   </li>
                 ))}
               </ul>
             )}
             <p className="mt-3 text-xs text-muted">
-              To add or remove someone, the list lives in{" "}
-              <code className="rounded bg-surface-2 px-1">lib/auth/roles.ts</code> and needs a deploy —
-              it is deliberately in the repo rather than editable here, so access changes are reviewed.
+              To change who is an admin, set <code className="rounded bg-surface-2 px-1">ADMIN_EMAILS</code> in the
+              hosting settings as a comma-separated list. It replaces this list and takes effect on their next
+              sign-in, with no deploy.
             </p>
           </div>
 

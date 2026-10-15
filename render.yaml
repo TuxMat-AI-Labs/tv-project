@@ -44,6 +44,14 @@ services:
         sync: false
       - key: AZURE_TENANT_ID
         sync: false
+      # Comma-separated list of admin email addresses. EVERYONE else who signs
+      # in gets the marketing view, so this list is the only thing standing
+      # between a colleague and the full hub. Setting it REPLACES the list
+      # compiled into lib/auth/roles.ts, which makes it the recovery path if an
+      # admin's real address does not match that list: set it here and they are
+      # an admin again on their next sign-in, with no deploy.
+      - key: ADMIN_EMAILS
+        sync: false
       # Shared secret for scripts/mdc.ts to POST a panel dump to
       # /api/mdc-report, which /hub/troubleshoot then shows. That script runs on
       # the office LAN (the app has no route to the panels), so it has no
